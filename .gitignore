@@ -74,3 +74,10 @@ Desktop.ini
 # Logs
 *.log
 logs/
+
+# Datasets
+hyamd/
+
+# Saídas derivadas de dados restritos
+outputs/
+cache/

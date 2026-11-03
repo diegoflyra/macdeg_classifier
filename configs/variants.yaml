@@ -1,0 +1,74 @@
+# Registro de variantes. ID completo: <ROI>_<resolução>_<receita>, por exemplo R2.0_S512_A2-G1.
+# Nenhuma configuração é escolhida aqui: todas ficam registradas para comparação posterior.
+
+rois:
+  R1.5: {half_dd: 1.5, rotation: true}
+  R2.0: {half_dd: 2.0, rotation: true}
+  # Acrescentada no Passo 0: maior ROI que deve caber sem cantos pretos.
+  R2.5: {half_dd: 2.5, rotation: true}
+  # Os cantos não cabem no campo, mesmo sem rotação: margin_black em quase toda a base.
+  R3.0: {half_dd: 3.0, rotation: false}
+  P0: {full_field: true, rotation: true}
+
+resolutions:
+  S384: {side: 384, purpose: exploration}
+  S512: {side: 512}
+  S768: {side: 768}
+
+geometry:
+  G0: {type: none}
+  G1: {type: d4}
+  G2: {type: rotate, angle_deg: [0, 360]}
+  G3: {type: rotate, angle_deg: [0, 360], window: [1.00, 1.05], shift_frac: 0.02}
+
+photometry:
+  F0: {type: none}
+  F1: {type: brightness_contrast, limit: 0.10}
+  F2: {type: gamma, range: [0.90, 1.10]}
+  F3: {type: saturation, limit: 0.10}
+  Fmix: {type: one_of, options: [F1, F2, F3], p: 0.5}
+
+quality:
+  Q0: {type: none}
+  Q1: {type: gaussian_blur, sigma: [0.5, 1.5]}
+  Q2: {type: gaussian_noise, std: [0.005, 0.02]}
+  Q3: {type: downscale, factor: [0.70, 0.95]}
+  Q4: {type: jpeg, quality: [75, 95]}
+  Qall: {type: one_of, options: [Q1, Q2, Q3, Q4], p: 1.0}
+
+# "A1 = melhor entre G1 e G2" é decisão futura: as duas opções ficam registradas.
+recipes:
+  A0: {geometry: G0, photometry: F0, quality: Q0}
+  A1-G1: {geometry: G1, photometry: F0, quality: Q0}
+  A1-G2: {geometry: G2, photometry: F0, quality: Q0}
+  A2-G1: {geometry: G1, photometry: Fmix, quality: Q0}
+  A2-G2: {geometry: G2, photometry: Fmix, quality: Q0}
+  A3-G1: {geometry: G1, photometry: Fmix, quality: Qall, negative_control: true}
+  A3-G2: {geometry: G2, photometry: Fmix, quality: Qall, negative_control: true}
+  G1: {geometry: G1, photometry: F0, quality: Q0}
+  G2: {geometry: G2, photometry: F0, quality: Q0}
+  G3: {geometry: G3, photometry: F0, quality: Q0}
+  F1: {geometry: G0, photometry: F1, quality: Q0}
+  F2: {geometry: G0, photometry: F2, quality: Q0}
+  F3: {geometry: G0, photometry: F3, quality: Q0}
+  Fmix: {geometry: G0, photometry: Fmix, quality: Q0}
+  Q1: {geometry: G0, photometry: F0, quality: Q1, negative_control: true}
+  Q2: {geometry: G0, photometry: F0, quality: Q2, negative_control: true}
+  Q3: {geometry: G0, photometry: F0, quality: Q3, negative_control: true}
+  Q4: {geometry: G0, photometry: F0, quality: Q4, negative_control: true}
+
+normalization:
+  # Validação e teste só aplicam isto. Por padrão, apenas escala para [0, 1].
+  mean: null
+  std: null
+
+prohibited:
+  - random_crop
+  - cutout
+  - random_erasing
+  - mixup
+  - cutmix
+  - hue_shift
+  - elastic
+  - autoaugment
+  - randaugment
