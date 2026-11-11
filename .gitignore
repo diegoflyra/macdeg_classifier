@@ -75,9 +75,61 @@ Desktop.ini
 *.log
 logs/
 
-# Datasets
+# Datasets (dados restritos ou de terceiros: nunca versionar)
 hyamd/
+brazilian-ophthalmological/
+brset/
+odir/
+rfmid/
+rfmid2/
+adam/
+dataset*/
+macdeg_data/
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# Qualquer imagem, em qualquer pasta: imagem de paciente nunca entra no Git, mesmo copiada para fora
+# das pastas acima. Figuras próprias da documentação ficam em docs/figuras/ (liberadas abaixo).
+*.jpg
+*.jpeg
+*.png
+*.tif
+*.tiff
+*.bmp
+*.gif
+*.webp
+*.dcm
+!docs/figuras/**
+
+# Derivados das imagens e das planilhas originais
+*.npy
+*.npz
+*.xlsx
+*.xls
+manifest.csv
+dropped.csv
+splits*.csv
+id_map*.csv
+
+# Pesos de modelos (vão para o Hugging Face, não para o Git)
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# Execuções locais do W&B e dos notebooks
+wandb/
+execucoes/
 
 # Saídas derivadas de dados restritos
 outputs/
 cache/
+
+# Marcações manuais: contêm nomes de arquivo com o ID do paciente
+annotations/
+
+#Refs de pipelines
+mlp_fase5.ipynb

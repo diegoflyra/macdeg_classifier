@@ -34,6 +34,51 @@ O script gera os caches, as grades de verificação e a auditoria, e roda os tes
 
 Depois, abra `notebooks/01_resultados.ipynb` para ver os resultados.
 
+## Conjunto multibase e treino
+
+Problema: **DMRI × sem DMRI**, em que "sem DMRI" = olhos normais (2/3) + outras doenças (1/3, com cotas
+iguais por doença). Bases: HYAMD, BRSET, ODIR, RFMiD, RFMiD 2.0 e ADAM, descritas em `configs/sources.yaml`
+e guardadas fora do projeto (`~/macdeg_data/`).
+
+```bash
+.venv/bin/python -m macdeg.data.build      # junta as bases, sorteia as outras doenças, remove cópias (1024 px)
+.venv/bin/python -m macdeg.data.splits     # validação cruzada aninhada: 5 dobras externas x 4 internas, por paciente
+.venv/bin/python -m macdeg.data.package    # zip para o cluster
+```
+
+Treino no cluster Apuana: ver [`docs/cluster.md`](docs/cluster.md). Cada experimento é um YAML em
+`configs/experimentos/` (configuração base + grade de variações) e roda como job array; a análise
+(`notebooks/04_analise.ipynb`) envia `resultados/<lote>/` para a branch `resultados`.
+
+Avaliação:
+- métrica principal: **média do F2 dentro de cada base**, com o limiar sempre escolhido em outras dobras;
+- também: AUROC, AUPRC, sensibilidade, especificidade em normais, em outras doenças e por doença;
+- réguas: só a base de origem e só a idade (o modelo precisa superá-las);
+- veredito pareado contra a referência (*ganhou / empatou / perdeu*, IC95 por paciente);
+- distribuição das notas de normais, outras doenças, drusas sem diagnóstico e DMRI.
+
+Proposta atualizada: [`docs/proposta.md`](docs/proposta.md). Decisões e motivos: [`docs/decisoes.md`](docs/decisoes.md).
+
+Modelos finais (ensemble das 5 dobras) vão, privados, para o Hugging Face: ver [`docs/huggingface.md`](docs/huggingface.md).
+Nada de imagens ou dados de paciente sai do computador ou do cluster: W&B só recebe números, o GitHub
+recebe agregados e previsões com IDs sequenciais nossos.
+
+## Marcar o disco óptico
+
+```bash
+.venv/bin/python -m macdeg.annotate
+```
+
+Abra `http://localhost:8765` e clique no centro do disco em cada imagem. O anel que segue o mouse tem o tamanho típico do disco. `N` indica que não dá para ver o disco, e `Z` volta uma imagem. Tudo é salvo a cada clique em `annotations/disc_clicks.csv` (fora do Git, pois contém IDs); ao abrir de novo, o programa continua de onde parou. Não apague esse arquivo: ele não pode ser regenerado.
+
+A página não mostra classe, nome de arquivo nem o palpite do detector, e cerca de 3% das imagens reaparecem sem aviso para medir a repetibilidade. Para comparar os cliques com o detector, sem identificar imagens:
+
+```bash
+.venv/bin/python -m macdeg.annotation_report
+```
+
+## Testes
+
 Para rodar só os testes (com imagens sintéticas, não precisam da base):
 
 ```bash
@@ -43,22 +88,34 @@ Para rodar só os testes (com imagens sintéticas, não precisam da base):
 ## Estrutura
 
 ```
-configs/variants.yaml      Registro de variantes (ROI, resolução, geometria, fotometria, qualidade)
+configs/sources.yaml       Registro das bases e regra do sorteio das outras doenças
+configs/train/             Configuração de treino da referência
+configs/experimentos/      Experimentos (configuração base + grade de variações)
+configs/variants.yaml      Variantes do pré-processamento por ROI (suspenso)
 macdeg/
-  metadata.py              Liga labels.csv aos arquivos, por olho
-  localization.py          Campo de visão, disco e fóvea
-  preprocess.py            Gera os caches e o CSV de metadados
-  augment.py               Carrega qualquer variante por ID e aplica as transformações
-  audit.py                 Mede quanta estrutura pequena sobrevive a cada variante
-  grids.py                 Grades de verificação visual
-  exploration/             Inspeção inicial da base (Passo 0); o pipeline não depende dela
+  data/                    Leitores das bases, sorteio, cópias, divisões aninhadas, empacotamento
+  train.py                 Treino de uma dobra (ResNet e afins)
+  metrics.py               F2 por base, limiar em outras dobras, IC por paciente, veredito pareado
+  cluster.py               Lança experimentos no SLURM (Apuana) ou localmente
+  analysis.py              Junta as dobras, réguas, ranking, resumo; envia ao GitHub e ao W&B
+  hub.py                   Publica e carrega modelos no Hugging Face (privado)
+  ambiente.py              Segredos (.env) e envio à branch resultados
+  metadata.py, localization.py, preprocess.py, augment.py, audit.py, grids.py
+                           Pré-processamento por ROI da HYAMD (suspenso)
+  annotate.py, annotation_report.py
+                           Marcação manual do disco óptico
+  exploration/             Inspeção inicial da HYAMD (Passo 0)
 notebooks/
-  00_inspecao.ipynb        Inspeção da base
-  01_resultados.ipynb      Sinalizações, grades e auditoria
-scripts/run_overnight.sh   Executa o pipeline inteiro
+  00_inspecao.ipynb        Inspeção da HYAMD
+  01_resultados.ipynb      Pré-processamento por ROI: sinalizações, grades e auditoria
+  02_lancamento.ipynb      Lança um experimento no cluster
+  03_tarefa.ipynb          Uma tarefa (executada pelo SLURM)
+  04_analise.ipynb         Análise de um lote
+cluster/setup_apuana.sh    Ambiente no Apuana (Miniforge + PyTorch)
+scripts/run_overnight.sh   Pipeline do pré-processamento por ROI
 scripts/nb_clean.*         Filtro do Git que remove as saídas dos notebooks
 tests/                     Testes automáticos
-docs/                      Relatório do Passo 0 e registro de decisões
+docs/                      Proposta, decisões, guias do cluster e do Hugging Face, relatório do Passo 0
 ```
 
 ## Usar uma variante

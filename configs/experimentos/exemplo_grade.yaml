@@ -1,0 +1,9 @@
+# Exemplo (não rodar como está): resolução x taxa de aprendizado = 4 configurações x 20 treinos.
+nome: resolucao_lr
+base: configs/train/baseline.yaml
+grade:
+  image_size: [512, 1024]
+  lr: [3.0e-4, 1.0e-4]
+variacoes:
+  - {other_diseases: false}      # "sem DMRI" só com normais, para comparar
+referencia: resultados/referencia-AAAAMMDD-HHMM/referencia-00

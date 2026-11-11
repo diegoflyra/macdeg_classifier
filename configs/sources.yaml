@@ -1,0 +1,66 @@
+# Registro das bases. A ordem importa: entre duplicatas exatas, fica a cópia da base listada primeiro.
+#
+# Tipos de leitor (macdeg/data/sources.py):
+#   hyamd    a HYAMD, com o labels.csv original
+#   folders  pastas por classe; `classes` liga o nome da pasta a 1 (DMRI), 0 (normal) ou null (fora)
+#   csv      planilha de rótulos; `values` liga cada valor da coluna a 1, 0 ou null
+#
+# Caminhos relativos partem da raiz do projeto; `~` é a pasta pessoal do WSL.
+
+# Outras doenças como "sem DMRI" (macdeg/data/select.py). other_to_normal: 0 = só olhos normais;
+# 0.5 = as outras doenças somam metade dos normais (um terço do "sem DMRI").
+selection:
+  other_to_normal: 0.5
+  floor_sources: [hyamd, adam]   # bases sem olhos normais: recebem pelo menos tantos "sem DMRI" quanto DMRI
+  seed: 0
+
+sources:
+  hyamd:
+    type: hyamd
+    path: hyamd
+    # O controle da HYAMD é retinopatia diabética, não olho normal. Por padrão fica fora.
+    include_dr_as_negative: false
+
+  odir:
+    type: odir
+    path: ~/macdeg_data/odir/ODIR-5K/ODIR-5K
+    # Olhos com "drusen" mas sem diagnóstico de DMRI: null = fora; 1 = contar como DMRI.
+    drusen_only: null
+
+  brset:
+    type: brset
+    path: brazilian-ophthalmological
+    # Drusas marcadas sem diagnóstico de DMRI: null = fora; 1 = contar como DMRI.
+    drusen_only: null
+
+  rfmid:
+    type: rfmid
+    path: ~/macdeg_data/rfmid
+    drusen_only: null
+    sets:
+      - {csv: Training_Set/Training_Set/RFMiD_Training_Labels.csv, images: Training_Set/Training_Set/Training}
+      - {csv: Evaluation_Set/Evaluation_Set/RFMiD_Validation_Labels.csv, images: Evaluation_Set/Evaluation_Set/Validation}
+      - {csv: Test_Set/Test_Set/RFMiD_Testing_Labels.csv, images: Test_Set/Test_Set/Test}
+
+  rfmid2:
+    type: rfmid
+    path: ~/macdeg_data/rfmid2
+    drusen_only: null
+    sets:
+      - {csv: RFMiD_2_Training_labels.csv, images: .}
+      - {csv: RFMiD_2_Validation_labels.csv, images: .}
+      - {csv: RFMiD_2_Testing_labels.csv, images: .}
+
+  adam:
+    type: adam
+    path: ~/macdeg_data/adam
+    # Cópia pública do Google Drive (ADAM.zip, sha256 f8569d8f...b438018), conferida com o artigo:
+    # 400 + 400 + 400 imagens, 89 DMRI em cada conjunto. Nada publicado com ela sem autorização.
+    # "Não DMRI" mistura normais e outras doenças: null = fora; true = conta como 0.
+    non_amd_as_negative: false
+
+  # Exemplo de base do Kaggle em pastas:
+  # exemplo_kaggle:
+  #   type: folders
+  #   path: ~/macdeg_data/kaggle/exemplo
+  #   classes: {AMD: 1, ARMD: 1, normal: 0, cataract: null}

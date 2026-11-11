@@ -1,0 +1,8 @@
+https://www.kaggle.com/datasets/sumit17125/eye-image-dataset
+https://www.kaggle.com/datasets/athuljosephthomas/retinal-disease-image-classification
+https://www.kaggle.com/datasets/deepakraje/macular-oct-data
+https://www.kaggle.com/datasets/mdeconozzamanecon/ocular-disease
+https://www.kaggle.com/datasets/rohitrawat25/combined-fundus-images/data
+https://www.kaggle.com/datasets/abhinav099802/eye-disease-image-dataset?select=data
+https://www.kaggle.com/datasets/sehastrajits/fundus-aptosddridirdeyepacsmessidor
+https://www.kaggle.com/datasets/manan1717/ocular-disease-dataset/data

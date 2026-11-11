@@ -1,5 +1,10 @@
 # Passo 0: relatório de inspeção da HYAMD
 
+> **Situação em 11/11/2026:** continua válido como descrição da HYAMD. Consequências para o projeto atual:
+> a ausência de datas confirma que a progressão não pode ser estudada com ela; o controle (retinopatia
+> diabética) entra hoje como "outra doença" no "sem DMRI"; a quase-duplicata entre pacientes passou a ser
+> tratada pela correlação de detalhes vasculares (`macdeg/data/build.py`, ver `docs/decisoes.md`).
+
 Só agregados, sem IDs. Unidade R = raio do campo de visão (mediana de 946 px). Reprodução: `notebooks/00_inspecao.ipynb`.
 
 ## Base
@@ -47,5 +52,5 @@ Estimativa, sem medir o disco: supõe disco→fóvea = 2,5 DD, logo 1 DD ≈ 0,2
 | 2,0 DD | 468 | 662 | Sim, incl. rotação |
 | 3,0 DD | 702 | 993 | **Não**: nem os cantos sem rotação |
 
-## Não conclusivo
-- Quase-duplicatas entre pacientes: a comparação de miniaturas não separou olhos iguais de pacientes diferentes. Só está descartada a duplicata byte a byte.
+## Não conclusivo (na época)
+- Quase-duplicatas entre pacientes: a comparação de miniaturas não separou olhos iguais de pacientes diferentes. Só estava descartada a duplicata byte a byte. Resolvido depois com a correlação de detalhes vasculares (≥ 0,95), que separa cópias de olhos diferentes.

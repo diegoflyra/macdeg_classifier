@@ -1,0 +1,12 @@
+# Experimento 001: a referência. Uma configuração só (sem grade).
+# Formato de um experimento:
+#   base:       configuração de treino de partida
+#   grade:      chave -> lista de valores; todas as combinações viram configurações (grid search)
+#   variacoes:  lista de mudanças avulsas (cada item vira uma configuração), além da grade
+#   referencia: resultados/<execução>/<configuração> já no GitHub, para o veredito pareado
+#               (null = a primeira configuração deste experimento é a referência)
+nome: referencia
+base: configs/train/baseline.yaml
+grade: {}
+variacoes: []
+referencia: null

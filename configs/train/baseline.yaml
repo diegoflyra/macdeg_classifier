@@ -1,0 +1,24 @@
+# Referência: ResNet-50 pré-treinada na ImageNet, retina inteira reduzida a 512 px, sem augmentation.
+# Todos os experimentos são comparados com ela (veredito pareado). Cada experimento muda UMA coisa.
+# O conjunto é guardado em 1024 px; image_size escolhe a resolução do treino (reduz na hora).
+name: resnet50_referencia
+dataset: ~/macdeg_data/dataset_1024
+splits: splits_nested_seed0.csv
+sources: null            # null = todas; ou uma lista, ex.: [hyamd, brset]
+other_diseases: true     # false = "sem DMRI" só com olhos normais
+
+model: resnet50
+pretrained: true
+image_size: 512
+batch_size: 16
+epochs: 20
+lr: 3.0e-4
+weight_decay: 1.0e-4
+warmup_epochs: 1
+patience: 5              # para depois de 5 épocas sem melhorar a AUROC de validação
+balance: pos_weight      # cada erro numa DMRI pesa (sem DMRI / DMRI) vezes mais na perda
+num_workers: 6
+
+augment: null            # sem augmentation na referência (Q34)
+
+shuffle_labels: false    # true = controle negativo (rótulos embaralhados)
