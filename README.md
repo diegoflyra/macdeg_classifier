@@ -111,7 +111,7 @@ notebooks/
   02_lancamento.ipynb      Lança um experimento no cluster
   03_tarefa.ipynb          Uma tarefa (executada pelo SLURM)
   04_analise.ipynb         Análise de um lote
-cluster/setup_apuana.sh    Ambiente no Apuana (módulo Python + venv + PyTorch), rodar no nó install
+cluster/setup_apuana.sh    Ambiente no Apuana (venv + PyTorch), rodar no nó install
 cluster/requirements-cluster.txt  Pacotes do cluster (sem versão fixa; registradas no freeze.txt)
 scripts/run_overnight.sh   Pipeline do pré-processamento por ROI
 scripts/nb_clean.*         Filtro do Git que remove as saídas dos notebooks

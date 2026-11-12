@@ -21,7 +21,8 @@ conferido com `sinfo` e `scontrol` em 11/11/2026.
 
 - **Limites por QoS (por usuário):** `simple` = 2 GPUs, 16 CPUs, 64 GB; `complex` = 4 GPUs, 48 CPUs, 500 GB.
   Todo job precisa de `--qos` igual ao da partição. Sem preempção; o SLURM mata o job no tempo máximo.
-- **Ambiente:** `module load Python/...` + `venv` (sem conda). `sacct`/`sacctmgr` indisponíveis para
+- **Ambiente:** `venv` com o Python do sistema (Ubuntu 22.04: 3.10.12, igual em todos os nós). Os módulos
+  (`module avail Python`) vão só até 3.10.8; o script usa um módulo apenas se ele for mais novo. Sem conda. `sacct`/`sacctmgr` indisponíveis para
   usuários (o banco de contabilidade está desligado). `$SCRATCH` não existe.
 
 ## Uma vez só
@@ -52,14 +53,14 @@ echo 'export MACDEG_RUNS=$HOME/macdeg_runs' >> ~/.bashrc
 ```bash
 salloc -p install --qos=simple -c 8 --mem=32G --time=00:30:00
 cd ~/macdeg_classifier
-bash cluster/setup_apuana.sh              # módulo Python mais novo + venv em ~/envs/macdeg + PyTorch cu130
+bash cluster/setup_apuana.sh              # venv em ~/envs/macdeg (Python do sistema) + PyTorch cu130
 exit                                      # sai do nó de instalação
 ```
 
-O script escolhe o Python mais novo de `module avail Python` (ou o que você passar como segundo
-argumento), cria o `venv`, instala o PyTorch e os pacotes de `cluster/requirements-cluster.txt`, grava o
-módulo usado em `~/envs/macdeg/MODULO_PYTHON` (os jobs carregam o mesmo) e as versões em
-`~/envs/macdeg/freeze.txt`. Progresso em outra sessão: `tail -f ~/envs/macdeg/install.log`.
+O script usa o Python do sistema, a menos que `module avail Python` tenha um mais novo (ou que você
+passe um módulo como segundo argumento); nesse caso grava o nome em `~/envs/macdeg/MODULO_PYTHON` e os
+jobs carregam o mesmo módulo. Instala o PyTorch e os pacotes de `cluster/requirements-cluster.txt` e
+registra as versões em `~/envs/macdeg/freeze.txt`. Progresso em outra sessão: `tail -f ~/envs/macdeg/install.log`.
 Se passar de 30 minutos, peça outro `salloc` e rode de novo: o que já foi instalado é reaproveitado.
 
 ## Cada experimento
@@ -67,7 +68,7 @@ Se passar de 30 minutos, peça outro `salloc` e rode de novo: o que já foi inst
 1. No seu computador: crie ou edite `configs/experimentos/<n>_<nome>.yaml`, **commit e push**.
 2. No cluster (login): `cd ~/macdeg_classifier && git pull`, depois ative o ambiente:
    ```bash
-   module load "$(cat ~/envs/macdeg/MODULO_PYTHON)" && source ~/envs/macdeg/bin/activate
+   source ~/envs/macdeg/bin/activate
    ```
 3. Teste rápido (vai para a `debug`; minutos; números sem valor):
    `python -m macdeg.cluster lancar configs/experimentos/001_referencia.yaml --teste`
@@ -87,7 +88,7 @@ TimeLimit=06:00:00` (o QoS precisa valer para todas as partições da lista).
 - **Job array** com até 2 tarefas simultâneas na `short-simple` (limite de GPUs do QoS `simple`; mais que
   isso só ficaria preso na fila). Cada tarefa = configuração × dobra externa × dobra interna.
 - **Início de cada job:** imprime nó, GPU e versão do PyTorch (para diagnosticar falhas pelo log), carrega
-  o módulo e o `venv`, descompacta o zip numa pasta própria no `/tmp` do nó (NVMe) e **apaga a pasta no
+  o `venv` (e o módulo Python, se houver), descompacta o zip numa pasta própria no `/tmp` do nó (NVMe) e **apaga a pasta no
   fim**, mesmo se o job falhar ou for cancelado.
 - **Código fixo:** o lançador extrai o commit atual para `~/macdeg_runs/<lote>/codigo/`; um push no meio do
   lote não muda o código das tarefas que ainda vão começar.

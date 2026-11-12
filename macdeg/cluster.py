@@ -197,7 +197,8 @@ def _wandb(lote: dict, task: dict, config: dict, out: Path, mode: str | None):
 SBATCH_PRELUDE = """set -eo pipefail
 echo "== $(date '+%Y-%m-%d %H:%M:%S') | nó $(hostname) | job ${{SLURM_JOB_ID}} tarefa ${{SLURM_ARRAY_TASK_ID:-}}"
 type module >/dev/null 2>&1 || source /etc/profile.d/lmod.sh 2>/dev/null || source /etc/profile.d/modules.sh 2>/dev/null || true
-module load "$(cat {venv}/MODULO_PYTHON)"
+# Módulo Python só se o venv foi criado com um (cluster/setup_apuana.sh); senão é o Python do sistema
+if [ -s {venv}/MODULO_PYTHON ]; then module load "$(cat {venv}/MODULO_PYTHON)"; fi
 source {venv}/bin/activate
 export PYTHONPATH={lote}/codigo MACDEG_RUNS={runs} MACDEG_ENV={env} MACDEG_REPO_URL={repo}
 # Pasta temporária no disco local do nó (NVMe); apagada no fim, mesmo se o job falhar ou for cancelado.

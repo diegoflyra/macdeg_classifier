@@ -17,18 +17,28 @@ if [[ "$(hostname)" == slurm-client* ]]; then
   read -r -p "Continuar mesmo assim? [s/N] " ok; [[ "$ok" == s* ]] || exit 1
 fi
 
+# Python: o módulo mais novo, mas só se for mais novo que o Python do sistema (que existe igual em todos
+# os nós). Em 2026-11 o Apuana tem módulos até 3.10.8 e o sistema tem 3.10.12: usa-se o do sistema.
+SISTEMA=$(/usr/bin/python3 -c "import sys; print('%d.%d.%d' % sys.version_info[:3])")
 MODULO=${2:-$(module -t avail Python 2>&1 | grep -E '^Python/3\.' | sort -V | tail -1)}
-if [ -z "$MODULO" ]; then echo "Nenhum módulo Python encontrado (module avail Python)."; exit 1; fi
-echo "Módulo Python: $MODULO"
-module load "$MODULO"
-python3 -c "import sys; assert sys.version_info >= (3, 10), sys.version; print('Python', sys.version.split()[0])"
+VMOD=$(echo "$MODULO" | sed -E 's|Python/([0-9.]+).*|\1|')
+if [ -n "$MODULO" ] && { [ -n "${2:-}" ] || [ "$(printf '%s\n%s\n' "$SISTEMA" "$VMOD" | sort -V | tail -1)" != "$SISTEMA" ]; }; then
+  echo "Python do módulo $MODULO (sistema: $SISTEMA)"
+  module load "$MODULO"
+  PY=python3
+else
+  echo "Python do sistema $SISTEMA (módulo mais novo: ${MODULO:-nenhum}, não é mais novo)"
+  MODULO=""
+  PY=/usr/bin/python3
+fi
+$PY -c "import sys; assert sys.version_info >= (3, 10), sys.version; print('Python', sys.version.split()[0])"
 
 if [ -d "$VENV" ]; then
   echo "Ambiente $VENV já existe: apague-o (rm -rf $VENV) para recriar do zero, ou ele só será atualizado."
 else
-  python3 -m venv "$VENV"
+  $PY -m venv "$VENV"
 fi
-echo "$MODULO" > "$VENV/MODULO_PYTHON"
+if [ -n "$MODULO" ]; then echo "$MODULO" > "$VENV/MODULO_PYTHON"; else rm -f "$VENV/MODULO_PYTHON"; fi
 source "$VENV/bin/activate"
 LOG="$VENV/install.log"
 echo "== $(date) instalação em $(hostname)" > "$LOG"
@@ -46,4 +56,4 @@ python -c "import torchvision.models as m; m.resnet50(weights=m.ResNet50_Weights
 python -m ipykernel install --user --name python3 --display-name "Python 3 (macdeg)" >/dev/null
 chmod 700 ~/macdeg_data 2>/dev/null || true
 python -c "import torch, pandas, papermill, wandb; print('torch', torch.__version__, '| CUDA', torch.version.cuda, '| pandas', pandas.__version__, '| ok')"
-echo "Ambiente pronto em $VENV (módulo $MODULO). Versões: $VENV/freeze.txt"
+echo "Ambiente pronto em $VENV (${MODULO:-Python do sistema}). Versões: $VENV/freeze.txt"
