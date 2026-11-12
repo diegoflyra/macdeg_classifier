@@ -63,7 +63,17 @@ def test_launch_tasks_and_analysis_end_to_end(tiny_dataset, tmp_path, monkeypatc
     assert len(lote["tarefas"]) == 2 * len(cluster.TEST_OUTERS) * 4
     assert (batch / "codigo" / "README.md").exists()        # código fixado no commit (só o que está commitado)
     array, analysis = cluster.write_scripts(batch, "~/macdeg_data/dataset_1024.zip")
-    assert f"--array=0-{len(lote['tarefas']) - 1}%5" in array.read_text()
+    script = array.read_text()
+    assert f"--array=0-{len(lote['tarefas']) - 1}%2" in script     # QoS simple: no máximo 2 GPUs por usuário
+    assert "--qos=simple" in script and "--partition=short-simple" in script
+    assert "module load" in script and "/bin/activate" in script and "conda" not in script
+    assert "trap 'rm -rf \"$TMPBASE\"'" in script                # o /tmp do nó é limpo no fim
+    assert "wandb sync {} \\;" in analysis.read_text()
+    opts = cluster.slurm_options(type("A", (), {"particao": "short-complex", "qos": None, "tempo": None,
+                                                "max_paralelo": None})(), test=False)
+    assert opts["qos"] == "complex"
+    a2, _ = cluster.write_scripts(batch, "~/x.zip", opts)
+    assert "%4" in a2.read_text()                                    # QoS complex: até 4 GPUs
 
     cluster.run_local(batch, str(tiny_dataset))
     result = analyze(batch, str(tiny_dataset), push=False)

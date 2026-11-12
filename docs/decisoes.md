@@ -34,8 +34,10 @@ Só agregados, sem IDs. Contexto e justificativas completas: `docs/proposta.md`.
 ### Treino e execução
 - **Referência:** ResNet-50 ImageNet, 512 px, sem aumento de dados, pos_weight, AdamW + cosseno, AMP.
 - **Lote efetivo fixo (16)** em qualquer GPU (acumulação de gradientes): o resultado não depende da GPU.
-- **Apuana:** partição `short-simple` (QoS `simple`), sem preempção; GPUs RTX 3090 ou fatias de A100 (MIG,
-  ~10 GB). Ambiente em Miniforge no `$HOME`. Código fixado no commit do lançamento; assinatura dos dados
+- **Apuana:** partição `short-simple` (QoS `simple`: até 2 GPUs por usuário), sem preempção; GPUs RTX 3090
+  ou fatias de A100 (MIG, ~10 GB). Ambiente `module load Python` + `venv` (guia oficial), instalado no nó
+  `install`; pacotes sem versão fixa no cluster, registradas em `freeze.txt`. Dados descompactados no `/tmp`
+  do nó e apagados no fim de cada job. Código fixado no commit do lançamento; assinatura dos dados
   conferida em cada tarefa. Pesos só guardados no treino final.
 - **Saídas:** W&B só com números (o projeto fica no time da UFPE: a conta não tem entidade pessoal);
   GitHub, branch `resultados`, com agregados e previsões por `sample_id`; Hugging Face, repositório

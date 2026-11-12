@@ -1,68 +1,104 @@
 # Treinar no Apuana (CIn/UFPE)
 
-O que sabemos do cluster (11/11/2026): SLURM; partições `debug` (30 min), `short-simple`/`short-complex`
-(2 dias), `long-*` (7 dias), `install` (30 min); sem preempção; nós 1–5 com RTX 3090 (24 GB), nós 6–10
-com A100 80 GB dividida em fatias MIG (~10 GB cada); driver 590 (CUDA 13.1); login com internet e sem
-conda; `sacctmgr` indisponível para usuários (limites de QoS desconhecidos). Vários nós estavam fora do ar.
+Fonte principal: o guia prático do Apuana no Notion (referência oficial: apuana.cin.ufpe.br/usage.html),
+conferido com `sinfo` e `scontrol` em 11/11/2026.
+
+## O cluster, em resumo
+
+- **Acesso:** VPN do CIn + `ssh <login>@slurm-client1.cin.ufpe.br`. O nó de login é fraco (8 GB de RAM):
+  nada pesado nele. Instalações vão para a partição `install`; trabalho interativo, para `install` ou `debug`.
+- **Nós:** 1–5 com 2 × RTX 3090 (24 GB) cada (o nó 2 tem 3); 6–10 com 1 × A100 80 GB, dividida em até 7
+  fatias MIG (~10 GB cada). Disco local NVMe de 1 TB em todos. Vários nós podem estar fora do ar.
+- **Partições:**
+
+  | Partição | QoS | Tempo máx. | Uso |
+  |---|---|---|---|
+  | `install` | simple | 30 min | instalar pacotes (interativa) |
+  | `debug` | complex | 30 min | testes rápidos (interativa) |
+  | `short-simple` | simple | 2 dias | **padrão dos nossos treinos** |
+  | `short-complex` | complex | 2 dias | jobs maiores |
+  | `long-simple` / `long-complex` | simple / complex | 7 dias | jobs longos |
+
+- **Limites por QoS (por usuário):** `simple` = 2 GPUs, 16 CPUs, 64 GB; `complex` = 4 GPUs, 48 CPUs, 500 GB.
+  Todo job precisa de `--qos` igual ao da partição. Sem preempção; o SLURM mata o job no tempo máximo.
+- **Ambiente:** `module load Python/...` + `venv` (sem conda). `sacct`/`sacctmgr` indisponíveis para
+  usuários (o banco de contabilidade está desligado). `$SCRATCH` não existe.
 
 ## Uma vez só
 
-No seu computador (conectado à VPN do CIn):
+**No seu computador** (WSL, conectado à VPN):
 
 ```bash
-# 1. Empacotar o conjunto (~4,5 GB) e anotar o sha256 que ele imprime
-.venv/bin/python -m macdeg.data.package
-# 2. Enviar ao seu $HOME no cluster
+cd /mnt/c/Users/lyrad/Documents/code/macdeg_classifier
+.venv/bin/python -m macdeg.data.package        # gera ~/macdeg_data/dataset_1024.zip e imprime o sha256
 ssh <login>@slurm-client1.cin.ufpe.br "mkdir -p ~/macdeg_data && chmod 700 ~/macdeg_data"
-rsync -P ~/macdeg_data/dataset_1024.zip <login>@slurm-client1.cin.ufpe.br:~/macdeg_data/
-# 3. Enviar o .env (tokens) direto para o clone no cluster, sem passar pelo Git
-scp .env <login>@slurm-client1.cin.ufpe.br:~/macdeg_classifier/.env
+rsync -avP ~/macdeg_data/dataset_1024.zip <login>@slurm-client1.cin.ufpe.br:~/macdeg_data/
+scp .env <login>@slurm-client1.cin.ufpe.br:~/macdeg_classifier/.env      # depois do clone abaixo
 ```
 
-No nó de login do cluster (`ssh <login>@slurm-client1.cin.ufpe.br`):
+**No cluster, nó de login** (só tarefas leves):
 
 ```bash
-git clone https://github.com/diegoflyra/macdeg_classifier.git ~/macdeg_classifier   # pede o token (repo privado)
-cd ~/macdeg_classifier && chmod 600 .env
-sha256sum ~/macdeg_data/dataset_1024.zip                         # tem que bater com o do passo 1
-python -m zipfile -e ~/macdeg_data/dataset_1024.zip ~/macdeg_data/dataset_1024   # para o lançador conferir a assinatura
-bash cluster/setup_apuana.sh                                      # Miniforge + ambiente "macdeg" (~15 min)
-echo 'export MACDEG_RUNS=$SCRATCH/macdeg_runs' >> ~/.bashrc      # lotes no $SCRATCH (rápido, sem cota)
+git clone https://github.com/diegoflyra/macdeg_classifier.git ~/macdeg_classifier   # senha = token do GitHub
+chmod 600 ~/macdeg_classifier/.env
+sha256sum ~/macdeg_data/dataset_1024.zip                         # tem que bater com o do pacote
+# Só os metadados (o lançador confere a assinatura com eles); as imagens ficam no zip
+python3 -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2], ['manifest.csv','splits_nested_seed0.csv','extras_drusas.csv','summary.json'])" ~/macdeg_data/dataset_1024.zip ~/macdeg_data/dataset_1024
+echo 'export MACDEG_RUNS=$HOME/macdeg_runs' >> ~/.bashrc
 ```
 
-Os lotes ficam no `$SCRATCH` (arquivos sem uso há 90 dias são apagados lá); o que importa vai para o
-GitHub e o Hugging Face. Pesos só são guardados no treino final.
+**No cluster, nó de instalação** (o ambiente):
+
+```bash
+salloc -p install --qos=simple -c 8 --mem=32G --time=00:30:00
+cd ~/macdeg_classifier
+bash cluster/setup_apuana.sh              # módulo Python mais novo + venv em ~/envs/macdeg + PyTorch cu130
+exit                                      # sai do nó de instalação
+```
+
+O script escolhe o Python mais novo de `module avail Python` (ou o que você passar como segundo
+argumento), cria o `venv`, instala o PyTorch e os pacotes de `cluster/requirements-cluster.txt`, grava o
+módulo usado em `~/envs/macdeg/MODULO_PYTHON` (os jobs carregam o mesmo) e as versões em
+`~/envs/macdeg/freeze.txt`. Progresso em outra sessão: `tail -f ~/envs/macdeg/install.log`.
+Se passar de 30 minutos, peça outro `salloc` e rode de novo: o que já foi instalado é reaproveitado.
 
 ## Cada experimento
 
 1. No seu computador: crie ou edite `configs/experimentos/<n>_<nome>.yaml`, **commit e push**.
-2. No cluster: `cd ~/macdeg_classifier && git pull && conda activate macdeg`.
-3. Teste rápido (minutos, números sem valor):
+2. No cluster (login): `cd ~/macdeg_classifier && git pull`, depois ative o ambiente:
+   ```bash
+   module load "$(cat ~/envs/macdeg/MODULO_PYTHON)" && source ~/envs/macdeg/bin/activate
+   ```
+3. Teste rápido (vai para a `debug`; minutos; números sem valor):
    `python -m macdeg.cluster lancar configs/experimentos/001_referencia.yaml --teste`
 4. Valendo: `python -m macdeg.cluster lancar configs/experimentos/001_referencia.yaml`
-   (ou abra `notebooks/02_lancamento.ipynb`, que faz o mesmo com as verificações à vista).
-5. Acompanhar: `squeue -u $USER`; logs em `~/macdeg_runs/<lote>/logs/`; curvas no W&B.
+   - outra partição: `--particao short-complex` (QoS `complex`, até 4 tarefas simultâneas) ou `--particao long-simple`;
+   - outros limites: `--tempo 06:00:00`, `--max-paralelo 2`.
+5. Acompanhar: `watch -n 30 squeue -u $USER`; previsão de início: `squeue -u $USER --start`;
+   logs em `~/macdeg_runs/<lote>/logs/` (`tail -f` mostra ao vivo); curvas no W&B.
 6. Quando o array termina, o job de análise roda sozinho e envia `resultados/<lote>/` para a branch
-   `resultados` do GitHub, incluindo `notebooks/` com as cópias executadas (tarefas e análise, só texto:
-   saídas de imagem são removidas antes do envio).
+   `resultados` do GitHub, incluindo `notebooks/` com as cópias executadas (só texto).
+
+Jobs na fila podem ser mudados sem cancelar: `scontrol update JobId=<id> Partition=short-simple,long-simple
+TimeLimit=06:00:00` (o QoS precisa valer para todas as partições da lista).
 
 ## O que cada peça faz e por quê
 
-- **Job array**: cada tarefa é um treino independente (configuração × dobra externa × dobra interna).
-  `max_paralelo` (padrão 5) limita quantas rodam ao mesmo tempo, para não estourar a cota do grupo.
-- **Partição `short-simple` (QoS `simple`)**: alcança todos os nós e GPUs, até 2 dias, prioridade mais
-  alta; o Apuana não tem preempção. Se um nó cair, `--requeue` recoloca a tarefa e o treino continua do `last.pt`.
-- **Ambiente**: o login não tem conda; `cluster/setup_apuana.sh` instala o Miniforge no `$HOME`, que é
-  compartilhado com os nós de GPU.
-- **Código fixo**: o lançador extrai o commit atual para `~/macdeg_runs/<lote>/codigo/`. Um push seu no
-  meio do lote não muda o código das tarefas que ainda vão começar.
-- **Dados no disco do nó**: cada tarefa descompacta o zip em `$SLURM_TMPDIR` (NVMe local), muito mais
-  rápido que ler 18 mil imagens pelo `$HOME` (rede).
-- **Assinatura dos dados**: o lote guarda um hash do manifest e das divisões; uma tarefa recusa rodar
-  se o conjunto mudou, porque os resultados não seriam comparáveis.
-- **Lote efetivo fixo (16)**: em GPU com pouca memória, o treino divide o lote e acumula gradientes;
-  o resultado não depende da GPU que a fila sortear.
-- **W&B**: tenta online; sem internet no nó, grava offline e o job de análise sincroniza.
+- **Job array** com até 2 tarefas simultâneas na `short-simple` (limite de GPUs do QoS `simple`; mais que
+  isso só ficaria preso na fila). Cada tarefa = configuração × dobra externa × dobra interna.
+- **Início de cada job:** imprime nó, GPU e versão do PyTorch (para diagnosticar falhas pelo log), carrega
+  o módulo e o `venv`, descompacta o zip numa pasta própria no `/tmp` do nó (NVMe) e **apaga a pasta no
+  fim**, mesmo se o job falhar ou for cancelado.
+- **Código fixo:** o lançador extrai o commit atual para `~/macdeg_runs/<lote>/codigo/`; um push no meio do
+  lote não muda o código das tarefas que ainda vão começar.
+- **Assinatura dos dados:** cada tarefa recusa rodar se o conjunto ou as divisões mudaram.
+- **Lote efetivo fixo (16):** em GPU com pouca memória (fatia MIG), o treino acumula gradientes; o
+  resultado não depende da GPU sorteada.
+- **Retomada:** `--requeue` + `last.pt`: se um nó cair, a tarefa volta à fila e continua da última época.
+- **W&B:** tenta online; sem internet no nó, grava offline e o job de análise sincroniza.
+- **Espaço:** lotes em `~/macdeg_runs` (cota de 100 GB no `$HOME`). Treinos internos não guardam pesos;
+  o treino final guarda ~0,5 GB por configuração. Lotes antigos podem ser apagados (o que importa está no
+  GitHub e no Hugging Face).
 
 ## Publicar o modelo final de uma configuração
 

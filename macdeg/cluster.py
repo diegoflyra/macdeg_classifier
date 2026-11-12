@@ -42,8 +42,13 @@ TEST_OVERRIDES = {"limit": 48, "epochs": 1, "max_steps": 2, "image_size": 128, "
 TEST_OUTERS = [0, 1]
 # Apuana (sinfo de 2026-11): short-simple = todos os nós e GPUs, até 2 dias, prioridade mais alta, sem
 # preempção. O QoS precisa acompanhar a partição (simple ou complex).
+# Apuana (guia do Notion + scontrol, 2026-11): short-simple = até 2 dias, sem preempção. Cada QoS limita o
+# usuário: simple = 2 GPUs, 16 CPUs, 64 GB; complex = 4 GPUs, 48 CPUs, 500 GB. O QoS acompanha a partição.
 SLURM_DEFAULTS = {"partition": "short-simple", "qos": "simple", "cpus": 6, "mem": "32G", "time": "12:00:00",
-                  "max_paralelo": 5, "conda_env": "macdeg", "particao_analise": "short-simple", "qos_analise": "simple"}
+                  "particao_analise": "short-simple", "qos_analise": "simple"}
+QOS_MAX_GPUS = {"simple": 2, "complex": 4}
+# Ambiente: módulo Python do cluster + venv (cluster/setup_apuana.sh grava o módulo usado em MODULO_PYTHON)
+VENV = Path(os.environ.get("MACDEG_VENV", "~/envs/macdeg")).expanduser()
 
 
 def _set(config: dict, key: str, value) -> None:
@@ -85,7 +90,10 @@ def snapshot_code(destination: Path, commit: str) -> None:
     """Extrai o código do commit (git archive): o que não foi commitado não entra."""
     archive = subprocess.run(["git", "archive", "--format=tar", commit], cwd=PROJECT, capture_output=True, check=True)
     with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tar:
-        tar.extractall(destination, filter="data")
+        try:
+            tar.extractall(destination, filter="data")
+        except TypeError:  # Python sem o parâmetro filter (< 3.11.4): o arquivo vem do próprio git archive
+            tar.extractall(destination)
 
 
 def prepare(experiment_path: Path, dataset: str | None = None, test: bool = False, final: list[str] | None = None,
@@ -185,44 +193,55 @@ def _wandb(lote: dict, task: dict, config: dict, out: Path, mode: str | None):
     return run.log, (lambda model: run.watch(model, log="all", log_freq=200)), finish
 
 
+# Início comum dos jobs: diagnóstico (para entender falhas pelo log) e ambiente do guia do Apuana.
+SBATCH_PRELUDE = """set -eo pipefail
+echo "== $(date '+%Y-%m-%d %H:%M:%S') | nó $(hostname) | job ${{SLURM_JOB_ID}} tarefa ${{SLURM_ARRAY_TASK_ID:-}}"
+type module >/dev/null 2>&1 || source /etc/profile.d/lmod.sh 2>/dev/null || source /etc/profile.d/modules.sh 2>/dev/null || true
+module load "$(cat {venv}/MODULO_PYTHON)"
+source {venv}/bin/activate
+export PYTHONPATH={lote}/codigo MACDEG_RUNS={runs} MACDEG_ENV={env} MACDEG_REPO_URL={repo}
+# Pasta temporária no disco local do nó (NVMe); apagada no fim, mesmo se o job falhar ou for cancelado.
+TMPBASE="${{SLURM_TMPDIR:-/tmp}}/$USER-macdeg-$SLURM_JOB_ID-${{SLURM_ARRAY_TASK_ID:-0}}"
+trap 'rm -rf "$TMPBASE"' EXIT TERM INT
+mkdir -p "$TMPBASE"
+DADOS="$TMPBASE/dataset"
+"""
+
 SBATCH_ARRAY = """#!/bin/bash
 #SBATCH --job-name={nome}
 #SBATCH --array=0-{ultimo}%{max_paralelo}
 #SBATCH --partition={partition}
 #SBATCH --qos={qos}
 #SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task={cpus}
 #SBATCH --mem={mem}
 #SBATCH --time={time}
 #SBATCH --requeue
 #SBATCH --output={lote}/logs/tarefa_%a.out
-set -euo pipefail
-source "${{MACDEG_CONDA:-$HOME/miniforge3}}/etc/profile.d/conda.sh"   # Miniforge no $HOME (cluster/setup_apuana.sh)
-conda activate {conda_env}
-export PYTHONPATH={lote}/codigo MACDEG_RUNS={runs} MACDEG_ENV={env} MACDEG_REPO_URL={repo}
-# Conjunto no disco local do nó (o mais rápido); descompactado uma vez por tarefa.
-DADOS="${{SLURM_TMPDIR:-/tmp/$USER-$SLURM_JOB_ID}}/dataset"
-if [ ! -f "$DADOS/manifest.csv" ]; then mkdir -p "$DADOS" && python -m zipfile -e {zip} "$DADOS"; fi
+""" + SBATCH_PRELUDE + """
+nvidia-smi -L || echo "nvidia-smi falhou"
+python -c "import torch; print('torch', torch.__version__, '| CUDA', torch.cuda.is_available(), '|', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'sem GPU')"
+echo "== copiando o conjunto para $DADOS"
+python -m zipfile -e {zip} "$DADOS"
 papermill {lote}/codigo/notebooks/03_tarefa.ipynb {lote}/notebooks/tarefa_$SLURM_ARRAY_TASK_ID.ipynb \\
   -p LOTE {lote} -p TAREFA $SLURM_ARRAY_TASK_ID -p DADOS "$DADOS" --cwd {lote}/codigo
+echo "== fim $(date '+%Y-%m-%d %H:%M:%S')"
 """
 
 SBATCH_ANALYSIS = """#!/bin/bash
 #SBATCH --job-name={nome}-analise
 #SBATCH --partition={particao_analise}
 #SBATCH --qos={qos_analise}
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=16G
 #SBATCH --time=02:00:00
 #SBATCH --output={lote}/logs/analise.out
-set -euo pipefail
-source "${{MACDEG_CONDA:-$HOME/miniforge3}}/etc/profile.d/conda.sh"   # Miniforge no $HOME (cluster/setup_apuana.sh)
-conda activate {conda_env}
-export PYTHONPATH={lote}/codigo MACDEG_RUNS={runs} MACDEG_ENV={env} MACDEG_REPO_URL={repo}
+""" + SBATCH_PRELUDE + """
 # Runs do W&B gravados offline (nó sem internet) são enviados agora.
 find {lote}/tarefas -type d -name "offline-run-*" -exec wandb sync {{}} \\; 2>/dev/null || true
-DADOS="${{SLURM_TMPDIR:-/tmp/$USER-$SLURM_JOB_ID}}/dataset"
-if [ ! -f "$DADOS/manifest.csv" ]; then mkdir -p "$DADOS" && python -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2], ['manifest.csv', 'splits_nested_seed0.csv'])" {zip} "$DADOS"; fi
+python -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2], ['manifest.csv', 'splits_nested_seed0.csv'])" {zip} "$DADOS"
 set +e
 papermill {lote}/codigo/notebooks/04_analise.ipynb {lote}/notebooks/analise.ipynb \\
   -p LOTE {lote} -p DADOS "$DADOS" --cwd {lote}/codigo
@@ -237,7 +256,9 @@ def write_scripts(batch: Path, zip_path: str, slurm: dict | None = None) -> tupl
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
     values = {**SLURM_DEFAULTS, **(slurm or {}), "nome": lote["nome"][:40], "ultimo": len(lote["tarefas"]) - 1,
               "lote": str(batch), "zip": str(Path(zip_path).expanduser()), "runs": str(RUNS),
-              "env": str(PROJECT / ".env"), "repo": repo_url()}
+              "env": str(PROJECT / ".env"), "repo": repo_url(), "venv": str(VENV)}
+    # Mais tarefas simultâneas que o QoS permite só ficariam presas na fila
+    values.setdefault("max_paralelo", QOS_MAX_GPUS.get(values["qos"], 2))
     array, analysis = batch / "job_tarefas.sh", batch / "job_analise.sh"
     array.write_text(SBATCH_ARRAY.format(**values))
     analysis.write_text(SBATCH_ANALYSIS.format(**values))
@@ -260,6 +281,22 @@ def run_local(batch: Path, dataset: str | None = None, wandb_mode: str | None = 
         run_task(batch, task["id"], dataset, wandb_mode)
 
 
+# QoS que cada partição do Apuana aceita (scontrol show partition, 2026-11)
+PARTITION_QOS = {"debug": "complex", "short-simple": "simple", "short-complex": "complex",
+                 "long-simple": "simple", "long-complex": "complex", "install": "simple"}
+
+
+def slurm_options(args, test: bool) -> dict:
+    """Opções do SLURM da linha de comando. O teste vai para a `debug` (fila rápida, até 30 min)."""
+    partition = args.particao or ("debug" if test else SLURM_DEFAULTS["partition"])
+    qos = args.qos or PARTITION_QOS.get(partition, SLURM_DEFAULTS["qos"])
+    options = {"partition": partition, "qos": qos, "particao_analise": partition, "qos_analise": qos,
+               "time": args.tempo or ("00:30:00" if test else SLURM_DEFAULTS["time"])}
+    if args.max_paralelo:
+        options["max_paralelo"] = args.max_paralelo
+    return options
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="comando", required=True)
@@ -273,6 +310,11 @@ def main() -> None:
         p.add_argument("--local", action="store_true", help="roda aqui, sem SLURM")
         p.add_argument("--zip", default="~/macdeg_data/dataset_1024.zip")
         p.add_argument("--dados", default=None, help="pasta do conjunto (padrão: a da configuração)")
+        p.add_argument("--particao", default=None, help="partição do SLURM (padrão: short-simple; teste: debug)")
+        p.add_argument("--qos", default=None, help="QoS da partição (simple ou complex; padrão: o da partição)")
+        p.add_argument("--tempo", default=None, help="limite por tarefa, ex.: 12:00:00 (padrão; teste: 00:30:00)")
+        p.add_argument("--max-paralelo", type=int, default=None,
+                       help="tarefas simultâneas (padrão: o limite de GPUs do QoS: simple 2, complex 4)")
     args = ap.parse_args()
     if args.comando == "lancar":
         batch = prepare(args.experimento, args.dados, args.teste)
@@ -287,7 +329,7 @@ def main() -> None:
         from macdeg.analysis import analyze
         analyze(batch, args.dados)
     else:
-        print("job:", submit(batch, args.zip))
+        print("job:", submit(batch, args.zip, slurm_options(args, lote["teste"])))
 
 
 if __name__ == "__main__":
