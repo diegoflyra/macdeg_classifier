@@ -47,8 +47,19 @@ TEST_OUTERS = [0, 1]
 SLURM_DEFAULTS = {"partition": "short-simple", "qos": "simple", "cpus": 6, "mem": "32G", "time": "12:00:00",
                   "particao_analise": "short-simple", "qos_analise": "simple"}
 QOS_MAX_GPUS = {"simple": 2, "complex": 4}
-# Ambiente: módulo Python do cluster + venv (cluster/setup_apuana.sh grava o módulo usado em MODULO_PYTHON)
-VENV = Path(os.environ.get("MACDEG_VENV", "~/envs/macdeg")).expanduser()
+# Ambiente: venv do projeto (cluster/setup_apuana.sh). Procura, nesta ordem: $MACDEG_VENV, .venv ou venv
+# dentro do repositório, ~/envs/macdeg. Se o venv usa um módulo Python, o nome fica em MODULO_PYTHON.
+
+
+def find_venv() -> Path:
+    candidates = [os.environ.get("MACDEG_VENV"), PROJECT / ".venv", PROJECT / "venv", "~/envs/macdeg"]
+    for candidate in candidates:
+        if candidate and (Path(candidate).expanduser() / "bin" / "activate").exists():
+            return Path(candidate).expanduser()
+    return PROJECT / ".venv"
+
+
+VENV = find_venv()
 
 
 def _set(config: dict, key: str, value) -> None:

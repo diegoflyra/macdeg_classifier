@@ -53,14 +53,16 @@ echo 'export MACDEG_RUNS=$HOME/macdeg_runs' >> ~/.bashrc
 ```bash
 salloc -p install --qos=simple -c 8 --mem=32G --time=00:30:00
 cd ~/macdeg_classifier
-bash cluster/setup_apuana.sh              # venv em ~/envs/macdeg (Python do sistema) + PyTorch cu130
+bash cluster/setup_apuana.sh              # venv em ~/macdeg_classifier/.venv (Python do sistema) + PyTorch cu130
 exit                                      # sai do nó de instalação
 ```
 
 O script usa o Python do sistema, a menos que `module avail Python` tenha um mais novo (ou que você
-passe um módulo como segundo argumento); nesse caso grava o nome em `~/envs/macdeg/MODULO_PYTHON` e os
+passe um módulo como segundo argumento); nesse caso grava o nome em `.venv/MODULO_PYTHON` e os
 jobs carregam o mesmo módulo. Instala o PyTorch e os pacotes de `cluster/requirements-cluster.txt` e
-registra as versões em `~/envs/macdeg/freeze.txt`. Progresso em outra sessão: `tail -f ~/envs/macdeg/install.log`.
+registra as versões em `.venv/freeze.txt`. Progresso em outra sessão: `tail -f ~/macdeg_classifier/.venv/install.log`.
+O venv fica dentro do repositório, como no computador local (o `.gitignore` o exclui). Os jobs o procuram
+em `$MACDEG_VENV`, `.venv` ou `venv` do repositório e, por último, em `~/envs/macdeg`.
 Se passar de 30 minutos, peça outro `salloc` e rode de novo: o que já foi instalado é reaproveitado.
 
 ## Cada experimento
@@ -68,7 +70,7 @@ Se passar de 30 minutos, peça outro `salloc` e rode de novo: o que já foi inst
 1. No seu computador: crie ou edite `configs/experimentos/<n>_<nome>.yaml`, **commit e push**.
 2. No cluster (login): `cd ~/macdeg_classifier && git pull`, depois ative o ambiente:
    ```bash
-   source ~/envs/macdeg/bin/activate
+   source ~/macdeg_classifier/.venv/bin/activate      # ou venv/, conforme o nome que você usou
    ```
 3. Teste rápido (vai para a `debug`; minutos; números sem valor):
    `python -m macdeg.cluster lancar configs/experimentos/001_referencia.yaml --teste`

@@ -84,7 +84,7 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 
 - Execução pelo `python -m macdeg.cluster lancar <experimento> [--teste]`. O lançador fixa o **commit**
   (código não commitado não roda) e a assinatura dos dados. Apuana: partição `short-simple`, QoS
-  `simple` (no máximo 2 GPUs por usuário), ambiente `venv` em `~/envs/macdeg` (Python do sistema, 3.10)
+  `simple` (no máximo 2 GPUs por usuário), ambiente `venv` dentro do repositório (`.venv` ou `venv`; Python do sistema, 3.10)
   criado no nó `install` (`cluster/setup_apuana.sh`). Nada pesado no nó de login. Detalhes em `docs/cluster.md`.
 - **W&B:** só números (curvas, métricas, histogramas de pesos). Nunca imagens nem tabelas por imagem.
 - **GitHub:** a branch órfã `resultados` é escrita **só pelo pipeline** (`macdeg.ambiente.push_results`).

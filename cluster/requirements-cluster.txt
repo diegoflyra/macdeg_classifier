@@ -1,5 +1,5 @@
 # Pacotes para o cluster. Sem versões fixas: o pip escolhe as compatíveis com o Python do módulo do
-# Apuana. As versões instaladas ficam registradas em ~/envs/macdeg/freeze.txt.
+# Apuana. As versões instaladas ficam registradas em .venv/freeze.txt.
 # O PyTorch é instalado à parte (setup_apuana.sh), da página com CUDA.
 huggingface_hub
 ipykernel

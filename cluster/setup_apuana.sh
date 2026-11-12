@@ -6,10 +6,10 @@
 #   cd ~/macdeg_classifier && bash cluster/setup_apuana.sh            # ou: ... setup_apuana.sh cu130 Python/3.12.3-GCCcore-13.3.0
 # Argumentos opcionais: 1) versão de CUDA das rodas do PyTorch (driver 590 no Apuana -> cu130);
 #                       2) módulo Python (padrão: o Python 3 mais novo disponível, de preferência >= 3.11).
-# Progresso: tail -f ~/envs/macdeg/install.log (em outra sessão).
+# Progresso: tail -f ~/macdeg_classifier/.venv/install.log (em outra sessão).
 set -eo pipefail
 CUDA=${1:-cu130}
-VENV=${MACDEG_VENV:-$HOME/envs/macdeg}
+VENV=${MACDEG_VENV:-$(pwd)/.venv}          # dentro do repositório, como no computador local
 
 type module >/dev/null 2>&1 || source /etc/profile.d/lmod.sh 2>/dev/null || source /etc/profile.d/modules.sh 2>/dev/null || true
 if [[ "$(hostname)" == slurm-client* ]]; then
