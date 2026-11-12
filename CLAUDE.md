@@ -63,18 +63,17 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 
 ## 5. Estrutura do código (contratos que a análise e os testes esperam)
 
-- **Lógica no pacote `macdeg/`, com testes. Notebooks são finos**: configuram, chamam o pacote, mostram
-  texto. Não coloque lógica de treino ou métrica em notebook.
-- Notebooks: `02_lancamento` (login do cluster), `03_tarefa` (executado pelo SLURM via papermill, com
-  célula `parameters`: LOTE, TAREFA, DADOS, WANDB_MODE), `04_analise` (LOTE, DADOS, ENVIAR). Mantenha os
-  nomes e os parâmetros: `macdeg/cluster.py` os chama pelo nome.
+- **Lógica no pacote `macdeg/`, com testes.** Notebooks (se houver) só leem resultados; nada de lógica de
+  treino ou métrica neles.
+- Execução: um experimento = um job: `sbatch cluster/experimento.sh [experimento] [--teste|--retomar|--final]`,
+  que chama `python rodar.py` (tarefas uma por vez, análise, envio). Fora do cluster: `python rodar.py --teste`.
 - Contratos de arquivos (mudar exige atualizar `analysis.py`, `cluster.py` e os testes juntos):
   - `manifest.csv`: uid, sample_id, source, label, label_detail, disease, disease_group, patient_id,
     eye, age, sex, camera, group_id, width, height, image, path.
   - `splits_nested_seed0.csv`: uid, outer, inner_0..inner_4 (-1 = teste daquela dobra externa).
   - Previsões (`val/test/extra_predictions.csv`): sample_id, source, group_id, label, kind,
     disease_group, prob. **Nunca** uid, path ou nome de arquivo.
-  - Lote: `lote.json`, `tarefas/<configuração>/outer<k>_inner<j>|final/`, `notebooks/`, `logs/`,
+  - Lote: `lote.json`, `tarefas/<configuração>/outer<k>_inner<j>|final/`, `logs/`,
     `analise/`. `macdeg.train.run(config, outer, inner, seed, out, log, on_model)`.
 - Lote efetivo fixo (`batch_size`), com acumulação de gradientes conforme a GPU (`micro_batch`): o
   resultado não pode depender da GPU sorteada.
@@ -82,8 +81,8 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 
 ## 6. Cluster, serviços e Git
 
-- Execução pelo `python -m macdeg.cluster lancar <experimento> [--teste]`. O lançador fixa o **commit**
-  (código não commitado não roda) e a assinatura dos dados. Apuana: partição `short-simple`, QoS
+- Execução pelo `sbatch cluster/experimento.sh` (chama o `rodar.py`). O lote registra o **commit**
+  e a assinatura dos dados; faça commit, push e pull antes de lançar. Apuana: partição `short-simple`, QoS
   `simple` (no máximo 2 GPUs por usuário), ambiente `venv` dentro do repositório (`.venv` ou `venv`; Python do sistema, 3.10)
   criado no nó `install` (`cluster/setup_apuana.sh`). Nada pesado no nó de login. Detalhes em `docs/cluster.md`.
 - **W&B:** só números (curvas, métricas, histogramas de pesos). Nunca imagens nem tabelas por imagem.
@@ -91,8 +90,8 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
   Não faça commits manuais nela. Trabalho de código em branches próprias, com PR para `main`.
 - **Hugging Face:** repositório **privado** `macdeg_classifier` (tipo model), só modelos finais de poucas
   configurações (`macdeg/hub.py`, `docs/huggingface.md`). Torná-lo público é decisão dos donos.
-- Notebooks entram na `main` sem saídas (filtro `scripts/nb_clean`). Executados só na branch `resultados`,
-  sem imagens.
+- Notebooks entram na `main` sem saídas (filtro `scripts/nb_clean`). Na branch `resultados` vão os logs
+  (texto) de cada lote, nunca imagens.
 - Não faça commit, push ou PR a menos que a pessoa responsável peça.
 
 ## 7. Antes de entregar qualquer mudança

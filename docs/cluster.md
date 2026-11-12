@@ -67,43 +67,41 @@ Se passar de 30 minutos, peça outro `salloc` e rode de novo: o que já foi inst
 
 ## Cada experimento
 
-1. No seu computador: crie ou edite `configs/experimentos/<n>_<nome>.yaml`, **commit e push**.
-2. No cluster (login): `cd ~/macdeg_classifier && git pull`, depois ative o ambiente:
-   ```bash
-   source ~/macdeg_classifier/.venv/bin/activate      # ou venv/, conforme o nome que você usou
-   ```
-3. Teste rápido (vai para a `debug`; minutos; números sem valor):
-   `python -m macdeg.cluster lancar configs/experimentos/001_referencia.yaml --teste`
-4. Valendo: `python -m macdeg.cluster lancar configs/experimentos/001_referencia.yaml`
-   - outra partição: `--particao short-complex` (QoS `complex`, até 4 tarefas simultâneas) ou `--particao long-simple`;
-   - outros limites: `--tempo 06:00:00`, `--max-paralelo 2`.
-5. Acompanhar: `watch -n 30 squeue -u $USER`; previsão de início: `squeue -u $USER --start`;
-   logs em `~/macdeg_runs/<lote>/logs/` (`tail -f` mostra ao vivo); curvas no W&B.
-6. Quando o array termina, o job de análise roda sozinho e envia `resultados/<lote>/` para a branch
-   `resultados` do GitHub, incluindo `notebooks/` com as cópias executadas (só texto).
+Um experimento = **um job = uma GPU**. O `cluster/experimento.sh` confere o ambiente, copia o conjunto
+para o disco do nó, roda as tarefas uma por vez (`rodar.py`), a análise e o envio ao GitHub e ao W&B.
 
-Jobs na fila podem ser mudados sem cancelar: `scontrol update JobId=<id> Partition=short-simple,long-simple
-TimeLimit=06:00:00` (o QoS precisa valer para todas as partições da lista).
+1. No seu computador: crie ou edite `configs/experimentos/<n>_<nome>.yaml`, **commit e push**.
+2. No cluster (nó de login, na raiz do repositório):
+   ```bash
+   cd ~/macdeg_classifier && git pull && mkdir -p logs
+   sbatch -p debug --qos=complex --time=00:30:00 cluster/experimento.sh --teste    # teste rápido
+   sbatch cluster/experimento.sh                                                    # a referência, valendo
+   sbatch cluster/experimento.sh configs/experimentos/002_x.yaml                   # outro experimento
+   ```
+3. Acompanhar: `squeue -u $USER`; saída em `logs/macdeg_<job>.out` (`tail -f` mostra ao vivo) e erros em
+   `logs/macdeg_<job>.err`; curvas no W&B.
+4. No fim, `resultados/<lote>/` chega à branch `resultados` do GitHub, com os logs do job.
+
+- **Se o job estourar o tempo** (2 dias na `short-simple`) ou cair: `sbatch cluster/experimento.sh --retomar
+  ~/macdeg_runs/<lote>`. Tarefas prontas são puladas e a interrompida continua do `last.pt`.
+- **Outra fila:** as opções do `sbatch` vêm antes do script, ex.: `sbatch -p long-simple cluster/experimento.sh`.
+- **Sem cluster:** `python rodar.py --teste` roda o mesmo no computador.
 
 ## O que cada peça faz e por quê
 
-- **Job array** com até 2 tarefas simultâneas na `short-simple` (limite de GPUs do QoS `simple`; mais que
-  isso só ficaria preso na fila). Cada tarefa = configuração × dobra externa × dobra interna.
-- **Início de cada job:** imprime nó, GPU e versão do PyTorch (para diagnosticar falhas pelo log), carrega
-  o `venv` (e o módulo Python, se houver), descompacta o zip numa pasta própria no `/tmp` do nó (NVMe) e **apaga a pasta no
-  fim**, mesmo se o job falhar ou for cancelado.
-- **Código fixo:** o lançador extrai o commit atual para `~/macdeg_runs/<lote>/codigo/`; um push no meio do
-  lote não muda o código das tarefas que ainda vão começar.
-- **Assinatura dos dados:** cada tarefa recusa rodar se o conjunto ou as divisões mudaram.
+- **Um job por experimento:** pede a GPU uma vez e roda tudo nela. Menos espera na fila e nada de jobs
+  encadeados. Cada tarefa = configuração × dobra externa × dobra interna.
+- **Início do job:** imprime nó, GPU e PyTorch (para diagnosticar pelo log) e falha cedo, com mensagem no
+  `.err`, se faltar venv ou CUDA.
+- **Dados no disco do nó:** o zip é descompactado no `/tmp` do nó (NVMe) e apagado no fim, mesmo se o job
+  falhar ou for cancelado.
+- **Assinatura dos dados e commit** ficam no `lote.json`; o código do commit é copiado para `codigo/`.
 - **Lote efetivo fixo (16):** em GPU com pouca memória (fatia MIG), o treino acumula gradientes; o
-  resultado não depende da GPU sorteada.
-- **Retomada:** `--requeue` + `last.pt`: se um nó cair, a tarefa volta à fila e continua da última época.
-- **W&B:** tenta online; sem internet no nó, grava offline e o job de análise sincroniza.
-- **Espaço:** lotes em `~/macdeg_runs` (cota de 100 GB no `$HOME`). Treinos internos não guardam pesos;
-  o treino final guarda ~0,5 GB por configuração. Lotes antigos podem ser apagados (o que importa está no
-  GitHub e no Hugging Face).
+  resultado não depende da GPU.
+- **Espaço:** lotes em `~/macdeg_runs` (cota de 100 GB). Treinos internos não guardam pesos; o treino final
+  guarda ~0,5 GB por configuração.
 
 ## Publicar o modelo final de uma configuração
 
-`python -m macdeg.cluster final ~/macdeg_runs/<lote analisado> <configuração>` treina as 5 dobras
+`sbatch cluster/experimento.sh --final ~/macdeg_runs/<lote analisado> <configuração>` treina as 5 dobras
 externas dessa configuração e a análise envia o ensemble, privado, ao Hugging Face (ver `docs/huggingface.md`).

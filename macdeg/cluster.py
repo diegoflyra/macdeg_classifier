@@ -1,28 +1,22 @@
-"""Lança um experimento (grade de configurações x dobras) como job array do SLURM, ou localmente.
+"""Lotes de experimento: expande a grade, fixa código e dados, roda as tarefas.
 
-Uso no nó de login do Apuana:
-  python -m macdeg.cluster lancar configs/experimentos/001_referencia.yaml [--teste] [--local]
-  python -m macdeg.cluster final  <pasta do lote> <configuração> [--local]
-
-Um experimento vira um LOTE em $MACDEG_RUNS/<nome>-<AAAAMMDD-HHMM>/:
+Um experimento (configs/experimentos/*.yaml) vira um LOTE em $MACDEG_RUNS/<nome>-<AAAAMMDD-HHMM>/:
   lote.json       configurações, tarefas, commit, assinatura dos dados
-  codigo/         cópia do código no commit do lançamento (todas as tarefas usam a mesma versão)
+  codigo/         cópia do código no commit do lançamento (registro do que rodou)
   tarefas/<configuração>/outer<k>_inner<j>/   saída de cada treino (macdeg.train)
-  notebooks/      cópia executada do notebook de cada tarefa
-  logs/           saída do SLURM
+  logs/           saída e erros do job do SLURM
   analise/        o que vai para o GitHub (macdeg.analysis)
-Cada tarefa = (configuração, dobra externa, dobra interna). Uma tarefa concluída nunca roda de novo.
+Cada tarefa = (configuração, dobra externa, dobra interna). Tarefa concluída nunca roda de novo.
+Quem lança: rodar.py (no cluster, dentro de cluster/experimento.sh).
 """
 from __future__ import annotations
 
-import argparse
 import copy
 import hashlib
 import io
 import itertools
 import json
 import os
-import shutil
 import subprocess
 import tarfile
 import time
@@ -31,7 +25,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from macdeg.ambiente import PROJECT, commit_info, repo_url
+from macdeg.ambiente import PROJECT, commit_info
 from macdeg.data.sources import resolve
 from macdeg.data.splits import N_INNER, N_OUTER
 from macdeg.train import load_config
@@ -42,26 +36,6 @@ TEST_OVERRIDES = {"limit": 48, "epochs": 1, "max_steps": 2, "image_size": 128, "
 TEST_OUTERS = [0, 1]
 # Apuana (sinfo de 2026-11): short-simple = todos os nós e GPUs, até 2 dias, prioridade mais alta, sem
 # preempção. O QoS precisa acompanhar a partição (simple ou complex).
-# Apuana (guia do Notion + scontrol, 2026-11): short-simple = até 2 dias, sem preempção. Cada QoS limita o
-# usuário: simple = 2 GPUs, 16 CPUs, 64 GB; complex = 4 GPUs, 48 CPUs, 500 GB. O QoS acompanha a partição.
-SLURM_DEFAULTS = {"partition": "short-simple", "qos": "simple", "cpus": 6, "mem": "32G", "time": "12:00:00",
-                  "particao_analise": "short-simple", "qos_analise": "simple"}
-QOS_MAX_GPUS = {"simple": 2, "complex": 4}
-# Ambiente: venv do projeto (cluster/setup_apuana.sh). Procura, nesta ordem: $MACDEG_VENV, .venv ou venv
-# dentro do repositório, ~/envs/macdeg. Se o venv usa um módulo Python, o nome fica em MODULO_PYTHON.
-
-
-def find_venv() -> Path:
-    candidates = [os.environ.get("MACDEG_VENV"), PROJECT / ".venv", PROJECT / "venv", "~/envs/macdeg"]
-    for candidate in candidates:
-        if candidate and (Path(candidate).expanduser() / "bin" / "activate").exists():
-            return Path(candidate).expanduser()
-    return PROJECT / ".venv"
-
-
-VENV = find_venv()
-
-
 def _set(config: dict, key: str, value) -> None:
     *parents, leaf = key.split(".")
     for parent in parents:
@@ -133,7 +107,6 @@ def prepare(experiment_path: Path, dataset: str | None = None, test: bool = Fals
     run_name = f"{name}-{time.strftime('%Y%m%d-%H%M')}"
     batch = RUNS / run_name
     (batch / "logs").mkdir(parents=True)
-    (batch / "notebooks").mkdir()
     snapshot_code(batch / "codigo", "HEAD")
     lote = {"nome": run_name, "experimento": experiment, "teste": test, "final": bool(final),
             "lote_de_origem": str(from_batch) if from_batch else None, **info,
@@ -149,7 +122,7 @@ def task_dir(batch: Path, task: dict) -> Path:
 
 
 def run_task(batch: Path, task_id: int, dataset: str | None = None, wandb_mode: str | None = None) -> dict | None:
-    """Executa uma tarefa do lote (chamado pelo notebook de tarefa). Confere a assinatura dos dados."""
+    """Executa uma tarefa do lote. Confere a assinatura dos dados."""
     from macdeg.train import run
     batch = Path(batch)
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
@@ -204,145 +177,10 @@ def _wandb(lote: dict, task: dict, config: dict, out: Path, mode: str | None):
     return run.log, (lambda model: run.watch(model, log="all", log_freq=200)), finish
 
 
-# Início comum dos jobs: diagnóstico (para entender falhas pelo log) e ambiente do guia do Apuana.
-SBATCH_PRELUDE = """set -eo pipefail
-echo "== $(date '+%Y-%m-%d %H:%M:%S') | nó $(hostname) | job ${{SLURM_JOB_ID}} tarefa ${{SLURM_ARRAY_TASK_ID:-}}"
-type module >/dev/null 2>&1 || source /etc/profile.d/lmod.sh 2>/dev/null || source /etc/profile.d/modules.sh 2>/dev/null || true
-# Módulo Python só se o venv foi criado com um (cluster/setup_apuana.sh); senão é o Python do sistema
-if [ -s {venv}/MODULO_PYTHON ]; then module load "$(cat {venv}/MODULO_PYTHON)"; fi
-source {venv}/bin/activate
-export PYTHONPATH={lote}/codigo MACDEG_RUNS={runs} MACDEG_ENV={env} MACDEG_REPO_URL={repo}
-# Pasta temporária no disco local do nó (NVMe); apagada no fim, mesmo se o job falhar ou for cancelado.
-TMPBASE="${{SLURM_TMPDIR:-/tmp}}/$USER-macdeg-$SLURM_JOB_ID-${{SLURM_ARRAY_TASK_ID:-0}}"
-trap 'rm -rf "$TMPBASE"' EXIT TERM INT
-mkdir -p "$TMPBASE"
-DADOS="$TMPBASE/dataset"
-"""
-
-SBATCH_ARRAY = """#!/bin/bash
-#SBATCH --job-name={nome}
-#SBATCH --array=0-{ultimo}%{max_paralelo}
-#SBATCH --partition={partition}
-#SBATCH --qos={qos}
-#SBATCH --gres=gpu:1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task={cpus}
-#SBATCH --mem={mem}
-#SBATCH --time={time}
-#SBATCH --requeue
-#SBATCH --output={lote}/logs/tarefa_%a.out
-""" + SBATCH_PRELUDE + """
-nvidia-smi -L || echo "nvidia-smi falhou"
-python -c "import torch; print('torch', torch.__version__, '| CUDA', torch.cuda.is_available(), '|', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'sem GPU')"
-echo "== copiando o conjunto para $DADOS"
-python -m zipfile -e {zip} "$DADOS"
-papermill {lote}/codigo/notebooks/03_tarefa.ipynb {lote}/notebooks/tarefa_$SLURM_ARRAY_TASK_ID.ipynb \\
-  -p LOTE {lote} -p TAREFA $SLURM_ARRAY_TASK_ID -p DADOS "$DADOS" --cwd {lote}/codigo
-echo "== fim $(date '+%Y-%m-%d %H:%M:%S')"
-"""
-
-SBATCH_ANALYSIS = """#!/bin/bash
-#SBATCH --job-name={nome}-analise
-#SBATCH --partition={particao_analise}
-#SBATCH --qos={qos_analise}
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=2
-#SBATCH --mem=16G
-#SBATCH --time=02:00:00
-#SBATCH --output={lote}/logs/analise.out
-""" + SBATCH_PRELUDE + """
-# Runs do W&B gravados offline (nó sem internet) são enviados agora.
-find {lote}/tarefas -type d -name "offline-run-*" -exec wandb sync {{}} \\; 2>/dev/null || true
-python -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2], ['manifest.csv', 'splits_nested_seed0.csv'])" {zip} "$DADOS"
-set +e
-papermill {lote}/codigo/notebooks/04_analise.ipynb {lote}/notebooks/analise.ipynb \\
-  -p LOTE {lote} -p DADOS "$DADOS" --cwd {lote}/codigo
-STATUS=$?
-# Notebooks executados (tarefas e análise) vão para o GitHub mesmo se a análise falhou: ajudam a depurar.
-python -m macdeg.analysis notebooks {lote}
-exit $STATUS
-"""
-
-
-def write_scripts(batch: Path, zip_path: str, slurm: dict | None = None) -> tuple[Path, Path]:
-    lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
-    values = {**SLURM_DEFAULTS, **(slurm or {}), "nome": lote["nome"][:40], "ultimo": len(lote["tarefas"]) - 1,
-              "lote": str(batch), "zip": str(Path(zip_path).expanduser()), "runs": str(RUNS),
-              "env": str(PROJECT / ".env"), "repo": repo_url(), "venv": str(VENV)}
-    # Mais tarefas simultâneas que o QoS permite só ficariam presas na fila
-    values.setdefault("max_paralelo", QOS_MAX_GPUS.get(values["qos"], 2))
-    array, analysis = batch / "job_tarefas.sh", batch / "job_analise.sh"
-    array.write_text(SBATCH_ARRAY.format(**values))
-    analysis.write_text(SBATCH_ANALYSIS.format(**values))
-    return array, analysis
-
-
-def submit(batch: Path, zip_path: str, slurm: dict | None = None) -> str:
-    """Submete o array e, depois dele (com ou sem falhas), a análise."""
-    array, analysis = write_scripts(batch, zip_path, slurm)
-    job = subprocess.run(["sbatch", "--parsable", str(array)], capture_output=True, text=True, check=True).stdout.strip()
-    subprocess.run(["sbatch", f"--dependency=afterany:{job}", str(analysis)], check=True)
-    return job
-
-
 def run_local(batch: Path, dataset: str | None = None, wandb_mode: str | None = "disabled") -> None:
-    """Sem SLURM: roda as tarefas uma por vez, no próprio processo (modo de teste no computador)."""
+    """Roda as tarefas do lote uma por vez, no próprio processo (dentro do job do cluster ou no computador).
+    Tarefas já concluídas são puladas; uma tarefa interrompida continua do last.pt."""
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
     for task in lote["tarefas"]:
         print(f"tarefa {task['id'] + 1}/{len(lote['tarefas'])}: {task}", flush=True)
         run_task(batch, task["id"], dataset, wandb_mode)
-
-
-# QoS que cada partição do Apuana aceita (scontrol show partition, 2026-11)
-PARTITION_QOS = {"debug": "complex", "short-simple": "simple", "short-complex": "complex",
-                 "long-simple": "simple", "long-complex": "complex", "install": "simple"}
-
-
-def slurm_options(args, test: bool) -> dict:
-    """Opções do SLURM da linha de comando. O teste vai para a `debug` (fila rápida, até 30 min)."""
-    partition = args.particao or ("debug" if test else SLURM_DEFAULTS["partition"])
-    qos = args.qos or PARTITION_QOS.get(partition, SLURM_DEFAULTS["qos"])
-    options = {"partition": partition, "qos": qos, "particao_analise": partition, "qos_analise": qos,
-               "time": args.tempo or ("00:30:00" if test else SLURM_DEFAULTS["time"])}
-    if args.max_paralelo:
-        options["max_paralelo"] = args.max_paralelo
-    return options
-
-
-def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest="comando", required=True)
-    launch = sub.add_parser("lancar")
-    launch.add_argument("experimento", type=Path)
-    final = sub.add_parser("final")
-    final.add_argument("lote", type=Path)
-    final.add_argument("configuracoes", nargs="+")
-    for p in (launch, final):
-        p.add_argument("--teste", action="store_true", help="passada rápida; os números não servem")
-        p.add_argument("--local", action="store_true", help="roda aqui, sem SLURM")
-        p.add_argument("--zip", default="~/macdeg_data/dataset_1024.zip")
-        p.add_argument("--dados", default=None, help="pasta do conjunto (padrão: a da configuração)")
-        p.add_argument("--particao", default=None, help="partição do SLURM (padrão: short-simple; teste: debug)")
-        p.add_argument("--qos", default=None, help="QoS da partição (simple ou complex; padrão: o da partição)")
-        p.add_argument("--tempo", default=None, help="limite por tarefa, ex.: 12:00:00 (padrão; teste: 00:30:00)")
-        p.add_argument("--max-paralelo", type=int, default=None,
-                       help="tarefas simultâneas (padrão: o limite de GPUs do QoS: simple 2, complex 4)")
-    args = ap.parse_args()
-    if args.comando == "lancar":
-        batch = prepare(args.experimento, args.dados, args.teste)
-    else:
-        batch = prepare(None, args.dados, args.teste, final=args.configuracoes, from_batch=args.lote)
-    lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
-    print(f"lote {batch}: {len(lote['configuracoes'])} configuração(ões), {len(lote['tarefas'])} tarefas")
-    if lote["codigo_alterado_sem_commit"]:
-        print("AVISO: há mudanças sem commit; elas NÃO estão na cópia do código usada pelas tarefas.")
-    if args.local:
-        run_local(batch, args.dados)
-        from macdeg.analysis import analyze
-        analyze(batch, args.dados)
-    else:
-        print("job:", submit(batch, args.zip, slurm_options(args, lote["teste"])))
-
-
-if __name__ == "__main__":
-    main()

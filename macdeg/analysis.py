@@ -259,7 +259,7 @@ def _publish(batch: Path, out: Path, lote: dict, result: dict, push: bool) -> di
     if push and secret("GITHUB_TOKEN") and not lote["teste"]:
         ok = push_results(out, f"resultados/{lote['nome']}", f"resultados: {lote['nome']}")
         print("GitHub:", "enviado" if ok else "FALHOU (os arquivos estão em " + str(out) + ")")
-    if secret("WANDB_API_KEY"):
+    if secret("WANDB_API_KEY") and not lote["teste"]:   # lote de teste não vai a lugar nenhum
         _wandb_summary(lote, result, out)
     print((out / "RESUMO.md").read_text(encoding="utf-8"))
     return result
@@ -280,33 +280,20 @@ def _wandb_summary(lote: dict, result: dict, out: Path) -> None:
     run.finish()
 
 
-def clean_notebook(path: Path, destination: Path) -> None:
-    """Copia um notebook executado sem saídas de imagem (só texto vai para o GitHub)."""
-    nb = json.loads(path.read_text(encoding="utf-8"))
-    for cell in nb.get("cells", []):
-        for output in cell.get("outputs", []):
-            data = output.get("data")
-            if data:
-                for key in [k for k in data if k.startswith("image/")]:
-                    del data[key]
-                    data.setdefault("text/plain", ["[imagem removida antes do envio]"])
-    destination.write_text(json.dumps(nb, indent=1, ensure_ascii=False), encoding="utf-8")
-
-
-def push_notebooks(batch: Path | str) -> bool:
-    """Envia as cópias executadas dos notebooks (tarefas e análise) para resultados/<lote>/notebooks.
-    Roda no fim do job de análise, depois que o notebook de análise terminou de executar."""
+def push_logs(batch: Path | str) -> bool:
+    """Envia os logs (texto) das tarefas e da análise para resultados/<lote>/logs. Roda no fim do job de
+    análise, depois da análise. Os logs só têm agregados, caminhos do cluster e métricas (nenhum ID de imagem)."""
     import tempfile
     batch = Path(batch)
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
-    notebooks = sorted((batch / "notebooks").glob("*.ipynb"))
-    if lote["teste"] or not notebooks or not secret("GITHUB_TOKEN"):
+    logs = sorted([*(batch / "logs").glob("*.out"), *(batch / "logs").glob("*.err")])
+    if lote["teste"] or not logs or not secret("GITHUB_TOKEN"):
         return False
     with tempfile.TemporaryDirectory() as tmp:
-        for path in notebooks:
-            clean_notebook(path, Path(tmp) / path.name)
-        ok = push_results(tmp, f"resultados/{lote['nome']}/notebooks", f"notebooks executados: {lote['nome']}")
-    print("GitHub (notebooks executados):", "enviados" if ok else "FALHOU")
+        for path in logs:
+            shutil.copy(path, Path(tmp) / path.name)
+        ok = push_results(tmp, f"resultados/{lote['nome']}/logs", f"logs: {lote['nome']}")
+    print("GitHub (logs):", "enviados" if ok else "FALHOU")
     return ok
 
 
@@ -314,9 +301,9 @@ if __name__ == "__main__":
     import sys
     from macdeg.ambiente import load_dotenv
     load_dotenv()
-    if len(sys.argv) == 3 and sys.argv[1] == "notebooks":
-        push_notebooks(sys.argv[2])
+    if len(sys.argv) == 3 and sys.argv[1] == "logs":
+        push_logs(sys.argv[2])
     elif len(sys.argv) >= 3 and sys.argv[1] == "analisar":
         analyze(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)
     else:
-        print("uso: python -m macdeg.analysis analisar <lote> [dados] | notebooks <lote>")
+        print("uso: python -m macdeg.analysis analisar <lote> [dados] | logs <lote>")

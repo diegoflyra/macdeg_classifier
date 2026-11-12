@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -62,19 +63,6 @@ def test_launch_tasks_and_analysis_end_to_end(tiny_dataset, tmp_path, monkeypatc
     assert [c["nome"] for c in lote["configuracoes"]] == ["e2e-00", "e2e-01"]
     assert len(lote["tarefas"]) == 2 * len(cluster.TEST_OUTERS) * 4
     assert (batch / "codigo" / "README.md").exists()        # código fixado no commit (só o que está commitado)
-    array, analysis = cluster.write_scripts(batch, "~/macdeg_data/dataset_1024.zip")
-    script = array.read_text()
-    assert f"--array=0-{len(lote['tarefas']) - 1}%2" in script     # QoS simple: no máximo 2 GPUs por usuário
-    assert "--qos=simple" in script and "--partition=short-simple" in script
-    assert "module load" in script and "/bin/activate" in script and "conda" not in script
-    assert "trap 'rm -rf \"$TMPBASE\"'" in script                # o /tmp do nó é limpo no fim
-    assert "wandb sync {} \\;" in analysis.read_text()
-    opts = cluster.slurm_options(type("A", (), {"particao": "short-complex", "qos": None, "tempo": None,
-                                                "max_paralelo": None})(), test=False)
-    assert opts["qos"] == "complex"
-    a2, _ = cluster.write_scripts(batch, "~/x.zip", opts)
-    assert "%4" in a2.read_text()                                    # QoS complex: até 4 GPUs
-
     cluster.run_local(batch, str(tiny_dataset))
     result = analyze(batch, str(tiny_dataset), push=False)
     assert result["tarefas_faltando"] == []
@@ -101,18 +89,45 @@ def test_launch_tasks_and_analysis_end_to_end(tiny_dataset, tmp_path, monkeypatc
         cluster.run_task(batch, 1, str(tiny_dataset), "disabled")
 
 
-def test_executed_notebooks_lose_images_before_github(tmp_path):
-    from macdeg.analysis import clean_notebook, push_notebooks
-    nb = {"cells": [{"cell_type": "code", "source": "x", "outputs": [
-        {"output_type": "display_data", "data": {"image/png": "AAAA", "text/plain": ["<Figure>"]}},
-        {"output_type": "stream", "name": "stdout", "text": ["AUROC 0.8\n"]}]}], "metadata": {}, "nbformat": 4,
-        "nbformat_minor": 5}
-    source, cleaned = tmp_path / "a.ipynb", tmp_path / "b.ipynb"
-    source.write_text(json.dumps(nb))
-    clean_notebook(source, cleaned)
-    out = json.loads(cleaned.read_text())["cells"][0]["outputs"]
-    assert "image/png" not in out[0]["data"] and out[1]["text"] == ["AUROC 0.8\n"]
+def test_logs_are_not_pushed_for_test_batches(tmp_path):
+    from macdeg.analysis import push_logs
     batch = tmp_path / "lote"
-    (batch / "notebooks").mkdir(parents=True)
+    (batch / "logs").mkdir(parents=True)
+    (batch / "logs" / "tarefa_0.out").write_text("AUROC 0.8\n")
     (batch / "lote.json").write_text(json.dumps({"nome": "x", "teste": True}))
-    assert push_notebooks(batch) is False          # lote de teste: nada vai para o GitHub
+    assert push_logs(batch) is False          # lote de teste: nada vai para o GitHub
+
+
+def test_rodar_runs_a_whole_test_experiment(tiny_dataset, tmp_path, monkeypatch):
+    """O rodar.py (o que o cluster/experimento.sh chama) roda tarefas e análise num processo só."""
+    import sys
+    import macdeg.cluster as cluster
+    import rodar
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    monkeypatch.setattr(rodar, "RUNS", tmp_path / "runs")
+    monkeypatch.setattr(rodar, "load_dotenv", lambda *a, **k: None)   # o teste não usa as chaves reais
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": "r", "base": str(tmp_path / "base.yaml")}))
+    monkeypatch.setattr(sys, "argv", ["rodar.py", str(tmp_path / "exp.yaml"), "--teste", "--dados", str(tiny_dataset)])
+    rodar.main()
+    batch = Path((tmp_path / "runs" / "ultimo_lote.txt").read_text())
+    assert (batch / "analise" / "RESUMO.md").exists() and (batch / "logs").is_dir()
+    lote = json.loads((batch / "lote.json").read_text())
+    assert all((cluster.task_dir(batch, t) / "metrics.json").exists() for t in lote["tarefas"])
+    # retomar um lote pronto não treina de novo
+    monkeypatch.setattr(sys, "argv", ["rodar.py", "--teste", "--retomar", str(batch), "--dados", str(tiny_dataset)])
+    rodar.main()
+
+
+def test_experiment_script_is_valid_bash():
+    import subprocess
+    from macdeg.ambiente import PROJECT
+    script = PROJECT / "cluster" / "experimento.sh"
+    assert subprocess.run(["bash", "-n", str(script)]).returncode == 0
+    text = script.read_text()
+    assert "--partition=short-simple" in text and "--qos=simple" in text and "--gres=gpu:1" in text
+    assert "--error=logs/%x_%j.err" in text and "python rodar.py" in text and "trap 'rm -rf" in text

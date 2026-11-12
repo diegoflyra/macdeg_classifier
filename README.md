@@ -48,7 +48,7 @@ e guardadas fora do projeto (`~/macdeg_data/`).
 
 Treino no cluster Apuana: ver [`docs/cluster.md`](docs/cluster.md). Cada experimento é um YAML em
 `configs/experimentos/` (configuração base + grade de variações) e roda como job array; a análise
-(`notebooks/04_analise.ipynb`) envia `resultados/<lote>/` para a branch `resultados`.
+envia `resultados/<lote>/` para a branch `resultados`. No cluster: `sbatch cluster/experimento.sh`.
 
 Avaliação:
 - métrica principal: **média do F2 dentro de cada base**, com o limiar sempre escolhido em outras dobras;
@@ -88,6 +88,8 @@ Para rodar só os testes (com imagens sintéticas, não precisam da base):
 ## Estrutura
 
 ```
+rodar.py                   Roda um experimento inteiro (tarefas, análise, envio); ver docs/cluster.md
+cluster/experimento.sh     O job do SLURM: sbatch cluster/experimento.sh [experimento]
 configs/sources.yaml       Registro das bases e regra do sorteio das outras doenças
 configs/train/             Configuração de treino da referência
 configs/experimentos/      Experimentos (configuração base + grade de variações)
@@ -108,9 +110,6 @@ macdeg/
 notebooks/
   00_inspecao.ipynb        Inspeção da HYAMD
   01_resultados.ipynb      Pré-processamento por ROI: sinalizações, grades e auditoria
-  02_lancamento.ipynb      Lança um experimento no cluster
-  03_tarefa.ipynb          Uma tarefa (executada pelo SLURM)
-  04_analise.ipynb         Análise de um lote
 cluster/setup_apuana.sh    Ambiente no Apuana (venv + PyTorch), rodar no nó install
 cluster/requirements-cluster.txt  Pacotes do cluster (sem versão fixa; registradas no freeze.txt)
 scripts/run_overnight.sh   Pipeline do pré-processamento por ROI
