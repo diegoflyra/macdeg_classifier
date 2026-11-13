@@ -1,0 +1,45 @@
+{
+ "nome": "referencia-20261112-1618",
+ "experimento": {
+  "nome": "referencia",
+  "base": "configs/train/baseline.yaml",
+  "grade": {},
+  "variacoes": [],
+  "referencia": null
+ },
+ "teste": false,
+ "final": false,
+ "lote_de_origem": null,
+ "commit": "d0bd3f40186fac802f28f3b8894b07c1d6c82a01",
+ "codigo_alterado_sem_commit": false,
+ "criado": "2026-11-12 16:18",
+ "assinatura_dados": "72e45dfc1003894a",
+ "splits": "splits_nested_seed0.csv",
+ "configuracoes": [
+  {
+   "nome": "referencia-00",
+   "mudancas": {},
+   "config": {
+    "name": "referencia-00",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "resnet50",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": null,
+    "shuffle_labels": false
+   }
+  }
+ ],
+ "n_tarefas": 20
+}

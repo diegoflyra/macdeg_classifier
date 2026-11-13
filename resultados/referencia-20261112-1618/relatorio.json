@@ -1,0 +1,223 @@
+{
+ "lote": "referencia-20261112-1618",
+ "commit": "d0bd3f40186fac802f28f3b8894b07c1d6c82a01",
+ "assinatura_dados": "72e45dfc1003894a",
+ "teste": false,
+ "tarefas_faltando": [],
+ "analisado": "2026-11-13 02:15",
+ "configuracoes": {
+  "referencia-00": {
+   "mudancas": {},
+   "dobras_externas": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "n": 18039,
+   "n_dmri": 1515,
+   "n_normal": 11017,
+   "n_outra_doenca": 5507,
+   "f2_media_bases": 0.770072135625825,
+   "f2_media_bases_ic95": [
+    0.7494,
+    0.7893
+   ],
+   "f2_geral": 0.7756964457252642,
+   "auroc": 0.9671572422311222,
+   "auprc": 0.7761013723656017,
+   "auroc_ic95": [
+    0.9614,
+    0.9725
+   ],
+   "sensibilidade": 0.8528052805280528,
+   "especificidade": 0.9409343984507383,
+   "especificidade_normais": 0.9855677589180357,
+   "especificidade_outras_doencas": 0.8516433629925549,
+   "especificidade_por_doenca": {
+    "catarata": {
+     "n": 288,
+     "especificidade": 0.9861111111111112
+    },
+    "cicatriz": {
+     "n": 206,
+     "especificidade": 0.8106796116504854
+    },
+    "descolamento": {
+     "n": 25,
+     "especificidade": 1.0
+    },
+    "edema_macular": {
+     "n": 395,
+     "especificidade": 0.9569620253164557
+    },
+    "glaucoma": {
+     "n": 671,
+     "especificidade": 0.9836065573770492
+    },
+    "hemorragia": {
+     "n": 85,
+     "especificidade": 0.8941176470588236
+    },
+    "membrana_epirretiniana": {
+     "n": 390,
+     "especificidade": 0.9025641025641026
+    },
+    "miopia": {
+     "n": 616,
+     "especificidade": 0.8863636363636364
+    },
+    "nao_especificada": {
+     "n": 662,
+     "especificidade": 0.8338368580060423
+    },
+    "nevo": {
+     "n": 97,
+     "especificidade": 0.9896907216494846
+    },
+    "oclusao_vascular": {
+     "n": 326,
+     "especificidade": 0.911042944785276
+    },
+    "outra": {
+     "n": 671,
+     "especificidade": 0.8688524590163934
+    },
+    "retinopatia_diabetica": {
+     "n": 671,
+     "especificidade": 0.43219076005961254
+    },
+    "retinopatia_hipertensiva": {
+     "n": 404,
+     "especificidade": 0.9504950495049505
+    }
+   },
+   "por_base": {
+    "adam": {
+     "n_dmri": 263,
+     "n_sem_dmri": 662,
+     "f2": 0.85,
+     "auroc": 0.9514203990672349,
+     "sensibilidade": 0.9049429657794676,
+     "especificidade": 0.8338368580060423
+    },
+    "brset": {
+     "n_dmri": 261,
+     "n_sem_dmri": 8881,
+     "f2": 0.7618710134656272,
+     "auroc": 0.9880674270829155,
+     "sensibilidade": 0.8237547892720306,
+     "especificidade": 0.9828848102691138
+    },
+    "hyamd": {
+     "n_dmri": 532,
+     "n_sem_dmri": 560,
+     "f2": 0.8138368983957219,
+     "auroc": 0.7743253222341567,
+     "sensibilidade": 0.9154135338345865,
+     "especificidade": 0.3267857142857143
+    },
+    "odir": {
+     "n_dmri": 280,
+     "n_sem_dmri": 4362,
+     "f2": 0.6463022508038585,
+     "auroc": 0.9244612563044475,
+     "sensibilidade": 0.7178571428571429,
+     "especificidade": 0.9463548830811555
+    },
+    "rfmid": {
+     "n_dmri": 179,
+     "n_sem_dmri": 2059,
+     "f2": 0.7783505154639175,
+     "auroc": 0.9605628376306773,
+     "sensibilidade": 0.8435754189944135,
+     "especificidade": 0.9499757163671685
+    }
+   },
+   "regua_origem_auroc": 0.7921528881283191,
+   "regua_idade_auroc": 0.7957865370853291,
+   "regua_idade_cobertura": 0.656,
+   "regua_idade_por_base": {
+    "brset": 0.9049483657529676,
+    "hyamd": 0.7308253893662728,
+    "odir": 0.5707457260758498
+   },
+   "nota_selecao_por_dobra": {
+    "0": 0.7528347905201048,
+    "1": 0.7406378159799657,
+    "2": 0.71355806226615,
+    "3": 0.705263126701426,
+    "4": 0.7131453507605061
+   },
+   "epocas_melhores": [
+    10,
+    8,
+    11,
+    11,
+    12,
+    10,
+    13,
+    5,
+    6,
+    2,
+    5,
+    3,
+    13,
+    6,
+    10,
+    4,
+    14,
+    2,
+    3,
+    12
+   ],
+   "gpus": [
+    "NVIDIA A100 80GB PCIe"
+   ],
+   "distribuicao_notas": [
+    {
+     "tipo": "normal",
+     "n": 11017,
+     "p10": 0.0001,
+     "p25": 0.0007,
+     "p50": 0.0049,
+     "p75": 0.0237,
+     "p90": 0.0995,
+     "acima_do_limiar": 0.0107
+    },
+    {
+     "tipo": "outra",
+     "n": 5507,
+     "p10": 0.001,
+     "p25": 0.0101,
+     "p50": 0.072,
+     "p75": 0.27,
+     "p90": 0.6022,
+     "acima_do_limiar": 0.1378
+    },
+    {
+     "tipo": "drusas",
+     "n": 2832,
+     "p10": 0.0045,
+     "p25": 0.0121,
+     "p50": 0.061,
+     "p75": 0.309,
+     "p90": 0.7799,
+     "acima_do_limiar": 0.1822
+    },
+    {
+     "tipo": "dmri",
+     "n": 1515,
+     "p10": 0.3444,
+     "p25": 0.6883,
+     "p50": 0.9314,
+     "p75": 0.9915,
+     "p90": 0.9993,
+     "acima_do_limiar": 0.8521
+    }
+   ]
+  }
+ },
+ "referencia": "referencia-00"
+}
