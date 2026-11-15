@@ -27,7 +27,6 @@ import math
 import time
 from pathlib import Path
 
-import cv2
 import numpy as np
 import pandas as pd
 import torch
@@ -36,6 +35,7 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
 
+from macdeg import cache as image_cache
 from macdeg.data.sources import resolve
 from macdeg.data.splits import kind
 from macdeg.metrics import auroc, evaluate
@@ -58,19 +58,28 @@ def load_config(path: Path, overrides: list[str]) -> dict:
 
 
 class FundusDataset(Dataset):
-    def __init__(self, frame: pd.DataFrame, root: Path, transform):
+    """Lê do cache de imagens reduzidas (macdeg.cache) quando há; senão, do JPEG. Os pixels são os mesmos."""
+
+    def __init__(self, frame: pd.DataFrame, root: Path, transform, cache: tuple[Path, dict] | None = None):
         self.paths = [str(root / p) for p in frame["image"]]
         self.labels = frame["label"].to_numpy(np.float32)
         self.transform = transform
+        self.cache_path, lines = cache or (None, {})
+        self.rows = [lines.get(p, -1) for p in frame["image"]]
+        self._data = None                       # aberto em cada processo do DataLoader (mmap)
 
     def __len__(self) -> int:
         return len(self.paths)
 
     def __getitem__(self, index: int):
-        image = cv2.imread(self.paths[index], cv2.IMREAD_COLOR)
-        if image is None:
-            raise OSError("imagem ilegível no conjunto reduzido")
-        tensor = torch.from_numpy(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)).permute(2, 0, 1)
+        row = self.rows[index]
+        if row >= 0:
+            if self._data is None:
+                self._data = np.load(self.cache_path, mmap_mode="r")
+            image = np.array(self._data[row])
+        else:
+            image = image_cache.read_rgb(self.paths[index])
+        tensor = torch.from_numpy(image).permute(2, 0, 1)
         return self.transform(tensor), self.labels[index]
 
 
@@ -189,15 +198,20 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
           f"validação: {len(val)} ({int(val['label'].sum())} DMRI); dispositivo: {device}", flush=True)
 
     workers = config.get("num_workers", 6)
+    cached = None
+    if config.get("cache", True):   # mesmos pixels, sem decodificar 1024 px a cada época (macdeg.cache)
+        frames = [f for f in (train, val, test, extra) if f is not None]
+        cached = image_cache.build(root, [i for f in frames for i in f["image"]], config["image_size"])
+    torch.backends.cudnn.benchmark = True     # entrada de tamanho fixo: o cuDNN escolhe o algoritmo mais rápido
     micro = micro_batch(config, device)
     accumulate = config["batch_size"] // micro
     print(f"lote efetivo {config['batch_size']} = {accumulate} x {micro} imagens"
           + (f" | GPU: {torch.cuda.get_device_name(device)}" if device.type == "cuda" else ""), flush=True)
-    train_loader = DataLoader(FundusDataset(train, root, transforms(config, True)), batch_size=micro,
+    train_loader = DataLoader(FundusDataset(train, root, transforms(config, True), cached), batch_size=micro,
                               shuffle=True, num_workers=workers, pin_memory=device.type == "cuda", drop_last=True,
                               persistent_workers=workers > 0)
-    val_loader = DataLoader(FundusDataset(val, root, transforms(config, False)), batch_size=micro,
-                            num_workers=workers, pin_memory=device.type == "cuda")
+    val_loader = DataLoader(FundusDataset(val, root, transforms(config, False), cached), batch_size=micro,
+                            num_workers=workers, pin_memory=device.type == "cuda", persistent_workers=workers > 0)
 
     model = build_model(config["model"], config.get("pretrained", True)).to(device).to(memory_format=torch.channels_last)
     if on_model is not None:
@@ -225,16 +239,19 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
 
     for epoch in range(start, epochs):
         model.train()
-        began, losses = time.time(), []
+        began, losses, waiting = time.time(), [], 0.0
         optimizer.zero_grad(set_to_none=True)
         step = 0
+        asked = time.time()
         for k, (images, labels) in enumerate(train_loader):
+            waiting += time.time() - asked    # tempo parado esperando o DataLoader (gargalo de CPU/disco)
             images = images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
             labels = labels.to(device, non_blocking=True)
             with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
                 loss = criterion(model(images).squeeze(1).float(), labels)
             scaler.scale(loss / accumulate).backward()
             losses.append(loss.item())
+            asked = time.time()
             if (k + 1) % accumulate:
                 continue
             scaler.step(optimizer)
@@ -244,15 +261,18 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
             step += 1
             if config.get("max_steps") and step >= config["max_steps"]:
                 break
+            asked = time.time()
+        train_seconds = time.time() - began
         probs = predict(model, val_loader, device)
         val_auroc = auroc(val["label"], probs)
         row = {"epoch": epoch, "train_loss": float(np.mean(losses)), "val_auroc": val_auroc,
-               "seconds": round(time.time() - began, 1), "lr": scheduler.get_last_lr()[0]}
+               "seconds": round(time.time() - began, 1), "train_seconds": round(train_seconds, 1),
+               "data_wait_seconds": round(waiting, 1), "lr": scheduler.get_last_lr()[0]}
         history.append(row)
         print(json.dumps(row), flush=True)
         if log is not None:
             log({"epoca": epoch, "perda_treino": row["train_loss"], "auroc_val": val_auroc, "lr": row["lr"],
-                 "segundos_epoca": row["seconds"]})
+                 "segundos_epoca": row["seconds"], "segundos_esperando_dados": row["data_wait_seconds"]})
         if val_auroc is not None and val_auroc > best:
             best, stale = val_auroc, 0
             torch.save(model.state_dict(), out / "best.pt")
@@ -272,7 +292,7 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     for name, frame in (("test", test), ("extra", extra)):
         if frame is not None and len(frame):
             loader = DataLoader(FundusDataset(frame.assign(label=frame["label"].clip(lower=0)), root,
-                                              transforms(config, False)),
+                                              transforms(config, False), cached),
                                 batch_size=micro, num_workers=workers, pin_memory=device.type == "cuda")
             frame[PREDICTION_COLUMNS].assign(prob=predict(model, loader, device)).to_csv(
                 out / f"{name}_predictions.csv", index=False)

@@ -66,7 +66,7 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 - **Lógica no pacote `macdeg/`, com testes.** Notebooks (se houver) só leem resultados; nada de lógica de
   treino ou métrica neles.
 - Execução: um experimento = um job: `sbatch cluster/experimento.sh [experimento] [--teste|--retomar|--final]`,
-  que chama `python rodar.py` (tarefas uma por vez, análise, envio). Fora do cluster: `python rodar.py --teste`.
+  que chama `python rodar.py` (tarefas divididas entre as GPUs do job, análise, envio). Fora do cluster: `python rodar.py --teste`.
 - Contratos de arquivos (mudar exige atualizar `analysis.py`, `cluster.py` e os testes juntos):
   - `manifest.csv`: uid, sample_id, source, label, label_detail, disease, disease_group, patient_id,
     eye, age, sex, camera, group_id, width, height, image, path.

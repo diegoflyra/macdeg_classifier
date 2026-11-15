@@ -129,5 +129,69 @@ def test_experiment_script_is_valid_bash():
     script = PROJECT / "cluster" / "experimento.sh"
     assert subprocess.run(["bash", "-n", str(script)]).returncode == 0
     text = script.read_text()
-    assert "--partition=short-simple" in text and "--qos=simple" in text and "--gres=gpu:1" in text
+    assert "--partition=short-simple" in text and "--qos=simple" in text and "--gres=gpu:2" in text
     assert "--error=logs/%x_%j.err" in text and "python rodar.py" in text and "trap 'rm -rf" in text
+
+
+def test_pilot_is_one_real_training_and_analysis_handles_it(tiny_dataset, tmp_path, monkeypatch):
+    import macdeg.cluster as cluster
+    from macdeg.analysis import analyze
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": "p", "base": str(tmp_path / "base.yaml")}))
+    batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), pilot=True)
+    lote = json.loads((batch / "lote.json").read_text())
+    assert lote["piloto"] and lote["tarefas"] == [{"id": 0, "configuracao": "p-00", "outer": 0, "inner": 0}]
+    assert "epochs" not in cluster.TEST_OVERRIDES or lote["configuracoes"][0]["config"]["epochs"] == 1  # sem cortes de teste
+    cluster.run_local(batch, str(tiny_dataset))
+    result = analyze(batch, str(tiny_dataset), push=False)
+    assert result["piloto"] and result["configuracoes"]["p-00"]["dobras_externas"] == [0]
+    assert "PILOTO" in (batch / "analise" / "RESUMO.md").read_text()
+
+
+def test_image_cache_gives_the_same_pixels_as_reading_the_jpeg(tiny_dataset, tmp_path, monkeypatch):
+    """O cache só acelera: o tensor que chega ao modelo é idêntico ao da leitura direta do JPEG."""
+    import torch
+    from macdeg import cache
+    from macdeg.train import FundusDataset, transforms
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    manifest = pd.read_csv(tiny_dataset / "manifest.csv")
+    # imagem maior que o tamanho do treino, como no conjunto real (1024 -> 512)
+    big = cv2.resize(cv2.imread(str(tiny_dataset / manifest.loc[0, "image"])), (100, 100))
+    cv2.imwrite(str(tiny_dataset / manifest.loc[0, "image"]), big)
+    config = {"image_size": 48, "augment": None}
+    first = cache.build(tiny_dataset, list(manifest["image"][:20]), 48, workers=2)
+    assert len(first[1]) == 20
+    again = cache.build(tiny_dataset, list(manifest["image"][:10]), 48)           # reaproveita, não refaz
+    assert again == first
+    plain = FundusDataset(manifest, tiny_dataset, transforms(config, False))
+    cached = FundusDataset(manifest, tiny_dataset, transforms(config, False), first)
+    for i in (0, 5, 19, 30):                                   # 30 está fora do cache: lê o JPEG
+        assert torch.equal(plain[i][0], cached[i][0])
+    assert cache.build(tiny_dataset, list(manifest["image"][:21]), 48) == first      # 1 faltando: vem do JPEG
+    grown = cache.build(tiny_dataset, list(manifest["image"][15:40]), 48, workers=1)   # muitas faltando: amplia
+    assert len(grown[1]) == 40 and grown[0] != first[0] and first[0].exists()
+
+
+def test_tasks_are_split_between_two_gpus(tiny_dataset, tmp_path, monkeypatch):
+    """Duas "GPUs" (aqui, dois processos na CPU) dividem as tarefas; o lote termina inteiro."""
+    import macdeg.cluster as cluster
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": "g", "base": str(tmp_path / "base.yaml")}))
+    batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)
+    cluster.run_local(batch, str(tiny_dataset), gpus=["", ""])
+    lote = json.loads((batch / "lote.json").read_text())
+    assert all((cluster.task_dir(batch, t) / "metrics.json").exists() for t in lote["tarefas"])
+    history = pd.read_csv(cluster.task_dir(batch, lote["tarefas"][0]) / "history.csv")
+    assert {"train_seconds", "data_wait_seconds"} <= set(history.columns)
+

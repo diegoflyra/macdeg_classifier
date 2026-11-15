@@ -1,10 +1,13 @@
-"""Roda um experimento inteiro, neste processo: tarefas (uma por vez), análise e envio dos resultados.
+"""Roda um experimento inteiro: tarefas, análise e envio dos resultados.
 
-No cluster, quem chama é o cluster/experimento.sh (um job, uma GPU). No computador, rode direto.
+As tarefas rodam uma por vez neste processo ou, se o job tem várias GPUs (CUDA_VISIBLE_DEVICES), uma por
+GPU ao mesmo tempo. No cluster, quem chama é o cluster/experimento.sh (um job, 2 GPUs). No computador,
+rode direto.
 
     python rodar.py                                   # a referência (configs/experimentos/001_referencia.yaml)
     python rodar.py configs/experimentos/002_x.yaml   # outro experimento
     python rodar.py --teste                           # passada rápida: minutos, números sem valor, nada é enviado
+    python rodar.py --piloto                          # UM treino de verdade (dobra 0): números reais em ~1-2 h
     python rodar.py --retomar ~/macdeg_runs/<lote>    # continua um lote interrompido (pula o que já terminou)
     python rodar.py --final ~/macdeg_runs/<lote> <configuração>   # modelo final (5 dobras) -> Hugging Face
 
@@ -48,6 +51,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("experimento", nargs="?", default=REFERENCIA)
     ap.add_argument("--teste", action="store_true", help="passada rápida; os números não servem")
+    ap.add_argument("--piloto", action="store_true", help="um treino de verdade só (dobra externa 0, interna 0)")
     ap.add_argument("--retomar", type=Path, default=None, help="pasta de um lote já criado")
     ap.add_argument("--final", nargs="+", metavar=("LOTE", "CONFIG"), help="modelo final de configurações de um lote")
     ap.add_argument("--dados", default="~/macdeg_data/dataset_1024", help="pasta do conjunto (com as imagens)")
@@ -61,7 +65,7 @@ def main() -> None:
     elif args.final:
         batch = prepare(None, args.dados, args.teste, final=args.final[1:], from_batch=Path(args.final[0]).expanduser())
     else:
-        batch = prepare(args.experimento, args.dados, args.teste)
+        batch = prepare(args.experimento, args.dados, args.teste, pilot=args.piloto)
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
     RUNS.mkdir(parents=True, exist_ok=True)
     (RUNS / "ultimo_lote.txt").write_text(str(batch))     # o experimento.sh copia os logs do job para cá

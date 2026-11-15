@@ -53,7 +53,10 @@ def outer_predictions(runs: dict) -> tuple[pd.DataFrame, dict]:
     for k in sorted({o for o, _ in runs}):
         inner = {j: r for (o, j), r in runs.items() if o == k}
         oof = pd.concat([r["val"].assign(inner=j) for j, r in inner.items()], ignore_index=True)
-        selection[k] = f2_mean(crossfit(oof, "inner"))
+        # Com várias internas, a nota de seleção usa o limiar das outras internas; com uma só (piloto), o
+        # limiar da própria validação (otimista, mas só para seleção: o teste externo continua honesto).
+        selection[k] = f2_mean(crossfit(oof, "inner")) if oof["inner"].nunique() > 1 else \
+            f2_mean(oof, (oof["prob"] >= best_threshold(oof)).astype(int).to_numpy())
         threshold = best_threshold(oof)
         tests = pd.concat([r["test"] for r in inner.values()], ignore_index=True)
         test = tests.groupby("sample_id", as_index=False).agg(
@@ -127,7 +130,7 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
     runs, missing = collect(batch, lote)
     manifest = _load_manifest(dataset, lote)
     result = {"lote": lote["nome"], "commit": lote["commit"], "assinatura_dados": lote["assinatura_dados"],
-              "teste": lote["teste"], "tarefas_faltando": missing, "analisado": time.strftime("%Y-%m-%d %H:%M"),
+              "teste": lote["teste"], "piloto": lote.get("piloto", False), "tarefas_faltando": missing, "analisado": time.strftime("%Y-%m-%d %H:%M"),
               "configuracoes": {}}
     if lote["final"]:
         result["final"] = {name: final_threshold(r) for name, r in runs.items()}
@@ -220,6 +223,8 @@ def summary_markdown(result: dict) -> str:
              f"- assinatura dos dados: `{result['assinatura_dados']}`", f"- analisado: {result['analisado']}"]
     if result["teste"]:
         lines.append("- **MODO DE TESTE: os números não servem como resultado.**")
+    if result.get("piloto"):
+        lines.append("- **PILOTO: um treino só (dobra externa 0). Números reais, mas de 1/5 do conjunto; IC largo.**")
     if result["tarefas_faltando"]:
         lines.append(f"- tarefas faltando: {len(result['tarefas_faltando'])}")
     if result.get("final"):

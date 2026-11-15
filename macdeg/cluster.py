@@ -82,9 +82,10 @@ def snapshot_code(destination: Path, commit: str) -> None:
 
 
 def prepare(experiment_path: Path, dataset: str | None = None, test: bool = False, final: list[str] | None = None,
-            from_batch: Path | None = None) -> Path:
+            from_batch: Path | None = None, pilot: bool = False) -> Path:
     """Cria a pasta do lote e o lote.json. `final`: nomes de configurações para o treino final (5 dobras
-    externas, sem dobra interna), reaproveitando as configurações de `from_batch`."""
+    externas, sem dobra interna), reaproveitando as configurações de `from_batch`. `pilot`: um treino de
+    verdade só (dobra externa 0, interna 0), para ver números reais em ~1-2 h."""
     info = commit_info()
     if final:
         source = json.loads((from_batch / "lote.json").read_text(encoding="utf-8"))
@@ -93,14 +94,16 @@ def prepare(experiment_path: Path, dataset: str | None = None, test: bool = Fals
     else:
         experiment = yaml.safe_load(Path(experiment_path).read_text(encoding="utf-8"))
         configs, name = expand(experiment), experiment["nome"]
+    if pilot:
+        name = "piloto-" + name
     if test:
         name = "teste-" + name
         for c in configs:
             c["config"].update(TEST_OVERRIDES)
     root = resolve(dataset or configs[0]["config"]["dataset"])
     splits = configs[0]["config"].get("splits", "splits_nested_seed0.csv")
-    outers = TEST_OUTERS if test else list(range(N_OUTER))
-    inners = [None] if final else list(range(N_INNER))
+    outers = [0] if pilot else TEST_OUTERS if test else list(range(N_OUTER))
+    inners = [None] if final else [0] if pilot else list(range(N_INNER))
     tasks = [{"id": i, "configuracao": c["nome"], "outer": k, "inner": j}
              for i, (c, k, j) in enumerate(itertools.product(configs, outers, inners))]
 
@@ -108,7 +111,7 @@ def prepare(experiment_path: Path, dataset: str | None = None, test: bool = Fals
     batch = RUNS / run_name
     (batch / "logs").mkdir(parents=True)
     snapshot_code(batch / "codigo", "HEAD")
-    lote = {"nome": run_name, "experimento": experiment, "teste": test, "final": bool(final),
+    lote = {"nome": run_name, "experimento": experiment, "teste": test, "final": bool(final), "piloto": pilot,
             "lote_de_origem": str(from_batch) if from_batch else None, **info,
             "criado": time.strftime("%Y-%m-%d %H:%M"), "assinatura_dados": dataset_signature(root, splits),
             "splits": splits, "configuracoes": configs, "tarefas": tasks}
@@ -177,10 +180,76 @@ def _wandb(lote: dict, task: dict, config: dict, out: Path, mode: str | None):
     return run.log, (lambda model: run.watch(model, log="all", log_freq=200)), finish
 
 
-def run_local(batch: Path, dataset: str | None = None, wandb_mode: str | None = "disabled") -> None:
-    """Roda as tarefas do lote uma por vez, no próprio processo (dentro do job do cluster ou no computador).
-    Tarefas já concluídas são puladas; uma tarefa interrompida continua do last.pt."""
+def visible_gpus() -> list[str]:
+    """GPUs que o SLURM deu ao job (CUDA_VISIBLE_DEVICES: índices ou UUIDs de fatias MIG). Fora do SLURM,
+    sem a variável, devolve [] e as tarefas rodam no próprio processo."""
+    return [g.strip() for g in os.environ.get("CUDA_VISIBLE_DEVICES", "").split(",") if g.strip()]
+
+
+def run_local(batch: Path, dataset: str | None = None, wandb_mode: str | None = "disabled",
+              gpus: list[str] | None = None) -> None:
+    """Roda as tarefas do lote. Com uma GPU (ou nenhuma), uma por vez neste processo. Com várias, um
+    processo por GPU, cada um pegando a próxima tarefa livre de uma fila comum. Tarefas já concluídas são
+    puladas; uma tarefa interrompida continua do last.pt. O resultado de cada tarefa não depende da GPU
+    (lote efetivo fixo), então dividir as tarefas entre GPUs não muda os números."""
+    batch = Path(batch)
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
-    for task in lote["tarefas"]:
-        print(f"tarefa {task['id'] + 1}/{len(lote['tarefas'])}: {task}", flush=True)
-        run_task(batch, task["id"], dataset, wandb_mode)
+    total = len(lote["tarefas"])
+    pending = [t["id"] for t in lote["tarefas"] if not (task_dir(batch, t) / "metrics.json").exists()]
+    gpus = visible_gpus() if gpus is None else gpus
+    if len(gpus) <= 1 or len(pending) <= 1:
+        for task in lote["tarefas"]:
+            print(f"tarefa {task['id'] + 1}/{total}: {task}", flush=True)
+            run_task(batch, task["id"], dataset, wandb_mode)
+        return
+
+    import multiprocessing as mp
+    context = mp.get_context("spawn")       # CUDA não sobrevive a fork; cada processo começa limpo
+    queue = context.Queue()
+    for task_id in pending:
+        queue.put(task_id)
+    for _ in gpus:
+        queue.put(None)
+    print(f"{len(pending)} tarefas em {len(gpus)} GPUs, em paralelo", flush=True)
+    workers = [context.Process(target=_gpu_worker, args=(str(batch), dataset, wandb_mode, gpu, i, queue, total,
+                                                         max(1, len(os.sched_getaffinity(0)) // len(gpus))))
+               for i, gpu in enumerate(gpus)]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join()
+    failed = [i for i, worker in enumerate(workers) if worker.exitcode]
+    if failed:
+        raise SystemExit(f"tarefa(s) falharam na(s) GPU(s) {failed}; veja o .err. Depois: --retomar {batch}")
+
+
+class _Prefixed:
+    """Saída com o prefixo da GPU em cada linha, para o log das duas GPUs ficar legível."""
+
+    def __init__(self, stream, prefix: str):
+        self.stream, self.prefix, self.line_start = stream, prefix, True
+
+    def write(self, text: str) -> int:
+        out = []
+        for line in text.splitlines(keepends=True):
+            out.append(self.prefix + line if self.line_start else line)
+            self.line_start = line.endswith("\n")
+        self.stream.write("".join(out))
+        return len(text)
+
+    def __getattr__(self, name):            # flush, fileno, isatty... do fluxo original
+        return getattr(self.stream, name)
+
+
+def _gpu_worker(batch: str, dataset: str | None, wandb_mode: str | None, gpu: str, slot: int, queue, total: int,
+                threads: int) -> None:
+    import sys
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu     # antes de qualquer uso de CUDA: este processo só vê esta GPU
+    sys.stdout = _Prefixed(sys.stdout, f"[gpu{slot}] ")
+    sys.stderr = _Prefixed(sys.stderr, f"[gpu{slot}] ")
+    import torch
+    torch.set_num_threads(threads)
+    lote = json.loads((Path(batch) / "lote.json").read_text(encoding="utf-8"))
+    while (task_id := queue.get()) is not None:
+        print(f"tarefa {task_id + 1}/{total}: {lote['tarefas'][task_id]}", flush=True)
+        run_task(Path(batch), task_id, dataset, wandb_mode)
