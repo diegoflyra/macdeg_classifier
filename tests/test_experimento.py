@@ -300,3 +300,26 @@ def test_round2_experiment_file_changes_one_thing_per_variation():
     technical = {"cache"}                                      # não muda o conteúdo do treino
     assert all(len(set(c["mudancas"]) - technical) == 1 for c in configs[1:])
     assert configs[5]["config"]["image_size"] == 1024 and configs[3]["config"]["preprocess"] == "clahe"
+
+
+def test_cache_is_skipped_when_the_disk_is_full(tiny_dataset, tmp_path, monkeypatch):
+    """Disco sem espaço: o cache não é criado e o treino segue lendo os JPEGs (como no nó com /tmp cheio)."""
+    from collections import namedtuple
+    from macdeg import cache
+    from macdeg.train import run
+    Usage = namedtuple("Usage", "total used free")
+    monkeypatch.setattr(cache.shutil, "disk_usage", lambda path: Usage(10**9, 10**9, 10**6))
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    manifest = pd.read_csv(tiny_dataset / "manifest.csv")
+    assert cache.build(tiny_dataset, list(manifest["image"]), 64) is None
+    assert not list((tmp_path / "cache").glob("*.npy"))
+    config = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+              "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None, "limit": 24}
+    run(config, 0, 0, seed=0, out=tmp_path / "t")
+    assert (tmp_path / "t" / "metrics.json").exists()
+
+
+def test_job_script_avoids_the_mig_node_and_checks_disk_space():
+    from macdeg.ambiente import PROJECT
+    text = (PROJECT / "cluster" / "experimento.sh").read_text()
+    assert "--exclude=cluster-node6" in text and "df -Pk" in text and "menos de 5 GB livres" in text

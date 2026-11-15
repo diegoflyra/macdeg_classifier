@@ -16,6 +16,7 @@ import fcntl
 import hashlib
 import json
 import os
+import shutil
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
@@ -94,9 +95,10 @@ def _fill(args) -> list[int]:
 
 
 def build(root: Path, images: list[str], size: int, workers: int | None = None,
-          preprocess: str | None = None) -> tuple[Path, dict[str, int]]:
+          preprocess: str | None = None) -> tuple[Path, dict[str, int]] | None:
     """Garante o cache de `images` (caminhos relativos ao conjunto) em `size` px. Devolve (arquivo .npy,
-    {imagem: linha}). Se já existe um cache com todas essas imagens, só o reaproveita."""
+    {imagem: linha}). Se já existe um cache com todas essas imagens, só o reaproveita. Se o disco não
+    tem espaço, devolve None: o treino lê os JPEGs (mais devagar, mesmos pixels)."""
     folder = folder_for(root)
     folder.mkdir(parents=True, exist_ok=True)
     key = f"{size}px" + (f"-{preprocess}" if preprocess else "")     # um cache por tamanho e pré-processamento
@@ -111,6 +113,12 @@ def build(root: Path, images: list[str], size: int, workers: int | None = None,
                 return folder / index["arquivo"], index["linhas"]
             wanted = sorted(set(wanted) | known)    # amplia: refaz com a união
         # Nome novo a cada conteúdo: quem já lê o arquivo anterior (a outra GPU) não é afetado.
+        need = len(wanted) * size * size * 3
+        free = shutil.disk_usage(folder).free
+        if free < need * 1.05 + 2e9:     # folga de 2 GB para o resto do job
+            print(f"cache: AVISO, sem espaço em {folder} ({free / 1e9:.1f} GB livres, precisa de "
+                  f"{need / 1e9:.1f} GB): o treino vai ler os JPEGs, mais devagar", flush=True)
+            return None
         digest = hashlib.sha1("\n".join(wanted).encode()).hexdigest()[:10]
         data_path = folder / f"{key}-{digest}.npy"
         # Processos auxiliares só compensam com muitas imagens (cada um importa o PyTorch)

@@ -9,6 +9,8 @@
 #   sbatch --gres=gpu:1 --time=02:00:00 cluster/experimento.sh --piloto   # UM treino de verdade
 #   sbatch cluster/experimento.sh --retomar ~/macdeg_runs/<lote>          # continua um lote interrompido
 #   sbatch cluster/experimento.sh --final ~/macdeg_runs/<lote> <configuração>   # modelo final, guardado no lote
+# O nó 6 fica de fora: a A100 dele é dividida em 7 fatias MIG (1/7 da placa cada) e o /tmp dele lotou em
+# 15/11/2026. Os outros nós entregam GPUs inteiras.
 # Os argumentos vão direto para o rodar.py. Saída em logs/macdeg_<job>.out, erros em logs/macdeg_<job>.err.
 #SBATCH --job-name=macdeg
 #SBATCH --partition=short-simple
@@ -18,6 +20,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
 #SBATCH --time=2-00:00:00
+#SBATCH --exclude=cluster-node6
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 
@@ -43,7 +46,20 @@ mkdir -p "$MACDEG_RUNS" logs
 
 # 3. Dados no disco local do nó (rápido); apagados no fim, mesmo se o job falhar ou for cancelado.
 #    A primeira tarefa ainda reduz as imagens ao tamanho do treino uma vez só (macdeg/cache.py).
-TMP="${SLURM_TMPDIR:-/tmp}/$USER-macdeg-$SLURM_JOB_ID"
+#    Usa o disco local com mais espaço livre. O conjunto ocupa ~3,5 GB; o cache, ~17 GB por tamanho e
+#    pré-processamento em 512 px (se não couber, o treino lê os JPEGs, mais devagar).
+BASE="" ; LIVRE=0
+for d in "${SLURM_TMPDIR:-}" /tmp /scratch /local /var/tmp; do
+  { [ -n "$d" ] && [ -d "$d" ] && [ -w "$d" ]; } || continue
+  GB=$(df -Pk "$d" | awk 'NR==2 {print int($4 / 1048576)}')
+  echo "disco local $d: $GB GB livres"
+  if [ "$GB" -gt "$LIVRE" ]; then BASE=$d; LIVRE=$GB; fi
+done
+if [ "$LIVRE" -lt 5 ]; then
+  echo "ERRO: menos de 5 GB livres no disco local do nó $(hostname) (melhor: $BASE, $LIVRE GB). Relance excluindo o nó: sbatch --exclude=$(hostname) ..." >&2
+  exit 1
+fi
+TMP="$BASE/$USER-macdeg-$SLURM_JOB_ID"
 trap 'rm -rf "$TMP"' EXIT TERM INT
 mkdir -p "$TMP"
 echo "copiando o conjunto para $TMP ..."
