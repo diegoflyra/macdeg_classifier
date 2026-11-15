@@ -58,12 +58,16 @@ def load_config(path: Path, overrides: list[str]) -> dict:
 
 
 class FundusDataset(Dataset):
-    """Lê do cache de imagens reduzidas (macdeg.cache) quando há; senão, do JPEG. Os pixels são os mesmos."""
+    """Lê do cache de imagens reduzidas (macdeg.cache) quando há; senão, do JPEG. Os pixels são os mesmos.
+    Cada item: (imagem, rótulo DMRI, alvo auxiliar de DR: 1, 0 ou -1 = desconhecido)."""
 
-    def __init__(self, frame: pd.DataFrame, root: Path, transform, cache: tuple[Path, dict] | None = None):
+    def __init__(self, frame: pd.DataFrame, root: Path, transform, cache: tuple[Path, dict] | None = None,
+                 size: int | None = None, preprocess: str | None = None):
         self.paths = [str(root / p) for p in frame["image"]]
         self.labels = frame["label"].to_numpy(np.float32)
+        self.aux = dr_target(frame)
         self.transform = transform
+        self.size, self.preprocess = size, preprocess
         self.cache_path, lines = cache or (None, {})
         self.rows = [lines.get(p, -1) for p in frame["image"]]
         self._data = None                       # aberto em cada processo do DataLoader (mmap)
@@ -79,8 +83,40 @@ class FundusDataset(Dataset):
             image = np.array(self._data[row])
         else:
             image = image_cache.read_rgb(self.paths[index])
+            if self.preprocess:                 # o mesmo que o cache faz: reduz, depois pré-processa
+                image = image_cache.prepare(image, self.size, self.preprocess)
         tensor = torch.from_numpy(image).permute(2, 0, 1)
-        return self.transform(tensor), self.labels[index]
+        return self.transform(tensor), self.labels[index], self.aux[index]
+
+
+DR = "retinopatia_diabetica"
+
+
+def has_disease(frame: pd.DataFrame, name: str) -> np.ndarray:
+    """A imagem tem a doença `name` entre as suas categorias (coluna disease, separada por "|")?"""
+    if "disease" not in frame:
+        return np.zeros(len(frame), bool)
+    return frame["disease"].fillna("").astype(str).str.split("|").apply(lambda parts: name in parts).to_numpy()
+
+
+def dr_target(frame: pd.DataFrame) -> np.ndarray:
+    """Alvo da cabeça auxiliar: 1 = "sem DMRI" com retinopatia diabética, 0 = outro "sem DMRI" (normal ou
+    outra doença), -1 = desconhecido (olhos com DMRI: as bases não dizem se também têm DR; drusas)."""
+    target = np.full(len(frame), -1.0, np.float32)
+    negative = frame["label"].to_numpy() == 0
+    target[negative] = has_disease(frame, DR)[negative].astype(np.float32)
+    return target
+
+
+def sample_weights(frame: pd.DataFrame, oversample: dict | None) -> np.ndarray | None:
+    """Peso de sorteio de cada imagem de treino: `oversample` = {doença: fator}. Ex.: {retinopatia_diabetica: 3}
+    faz cada olho com DR aparecer, em média, 3 vezes mais por época. O conjunto não muda, só o sorteio."""
+    if not oversample:
+        return None
+    weights = np.ones(len(frame))
+    for name, factor in oversample.items():
+        weights[has_disease(frame, name)] *= float(factor)
+    return weights
 
 
 def transforms(config: dict, train: bool):
@@ -92,7 +128,7 @@ def transforms(config: dict, train: bool):
         if aug.get("hflip", True):
             steps.append(v2.RandomHorizontalFlip())
         if aug.get("rotate_deg", 0):
-            steps.append(v2.RandomRotation(aug["rotate_deg"]))
+            steps.append(v2.RandomRotation(aug["rotate_deg"], interpolation=v2.InterpolationMode.BILINEAR))
         if aug.get("color", 0):
             steps.append(v2.ColorJitter(brightness=aug["color"], contrast=aug["color"]))
     else:
@@ -101,16 +137,21 @@ def transforms(config: dict, train: bool):
     return v2.Compose(steps)
 
 
-def build_model(name: str, pretrained: bool) -> nn.Module:
+def build_model(name: str, pretrained: bool, outputs: int = 1) -> nn.Module:
+    """Saída 0 = logit de DMRI (a única usada em métricas e limiar). Com a cabeça auxiliar, saída 1 = DR."""
     import torchvision.models as tvm
     if name in ("resnet18", "resnet34", "resnet50"):
         weights = {"resnet18": tvm.ResNet18_Weights.IMAGENET1K_V1, "resnet34": tvm.ResNet34_Weights.IMAGENET1K_V1,
                    "resnet50": tvm.ResNet50_Weights.IMAGENET1K_V2}[name] if pretrained else None
         model = getattr(tvm, name)(weights=weights)
-        model.fc = nn.Linear(model.fc.in_features, 1)
+        model.fc = nn.Linear(model.fc.in_features, outputs)
         return model
     import timm
-    return timm.create_model(name, pretrained=pretrained, num_classes=1)
+    return timm.create_model(name, pretrained=pretrained, num_classes=outputs)
+
+
+def outputs_for(config: dict) -> int:
+    return 2 if config.get("aux_dr") else 1
 
 
 PREDICTION_COLUMNS = ["sample_id", "source", "group_id", "label", "kind", "disease_group"]
@@ -174,10 +215,10 @@ def micro_batch(config: dict, device: torch.device) -> int:
 def predict(model, loader, device) -> np.ndarray:
     model.eval()
     probs = []
-    for images, _ in loader:
+    for images, *_ in loader:
         with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
             logits = model(images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last))
-        probs.append(torch.sigmoid(logits.float()).squeeze(1).cpu().numpy())
+        probs.append(torch.sigmoid(logits[:, 0].float()).cpu().numpy())
     return np.concatenate(probs)
 
 
@@ -201,19 +242,30 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     cached = None
     if config.get("cache", True):   # mesmos pixels, sem decodificar 1024 px a cada época (macdeg.cache)
         frames = [f for f in (train, val, test, extra) if f is not None]
-        cached = image_cache.build(root, [i for f in frames for i in f["image"]], config["image_size"])
+        cached = image_cache.build(root, [i for f in frames for i in f["image"]], config["image_size"],
+                                   preprocess=config.get("preprocess"))
     torch.backends.cudnn.benchmark = True     # entrada de tamanho fixo: o cuDNN escolhe o algoritmo mais rápido
     micro = micro_batch(config, device)
     accumulate = config["batch_size"] // micro
     print(f"lote efetivo {config['batch_size']} = {accumulate} x {micro} imagens"
           + (f" | GPU: {torch.cuda.get_device_name(device)}" if device.type == "cuda" else ""), flush=True)
-    train_loader = DataLoader(FundusDataset(train, root, transforms(config, True), cached), batch_size=micro,
-                              shuffle=True, num_workers=workers, pin_memory=device.type == "cuda", drop_last=True,
+    dataset = lambda frame, train_mode: FundusDataset(frame, root, transforms(config, train_mode), cached,
+                                                      config["image_size"], config.get("preprocess"))
+    weights = sample_weights(train, config.get("oversample"))
+    sampler = None
+    if weights is not None:     # sorteio com reposição, mesmo número de imagens por época
+        sampler = torch.utils.data.WeightedRandomSampler(weights, num_samples=len(train), replacement=True,
+                                                         generator=torch.Generator().manual_seed(seed))
+        print(f"sorteio ponderado: {config['oversample']} ({int((weights > 1).sum())} imagens com peso > 1)")
+    train_loader = DataLoader(dataset(train, True), batch_size=micro, sampler=sampler,
+                              shuffle=sampler is None, num_workers=workers, pin_memory=device.type == "cuda", drop_last=True,
                               persistent_workers=workers > 0)
-    val_loader = DataLoader(FundusDataset(val, root, transforms(config, False), cached), batch_size=micro,
+    val_loader = DataLoader(dataset(val, False), batch_size=micro,
                             num_workers=workers, pin_memory=device.type == "cuda", persistent_workers=workers > 0)
 
-    model = build_model(config["model"], config.get("pretrained", True)).to(device).to(memory_format=torch.channels_last)
+    model = build_model(config["model"], config.get("pretrained", True), outputs_for(config)).to(device).to(
+        memory_format=torch.channels_last)
+    aux_weight = float(config.get("aux_dr") or 0)    # peso da perda auxiliar de DR (0 = sem cabeça auxiliar)
     if on_model is not None:
         on_model(model)
     positives = float(train["label"].sum())
@@ -243,12 +295,19 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
         optimizer.zero_grad(set_to_none=True)
         step = 0
         asked = time.time()
-        for k, (images, labels) in enumerate(train_loader):
+        for k, (images, labels, aux) in enumerate(train_loader):
             waiting += time.time() - asked    # tempo parado esperando o DataLoader (gargalo de CPU/disco)
             images = images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
             labels = labels.to(device, non_blocking=True)
             with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
-                loss = criterion(model(images).squeeze(1).float(), labels)
+                logits = model(images).float()
+                loss = criterion(logits[:, 0], labels)
+                if aux_weight:      # só nos olhos em que se sabe se há DR (os "sem DMRI")
+                    aux = aux.to(device, non_blocking=True)
+                    known = aux >= 0
+                    if known.any():
+                        loss = loss + aux_weight * nn.functional.binary_cross_entropy_with_logits(
+                            logits[known, 1], aux[known])
             scaler.scale(loss / accumulate).backward()
             losses.append(loss.item())
             asked = time.time()
@@ -291,8 +350,7 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     predictions.to_csv(out / "val_predictions.csv", index=False)
     for name, frame in (("test", test), ("extra", extra)):
         if frame is not None and len(frame):
-            loader = DataLoader(FundusDataset(frame.assign(label=frame["label"].clip(lower=0)), root,
-                                              transforms(config, False), cached),
+            loader = DataLoader(dataset(frame.assign(label=frame["label"].clip(lower=0)), False),
                                 batch_size=micro, num_workers=workers, pin_memory=device.type == "cuda")
             frame[PREDICTION_COLUMNS].assign(prob=predict(model, loader, device)).to_csv(
                 out / f"{name}_predictions.csv", index=False)

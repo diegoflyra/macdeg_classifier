@@ -9,9 +9,10 @@ rode direto.
     python rodar.py --teste                           # passada rápida: minutos, números sem valor, nada é enviado
     python rodar.py --piloto                          # UM treino de verdade (dobra 0): números reais em ~1-2 h
     python rodar.py --retomar ~/macdeg_runs/<lote>    # continua um lote interrompido (pula o que já terminou)
-    python rodar.py --final ~/macdeg_runs/<lote> <configuração>   # modelo final (5 dobras) -> Hugging Face
+    python rodar.py --final ~/macdeg_runs/<lote> <configuração>   # modelo final (5 dobras), guardado no lote
 
-Resultados: ~/macdeg_runs/<lote>/ ; GitHub (branch resultados), W&B (curvas) e, no --final, Hugging Face.
+Resultados: ~/macdeg_runs/<lote>/ ; GitHub (branch resultados) e W&B (curvas). No --final, os pesos ficam
+em <lote>/modelo/; o Hugging Face é à mão: python -m macdeg.hub publicar <lote> <configuração>.
 """
 from __future__ import annotations
 

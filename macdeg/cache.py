@@ -44,6 +44,25 @@ def resize(image: np.ndarray, size: int) -> np.ndarray:
     return v2.functional.resize(tensor, size, antialias=True).permute(1, 2, 0).contiguous().numpy()
 
 
+PREPROCESS = (None, "clahe")
+
+
+def clahe(image: np.ndarray) -> np.ndarray:
+    """Equalização local de contraste (CLAHE) só na luminância (L do LAB), cores preservadas. Uniformiza
+    iluminação e contraste entre câmeras. Grade de 8 x 8 blocos e limite 2,0, os valores usuais em retina."""
+    lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+    lab[..., 0] = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(lab[..., 0])
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+
+def prepare(image: np.ndarray, size: int, preprocess: str | None = None) -> np.ndarray:
+    """Imagem RGB original -> no tamanho do treino, com o pré-processamento (se houver) depois de reduzir."""
+    if preprocess not in PREPROCESS:
+        raise ValueError(f"preprocess desconhecido: {preprocess!r} (opções: {PREPROCESS})")
+    small = resize(image, size)
+    return clahe(small) if preprocess == "clahe" else small
+
+
 def folder_for(root: Path) -> Path:
     return Path(os.environ.get("MACDEG_CACHE") or Path(root) / "cache").expanduser()
 
@@ -60,13 +79,13 @@ def _lock(path: Path):
 
 def _fill(args) -> list[int]:
     """Processo auxiliar: reduz um pedaço das imagens e grava direto no .npy (mmap)."""
-    data_path, root, size, chunk = args
+    data_path, root, size, preprocess, chunk = args
     cv2.setNumThreads(1)
     torch.set_num_threads(1)
     data = np.load(data_path, mmap_mode="r+")
     done = []
     for row, image in chunk:
-        small = resize(read_rgb(str(Path(root) / image)), size)
+        small = prepare(read_rgb(str(Path(root) / image)), size, preprocess)
         if small.shape == (size, size, 3):
             data[row] = small
             done.append(row)
@@ -74,14 +93,16 @@ def _fill(args) -> list[int]:
     return done
 
 
-def build(root: Path, images: list[str], size: int, workers: int | None = None) -> tuple[Path, dict[str, int]]:
+def build(root: Path, images: list[str], size: int, workers: int | None = None,
+          preprocess: str | None = None) -> tuple[Path, dict[str, int]]:
     """Garante o cache de `images` (caminhos relativos ao conjunto) em `size` px. Devolve (arquivo .npy,
     {imagem: linha}). Se já existe um cache com todas essas imagens, só o reaproveita."""
     folder = folder_for(root)
     folder.mkdir(parents=True, exist_ok=True)
-    index_path = folder / f"{size}px.json"
+    key = f"{size}px" + (f"-{preprocess}" if preprocess else "")     # um cache por tamanho e pré-processamento
+    index_path = folder / f"{key}.json"
     wanted = sorted(set(images))
-    with _lock(folder / f"{size}px.lock"):
+    with _lock(folder / f"{key}.lock"):
         if index_path.exists():
             index = json.loads(index_path.read_text())
             known = set(index["pedidas"])
@@ -91,7 +112,7 @@ def build(root: Path, images: list[str], size: int, workers: int | None = None) 
             wanted = sorted(set(wanted) | known)    # amplia: refaz com a união
         # Nome novo a cada conteúdo: quem já lê o arquivo anterior (a outra GPU) não é afetado.
         digest = hashlib.sha1("\n".join(wanted).encode()).hexdigest()[:10]
-        data_path = folder / f"{size}px-{digest}.npy"
+        data_path = folder / f"{key}-{digest}.npy"
         # Processos auxiliares só compensam com muitas imagens (cada um importa o PyTorch)
         workers = workers or (max(1, len(os.sched_getaffinity(0))) if len(wanted) >= 1000 else 1)
         print(f"cache: reduzindo {len(wanted)} imagens para {size} px com {workers} processos...", flush=True)
@@ -100,11 +121,11 @@ def build(root: Path, images: list[str], size: int, workers: int | None = None) 
         rows = list(enumerate(wanted))
         chunks = [rows[i::workers * 4] for i in range(min(len(rows), workers * 4))]
         if workers == 1:
-            done = [r for c in chunks for r in _fill((tmp, root, size, c))]
+            done = [r for c in chunks for r in _fill((tmp, root, size, preprocess, c))]
         else:
             import multiprocessing as mp      # fork: não reimporta o PyTorch (caro em disco de rede)
             with ProcessPoolExecutor(workers, mp_context=mp.get_context("fork")) as pool:
-                done = [r for part in pool.map(_fill, [(tmp, root, size, c) for c in chunks]) for r in part]
+                done = [r for part in pool.map(_fill, [(tmp, root, size, preprocess, c) for c in chunks]) for r in part]
         tmp.replace(data_path)
         lines = {wanted[r]: r for r in sorted(done)}
         index_path.write_text(json.dumps({"tamanho": size, "arquivo": data_path.name, "pedidas": wanted,

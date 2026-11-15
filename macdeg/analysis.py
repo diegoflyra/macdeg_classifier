@@ -97,6 +97,40 @@ def score_distribution(predictions: pd.DataFrame, extra: pd.DataFrame | None) ->
     return pd.DataFrame(rows)
 
 
+def discordances(reference: pd.DataFrame, candidate: pd.DataFrame, manifest: pd.DataFrame | None) -> list[dict]:
+    """Onde a configuração e a referência discordam, imagem a imagem (mesmas imagens, cada uma com o seu
+    limiar escolhido fora da dobra). Responde "que diagnósticos se ganham ou se perdem com a mudança?":
+    - DMRI: detectada só pela referência (perdida com a mudança), só pela nova (ganha) ou por nenhuma;
+    - sem DMRI: falso positivo só da referência (corrigido) ou só da nova (criado).
+    Por base, por estágio da DMRI (quando a base informa, ex.: HYAMD precoce x intermediária/tardia) e,
+    nos "sem DMRI", por doença. Só contagens."""
+    joined = reference[["sample_id", "source", "label", "kind", "disease_group", "pred"]].merge(
+        candidate[["sample_id", "pred"]], on="sample_id", suffixes=("_ref", "_nova"), validate="one_to_one")
+    if manifest is not None and "label_detail" in manifest:
+        joined["estagio"] = joined["sample_id"].map(manifest.drop_duplicates("sample_id").set_index("sample_id")["label_detail"])
+    rows = []
+
+    def add(group: str, value: str, part: pd.DataFrame) -> None:
+        dmri, negative = part[part["label"] == 1], part[part["label"] == 0]
+        ref, new = dmri["pred_ref"] == 1, dmri["pred_nova"] == 1
+        fp_ref, fp_new = negative["pred_ref"] == 1, negative["pred_nova"] == 1
+        rows.append({"grupo": group, "valor": value, "n_dmri": len(dmri), "dmri_so_referencia": int((ref & ~new).sum()),
+                     "dmri_so_nova": int((~ref & new).sum()), "dmri_nenhuma": int((~ref & ~new).sum()),
+                     "n_sem_dmri": len(negative), "falso_positivo_so_referencia": int((fp_ref & ~fp_new).sum()),
+                     "falso_positivo_so_nova": int((~fp_ref & fp_new).sum())})
+
+    add("geral", "todas", joined)
+    for name, part in joined.groupby(family(joined["source"])):
+        add("base", name, part)
+    if "estagio" in joined:
+        for name, part in joined[joined["label"] == 1].groupby(joined["estagio"].fillna("?")):
+            add("estagio_dmri", name, part)
+    negatives = joined[joined["label"] == 0]
+    for name, part in negatives.groupby(negatives["disease_group"].fillna("normal")):
+        add("doenca", name, part)
+    return rows
+
+
 def _load_manifest(dataset: str | None, lote: dict) -> pd.DataFrame | None:
     try:
         root = resolve(dataset or lote["configuracoes"][0]["config"]["dataset"])
@@ -134,11 +168,12 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
               "configuracoes": {}}
     if lote["final"]:
         result["final"] = {name: final_threshold(r) for name, r in runs.items()}
+        from macdeg.hub import export_final    # pesos ficam no cluster; o HF é manual (python -m macdeg.hub)
+        for name in runs:
+            folder = export_final(batch, name, result["final"][name])
+            result["final"][name]["modelo"] = str(folder)
+            shutil.copy(folder / "config.json", out / f"modelo_{name}.json")   # cartão, sem pesos, vai ao GitHub
         _write(out, lote, result, None, None)
-        if secret("HF_TOKEN") and not lote["teste"]:
-            from macdeg.hub import upload_final
-            for name in runs:
-                result["final"][name]["hugging_face"] = upload_final(batch, name, result["final"][name])
         return _publish(batch, out, lote, result, push)
 
     outer, selection, histories = {}, {}, []
@@ -170,6 +205,7 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
     for name, preds in outer.items():
         if reference is not None and name != reference_name:
             result["configuracoes"][name]["veredito"] = paired_verdict(reference, preds)
+            result["configuracoes"][name]["discordancias"] = discordances(reference, preds, manifest)
 
     if len(outer) > 1:  # resultado aninhado: em cada dobra externa, a melhor configuração pela validação interna
         folds = sorted(set.intersection(*[set(s) for s in selection.values()]))
@@ -209,6 +245,9 @@ def _write(out: Path, lote: dict, result: dict, outer: dict | None, histories: l
         for name, preds in outer.items():
             preds.to_csv(out / f"previsoes_externas_{name}.csv", index=False)
         ranking(result).to_csv(out / "ranking.csv", index=False)
+        rows = [{"configuracao": n, **d} for n, r in result["configuracoes"].items() for d in r.get("discordancias", [])]
+        if rows:
+            pd.DataFrame(rows).to_csv(out / "discordancias.csv", index=False)
     if histories:
         pd.concat(histories, ignore_index=True).to_csv(out / "historico.csv", index=False)
     (out / "RESUMO.md").write_text(summary_markdown(result), encoding="utf-8")
@@ -231,7 +270,8 @@ def summary_markdown(result: dict) -> str:
         lines += ["", "## Treino final", ""]
         for name, f in result["final"].items():
             lines.append(f"- {name}: limiar {f['limiar']:.4f}, F2 médio por base fora da dobra "
-                         f"{_fmt(f['f2_media_bases_fora_da_dobra'])}")
+                         f"{_fmt(f['f2_media_bases_fora_da_dobra'])}; pesos em `{f.get('modelo', '—')}` "
+                         f"(cartão: `modelo_{name}.json`; publicar: `python -m macdeg.hub publicar <lote> {name}`)")
         return "\n".join(lines) + "\n"
     lines += ["", f"Referência: `{result.get('referencia')}`", "",
               "| configuração | mudanças | F2 médio por base [IC95] | AUROC | sens. | esp. normais | esp. outras | régua origem | veredito |",
@@ -254,6 +294,15 @@ def summary_markdown(result: dict) -> str:
                   "| tipo | n | p10 | p50 | p90 | acima do limiar |", "|---|---|---|---|---|---|"]
         for d in r["distribuicao_notas"]:
             lines.append(f"| {d['tipo']} | {d['n']} | {d['p10']} | {d['p50']} | {d['p90']} | {d['acima_do_limiar']} |")
+        if r.get("discordancias"):
+            lines += ["", "Discordâncias com a referência (mesmas imagens). DMRI: só a referência detectou (perdida) / "
+                      "só esta detectou (ganha); sem DMRI: falso positivo só da referência (corrigido) / só desta (criado):",
+                      "", "| grupo | valor | DMRI | perdidas | ganhas | nenhuma detectou | sem DMRI | FP corrigidos | FP criados |",
+                      "|---|---|---|---|---|---|---|---|---|"]
+            for d in r["discordancias"]:
+                lines.append(f"| {d['grupo']} | {d['valor']} | {d['n_dmri']} | {d['dmri_so_referencia']} | {d['dmri_so_nova']} "
+                             f"| {d['dmri_nenhuma']} | {d['n_sem_dmri']} | {d['falso_positivo_so_referencia']} "
+                             f"| {d['falso_positivo_so_nova']} |")
         if r.get("especificidade_por_doenca"):
             lines += ["", "Especificidade por doença: " + ", ".join(
                 f"{g} {v['especificidade']:.2f} (n={v['n']})" for g, v in r["especificidade_por_doenca"].items())]

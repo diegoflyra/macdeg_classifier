@@ -50,6 +50,34 @@ Só agregados, sem IDs. Contexto e justificativas completas: `docs/proposta.md`.
 - ADAM: cadastro feito; pesquisa não comercial; publicação científica (inclusive relatório técnico e
   apresentação) exige aprovação por e-mail dos organizadores; resultados (modelos) pertencem ao participante.
 
+## Rodada 2 e modelo final (15/11/2026)
+
+Resultado da referência (`referencia-20261112-1618`): F2 médio por base 0,770 [0,749; 0,789], AUROC 0,967.
+Pontos fracos: especificidade 0,43 nos olhos com retinopatia diabética (HYAMD: AUROC 0,77), ODIR com F2
+0,65, melhor época cedo (2-6, sobreajuste) e limiar variando entre as dobras (0,18 a 0,63).
+
+- **Olho com DMRI e outra doença (inclusive DR) é positivo.** Já era o comportamento dos leitores das
+  bases; registrado como decisão (consistente com a literatura: as lesões de uma não anulam a outra).
+- **Uma mudança por variação** (`configs/experimentos/002_rodada2.yaml`): A augmentation, B olhos com DR
+  sorteados 3x mais (`oversample`), C CLAHE (`preprocess: clahe`), D cabeça auxiliar de DR (`aux_dr`),
+  E 1024 px. As que ganharem no veredito pareado se combinam na rodada 3. Arquitetura (EfficientNet,
+  RETFound, FLAIR) fica para depois.
+- **A referência é retreinada dentro da rodada** (`rodada2-00`), com o mesmo código das variações. Ela
+  também serve para conferir que a otimização de velocidade não mudou o resultado da referência antiga.
+- **Alvo da cabeça de DR:** 1 nos "sem DMRI" com DR, 0 nos outros "sem DMRI", desconhecido (fora da
+  perda) nos olhos com DMRI, porque as bases não dizem se eles também têm DR.
+- **Discordâncias pareadas** (`discordancias.csv` e o RESUMO): DMRI detectada só pela referência,
+  só pela variação ou por nenhuma, e falsos positivos corrigidos ou criados, por base, estágio e doença.
+  Responde "que diagnósticos se perdem em 512 px?" melhor que o F2 sozinho.
+- **FLAIR:** pré-treinado com textos de diagnóstico de bases que usamos como teste (ODIR, RFMiD,
+  BRSET). Se for usado, a avaliação nessas bases fica otimista. Decisão adiada para a rodada de arquitetura.
+- **Modelo final:** o `--final` exporta o ensemble para `<lote>/modelo/<configuração>/` (safetensors
+  float16 + cartão com a origem e as métricas; o cartão vai ao GitHub). O Hugging Face é manual
+  (`python -m macdeg.hub publicar`).
+- Leitura crítica do levantamento bibliográfico feito com o Gemini (fora do repositório): vários números
+  não se confirmaram nas fontes (ex.: um artigo de OCT citado como de retinografia); só entram no texto
+  referências conferidas.
+
 ## Pré-processamento por ROI e auditoria (HYAMD, suspenso em 11/11/2026)
 
 Desenvolvido antes da mudança para o conjunto multibase. Fica disponível para voltar como experimento

@@ -16,22 +16,33 @@ convidar veem) ou públicos. Tudo aqui é privado.
 
 Pronto: não é preciso criar o repositório à mão.
 
-## O que acontece quando um modelo é publicado
+## Do treino final ao Hugging Face (em dois passos)
 
-`python -m macdeg.cluster final <lote analisado> <configuração>` treina a configuração nas 5 dobras
-externas e, no fim, a análise:
+**1. Treino final (no cluster):**
+`sbatch cluster/experimento.sh --final ~/macdeg_runs/<lote analisado> <configuração>` treina a
+configuração nas 5 dobras externas. No fim, a análise **exporta** o ensemble, sem enviar nada:
+
+    ~/macdeg_runs/<lote>-final-<data>/modelo/<configuração>/
+      dobra0..4.safetensors   os 5 modelos, em float16 (~47 MB cada)
+      config.json             cartão: lote de origem, commit, assinatura dos dados, arquitetura, tamanho
+                              da imagem, normalização, limiar e métricas da validação cruzada aninhada
+
+O cartão (sem os pesos) vai também para a branch `resultados` do GitHub, em
+`resultados/<lote final>/modelo_<configuração>.json`: é o registro de qual modelo foi o melhor e de
+onde ele veio. Os pesos ficam só no cluster (cota de 100 GB do `$HOME`).
+
+Os pesos estão em `safetensors`, não em `joblib`/`pickle`. É o formato padrão para redes do PyTorch,
+não executa código ao abrir e é o que o Hugging Face espera.
+
+**2. Publicar, quando quiser (no cluster, com `HF_TOKEN` no `.env`):**
+`python -m macdeg.hub publicar ~/macdeg_runs/<lote final> <configuração>`
 
 1. cria (se ainda não existir) o repositório **privado** `<seu-usuário>/macdeg_classifier`;
-2. envia a pasta `<configuração>/` com os 5 modelos (`dobra0..4.safetensors`, em float16, ~47 MB cada)
-   e um `config.json` com arquitetura, tamanho da imagem, normalização, **limiar**, commit, assinatura
-   dos dados e as métricas da validação cruzada aninhada;
+2. envia a pasta `<configuração>/` (os 5 modelos e o `config.json`);
 3. atualiza o `README.md` e o `ranking.json` do repositório: a tabela das configurações publicadas, **do
    pior para o melhor** pelo F2 médio por base.
 
-Só os modelos finais de poucas configurações vão para o HF (~235 MB cada): os 20 modelos internos de
-cada configuração ficam no cluster. O plano gratuito tem espaço privado limitado, então publique só o
-que valer a pena.
-
+O plano gratuito tem espaço privado limitado (~235 MB por configuração): publique só o que valer a pena.
 Nada de imagens, previsões por imagem ou dados de paciente vai para o HF.
 
 ## Usar um modelo publicado
@@ -39,7 +50,8 @@ Nada de imagens, previsões por imagem ou dados de paciente vai para o HF.
 ```python
 import cv2
 from macdeg.hub import load_ensemble
-modelo = load_ensemble("<seu-usuário>/macdeg_classifier", "referencia-00")   # baixa só aquela pasta
+modelo = load_ensemble("<seu-usuário>/macdeg_classifier", "referencia-00")   # do HF (baixa só aquela pasta)
+modelo = load_ensemble("~/macdeg_runs/<lote final>", "referencia-00")          # ou da pasta local, no cluster
 prob = modelo.predict(cv2.imread("retinografia.jpg"))
 print("DMRI" if prob >= modelo.threshold else "sem DMRI", round(prob, 3))
 ```

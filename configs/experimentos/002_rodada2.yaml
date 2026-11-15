@@ -1,0 +1,25 @@
+# Experimento 002: cada variação muda UMA coisa em relação à referência (ResNet-50, 512 px, sem
+# augmentation). Nada é combinado aqui: as que ganharem no veredito pareado se juntam na rodada 003.
+#
+#   rodada2-00  a referência, treinada de novo com o código atual (é contra ela que as outras são
+#               comparadas: mesmo código, mesmas dobras). Comparada à referência antiga
+#               (referencia-20261112-1618), também confere que a otimização de velocidade não mudou o resultado.
+#   rodada2-01  A: augmentation leve                 -> o sobreajuste (melhor época 2-6) está limitando?
+#   rodada2-02  B: olhos com DR sorteados 3x mais    -> dá para reduzir a confusão DR x DMRI?
+#   rodada2-03  C: CLAHE (contraste local)           -> uniformizar as câmeras ajuda (ODIR)?
+#   rodada2-04  D: cabeça auxiliar de DR (peso 0,5)  -> ensinar DR explicitamente separa melhor?
+#   rodada2-05  E: 1024 px                           -> perdemos diagnósticos ao reduzir para 512?
+#                  (cache: false só porque o cache em 1024 teria ~63 GB; não muda os pixels)
+#
+# Custo estimado: ~3 h de GPU por configuração em 512 px e ~12 h na de 1024 px: ~27 h de GPU, ~14 h com
+# as 2 GPUs do job (estimativa; o tempo real sai no log e no W&B).
+nome: rodada2
+base: configs/train/baseline.yaml
+grade: {}
+variacoes:
+  - {augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}}
+  - {oversample: {retinopatia_diabetica: 3}}
+  - {preprocess: clahe}
+  - {aux_dr: 0.5}
+  - {image_size: 1024, cache: false}
+referencia: null

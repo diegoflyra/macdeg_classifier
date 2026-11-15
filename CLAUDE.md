@@ -89,7 +89,8 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 - **GitHub:** a branch órfã `resultados` é escrita **só pelo pipeline** (`macdeg.ambiente.push_results`).
   Não faça commits manuais nela. Trabalho de código em branches próprias, com PR para `main`.
 - **Hugging Face:** repositório **privado** `macdeg_classifier` (tipo model), só modelos finais de poucas
-  configurações (`macdeg/hub.py`, `docs/huggingface.md`). Torná-lo público é decisão dos donos.
+  configurações, enviados à mão (`python -m macdeg.hub publicar`); o `--final` só exporta para o lote
+  (`macdeg/hub.py`, `docs/huggingface.md`). Torná-lo público é decisão dos donos.
 - Notebooks entram na `main` sem saídas (filtro `scripts/nb_clean`). Na branch `resultados` vão os logs
   (texto) de cada lote, nunca imagens.
 - Não faça commit, push ou PR a menos que a pessoa responsável peça.

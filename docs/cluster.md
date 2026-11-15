@@ -115,4 +115,6 @@ começa com `[gpu0]` ou `[gpu1]`. Com `--gres=gpu:1` antes do script, roda uma t
 ## Publicar o modelo final de uma configuração
 
 `sbatch cluster/experimento.sh --final ~/macdeg_runs/<lote analisado> <configuração>` treina as 5 dobras
-externas dessa configuração e a análise envia o ensemble, privado, ao Hugging Face (ver `docs/huggingface.md`).
+externas dessa configuração e guarda o ensemble em `<lote final>/modelo/<configuração>/` (o cartão vai ao
+GitHub). Publicar no Hugging Face é um passo separado: `python -m macdeg.hub publicar <lote final> <configuração>`
+(ver `docs/huggingface.md`).

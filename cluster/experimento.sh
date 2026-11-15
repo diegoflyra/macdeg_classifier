@@ -8,7 +8,7 @@
 #   sbatch -p debug --qos=complex --time=00:30:00 cluster/experimento.sh --teste       # teste rápido
 #   sbatch --gres=gpu:1 --time=02:00:00 cluster/experimento.sh --piloto   # UM treino de verdade
 #   sbatch cluster/experimento.sh --retomar ~/macdeg_runs/<lote>          # continua um lote interrompido
-#   sbatch cluster/experimento.sh --final ~/macdeg_runs/<lote> <configuração>   # modelo final -> HF
+#   sbatch cluster/experimento.sh --final ~/macdeg_runs/<lote> <configuração>   # modelo final, guardado no lote
 # Os argumentos vão direto para o rodar.py. Saída em logs/macdeg_<job>.out, erros em logs/macdeg_<job>.err.
 #SBATCH --job-name=macdeg
 #SBATCH --partition=short-simple
