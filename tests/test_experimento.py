@@ -323,3 +323,45 @@ def test_job_script_avoids_the_mig_node_and_checks_disk_space():
     from macdeg.ambiente import PROJECT
     text = (PROJECT / "cluster" / "experimento.sh").read_text()
     assert "--exclude=cluster-node6" in text and "df -Pk" in text and "menos de 5 GB livres" in text
+
+
+def test_two_jobs_share_a_batch_without_training_the_same_task(tiny_dataset, tmp_path, monkeypatch, capsys):
+    """Segundo job no mesmo lote (--retomar --do-fim): começa pela última tarefa, pula a que outro job marcou
+    como em andamento, retoma marca abandonada e deixa a análise para quem terminar por último."""
+    import os
+    import sys
+    import time
+    import macdeg.cluster as cluster
+    import rodar
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    monkeypatch.setattr(rodar, "RUNS", tmp_path / "runs")
+    monkeypatch.setattr(rodar, "load_dotenv", lambda *a, **k: None)
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": "d", "base": str(tmp_path / "base.yaml")}))
+    batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)
+    lote = json.loads((batch / "lote.json").read_text())
+    busy, abandoned = (cluster.task_dir(batch, t) for t in lote["tarefas"][:2])
+    for folder in (busy, abandoned):
+        folder.mkdir(parents=True)
+        (folder / "em_andamento").write_text("outro job")
+    old = time.time() - cluster.STALE_SECONDS - 60
+    os.utime(abandoned / "em_andamento", (old, old))
+
+    monkeypatch.setattr(sys, "argv", ["rodar.py", "--teste", "--retomar", str(batch), "--do-fim",
+                                      "--dados", str(tiny_dataset)])
+    rodar.main()
+    out = capsys.readouterr().out
+    order = [int(line.split()[1].split("/")[0]) for line in out.splitlines() if line.startswith("tarefa ") and "/" in line.split()[1]]
+    assert order == sorted(order, reverse=True)                       # do fim para o começo
+    assert not (busy / "metrics.json").exists() and (busy / "em_andamento").exists()   # não mexeu na do outro
+    assert (abandoned / "metrics.json").exists() and not (abandoned / "em_andamento").exists()
+    assert "a análise fica com ele" in out and not (batch / "analise").exists()
+
+    (busy / "em_andamento").unlink()                                  # o outro job termina a dele...
+    monkeypatch.setattr(sys, "argv", ["rodar.py", "--teste", "--retomar", str(batch), "--dados", str(tiny_dataset)])
+    rodar.main()                                                      # ...e, sendo o último, analisa
+    assert (batch / "analise" / "RESUMO.md").exists() and not (batch / "analise_em_andamento").exists()

@@ -8,6 +8,7 @@
 #   sbatch -p debug --qos=complex --time=00:30:00 cluster/experimento.sh --teste       # teste rápido
 #   sbatch --gres=gpu:1 --time=02:00:00 cluster/experimento.sh --piloto   # UM treino de verdade
 #   sbatch cluster/experimento.sh --retomar ~/macdeg_runs/<lote>          # continua um lote interrompido
+#   sbatch --gres=gpu:1 cluster/experimento.sh --retomar ~/macdeg_runs/<lote> --do-fim   # 2º job no mesmo lote
 #   sbatch cluster/experimento.sh --final ~/macdeg_runs/<lote> <configuração>   # modelo final, guardado no lote
 # O nó 6 fica de fora: a A100 dele é dividida em 7 fatias MIG (1/7 da placa cada) e o /tmp dele lotou em
 # 15/11/2026. Os outros nós entregam GPUs inteiras.

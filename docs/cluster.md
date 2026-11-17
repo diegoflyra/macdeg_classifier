@@ -86,6 +86,11 @@ começa com `[gpu0]` ou `[gpu1]`. Com `--gres=gpu:1` antes do script, roda uma t
 
 - **Se o job estourar o tempo** (2 dias na `short-simple`) ou cair: `sbatch cluster/experimento.sh --retomar
   ~/macdeg_runs/<lote>`. Tarefas prontas são puladas e a interrompida continua do `last.pt`.
+- **Dois jobs de 1 GPU no mesmo lote** (quando o de 2 GPUs fica na fila): o segundo com
+  `sbatch --gres=gpu:1 cluster/experimento.sh --retomar ~/macdeg_runs/<lote> --do-fim`. Ele começa pela última
+  tarefa; cada tarefa em andamento tem um arquivo `em_andamento` e o outro job a pula (marca parada há mais
+  de 45 min = job morto, e a tarefa é retomada). A análise roda no job que terminar por último. Só jobs
+  lançados a partir deste código respeitam a marca: um job antigo no mesmo lote não a vê.
 - **Outra fila:** as opções do `sbatch` vêm antes do script, ex.: `sbatch -p long-simple cluster/experimento.sh`.
 - **Sem cluster:** `python rodar.py --teste` roda o mesmo no computador.
 
