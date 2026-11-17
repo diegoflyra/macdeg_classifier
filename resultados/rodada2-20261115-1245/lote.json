@@ -1,0 +1,228 @@
+{
+ "nome": "rodada2-20261115-1245",
+ "experimento": {
+  "nome": "rodada2",
+  "base": "configs/train/baseline.yaml",
+  "grade": {},
+  "variacoes": [
+   {
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    }
+   },
+   {
+    "oversample": {
+     "retinopatia_diabetica": 3
+    }
+   },
+   {
+    "preprocess": "clahe"
+   },
+   {
+    "aux_dr": 0.5
+   },
+   {
+    "image_size": 1024,
+    "cache": false
+   }
+  ],
+  "referencia": null
+ },
+ "teste": false,
+ "final": false,
+ "piloto": false,
+ "lote_de_origem": null,
+ "commit": "0aff867a4985a37474222743d4d4a4e3a3e0b219",
+ "codigo_alterado_sem_commit": false,
+ "criado": "2026-11-15 12:45",
+ "assinatura_dados": "72e45dfc1003894a",
+ "splits": "splits_nested_seed0.csv",
+ "configuracoes": [
+  {
+   "nome": "rodada2-00",
+   "mudancas": {},
+   "config": {
+    "name": "rodada2-00",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "resnet50",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": null,
+    "shuffle_labels": false
+   }
+  },
+  {
+   "nome": "rodada2-01",
+   "mudancas": {
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    }
+   },
+   "config": {
+    "name": "rodada2-01",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "resnet50",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    },
+    "shuffle_labels": false
+   }
+  },
+  {
+   "nome": "rodada2-02",
+   "mudancas": {
+    "oversample": {
+     "retinopatia_diabetica": 3
+    }
+   },
+   "config": {
+    "name": "rodada2-02",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "resnet50",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": null,
+    "shuffle_labels": false,
+    "oversample": {
+     "retinopatia_diabetica": 3
+    }
+   }
+  },
+  {
+   "nome": "rodada2-03",
+   "mudancas": {
+    "preprocess": "clahe"
+   },
+   "config": {
+    "name": "rodada2-03",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "resnet50",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": null,
+    "shuffle_labels": false,
+    "preprocess": "clahe"
+   }
+  },
+  {
+   "nome": "rodada2-04",
+   "mudancas": {
+    "aux_dr": 0.5
+   },
+   "config": {
+    "name": "rodada2-04",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "resnet50",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": null,
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  },
+  {
+   "nome": "rodada2-05",
+   "mudancas": {
+    "image_size": 1024,
+    "cache": false
+   },
+   "config": {
+    "name": "rodada2-05",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "resnet50",
+    "pretrained": true,
+    "image_size": 1024,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": null,
+    "shuffle_labels": false,
+    "cache": false
+   }
+  }
+ ],
+ "n_tarefas": 120
+}
