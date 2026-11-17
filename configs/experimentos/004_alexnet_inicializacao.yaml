@@ -1,0 +1,8 @@
+# Compara inicialização padrão com Xavier + viés zero, mantendo as taxas separadas.
+# A segunda configuração é a proposta alexnet_finetuning_otimizada.yaml.
+nome: alexnet_inicializacao
+base: configs/train/alexnet_finetuning_otimizada.yaml
+grade:
+  head_init: [null, xavier]
+variacoes: []
+referencia: null

@@ -1,0 +1,9 @@
+# Compara taxa única de 1e-5 com saída a 1e-4; só head_lr muda entre configurações.
+# Ambas usam a inicialização padrão para isolar o efeito das taxas separadas.
+nome: alexnet_taxas
+base: configs/train/alexnet_finetuning.yaml
+grade:
+  lr: [1.0e-5]
+  head_lr: [null, 1.0e-4]
+variacoes: []
+referencia: null

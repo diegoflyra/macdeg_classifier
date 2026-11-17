@@ -101,8 +101,27 @@ def transforms(config: dict, train: bool):
     return v2.Compose(steps)
 
 
-def build_model(name: str, pretrained: bool) -> nn.Module:
+def build_model(name: str, pretrained: bool, *, freeze_first_convs: int = 0,
+                head_init: str | None = None) -> nn.Module:
+    if head_init not in (None, "xavier"):
+        raise ValueError("head_init deve ser null ou xavier.")
+    if head_init is not None and name != "alexnet":
+        raise ValueError("head_init só é suportado para model: alexnet.")
+    if type(freeze_first_convs) is not int or not 0 <= freeze_first_convs <= 5:
+        raise ValueError("freeze_first_convs deve ser um inteiro entre 0 e 5.")
+    if freeze_first_convs and name != "alexnet":
+        raise ValueError("freeze_first_convs só é suportado para model: alexnet.")
     import torchvision.models as tvm
+    if name == "alexnet":
+        from macdeg.models import freeze_alexnet_features
+        weights = tvm.AlexNet_Weights.IMAGENET1K_V1 if pretrained else None
+        model = tvm.alexnet(weights=weights)
+        model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, 1)
+        if head_init == "xavier":
+            nn.init.xavier_uniform_(model.classifier[-1].weight, gain=1.0)
+            nn.init.zeros_(model.classifier[-1].bias)
+        freeze_alexnet_features(model, freeze_first_convs)
+        return model
     if name in ("resnet18", "resnet34", "resnet50"):
         weights = {"resnet18": tvm.ResNet18_Weights.IMAGENET1K_V1, "resnet34": tvm.ResNet34_Weights.IMAGENET1K_V1,
                    "resnet50": tvm.ResNet50_Weights.IMAGENET1K_V2}[name] if pretrained else None
@@ -111,6 +130,22 @@ def build_model(name: str, pretrained: bool) -> nn.Module:
         return model
     import timm
     return timm.create_model(name, pretrained=pretrained, num_classes=1)
+
+
+def build_optimizer(model: nn.Module, config: dict) -> torch.optim.Optimizer:
+    """Taxa opcional para a saída nova; demais parâmetros mantêm config['lr']."""
+    parameters = [p for p in model.parameters() if p.requires_grad]
+    head_lr = config.get("head_lr")
+    if head_lr is not None:
+        if config.get("model") != "alexnet":
+            raise ValueError("head_lr só é suportado para model: alexnet.")
+        if not math.isfinite(head_lr) or head_lr <= 0:
+            raise ValueError("head_lr deve ser positivo e finito.")
+        head = [p for p in model.classifier[-1].parameters() if p.requires_grad]
+        head_ids = {id(p) for p in head}
+        parameters = [{"params": [p for p in parameters if id(p) not in head_ids], "lr": config["lr"]},
+                      {"params": head, "lr": head_lr}]
+    return torch.optim.AdamW(parameters, lr=config["lr"], weight_decay=config.get("weight_decay", 1e-4))
 
 
 PREDICTION_COLUMNS = ["sample_id", "source", "group_id", "label", "kind", "disease_group"]
@@ -213,13 +248,18 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     val_loader = DataLoader(FundusDataset(val, root, transforms(config, False), cached), batch_size=micro,
                             num_workers=workers, pin_memory=device.type == "cuda", persistent_workers=workers > 0)
 
-    model = build_model(config["model"], config.get("pretrained", True)).to(device).to(memory_format=torch.channels_last)
+    model = build_model(config["model"], config.get("pretrained", True),
+                        freeze_first_convs=config.get("freeze_first_convs", 0),
+                        head_init=config.get("head_init")).to(device).to(memory_format=torch.channels_last)
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    frozen = sum(p.numel() for p in model.parameters() if not p.requires_grad)
+    print(f"parâmetros treináveis: {trainable}; congelados: {frozen}", flush=True)
     if on_model is not None:
         on_model(model)
     positives = float(train["label"].sum())
     pos_weight = (len(train) - positives) / positives if config.get("balance") == "pos_weight" else 1.0
     criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(pos_weight, device=device))
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"], weight_decay=config.get("weight_decay", 1e-4))
+    optimizer = build_optimizer(model, config)
     epochs, steps_per_epoch = config["epochs"], len(train_loader) // accumulate
     warmup = steps_per_epoch * config.get("warmup_epochs", 1)
     total = steps_per_epoch * epochs
@@ -268,11 +308,14 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
         row = {"epoch": epoch, "train_loss": float(np.mean(losses)), "val_auroc": val_auroc,
                "seconds": round(time.time() - began, 1), "train_seconds": round(train_seconds, 1),
                "data_wait_seconds": round(waiting, 1), "lr": scheduler.get_last_lr()[0]}
+        if config.get("head_lr") is not None:
+            row["head_lr"] = scheduler.get_last_lr()[-1]
         history.append(row)
         print(json.dumps(row), flush=True)
         if log is not None:
             log({"epoca": epoch, "perda_treino": row["train_loss"], "auroc_val": val_auroc, "lr": row["lr"],
-                 "segundos_epoca": row["seconds"], "segundos_esperando_dados": row["data_wait_seconds"]})
+                 "segundos_epoca": row["seconds"], "segundos_esperando_dados": row["data_wait_seconds"],
+                 **({"lr_saida": row["head_lr"]} if "head_lr" in row else {})})
         if val_auroc is not None and val_auroc > best:
             best, stale = val_auroc, 0
             torch.save(model.state_dict(), out / "best.pt")
@@ -297,7 +340,8 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
             frame[PREDICTION_COLUMNS].assign(prob=predict(model, loader, device)).to_csv(
                 out / f"{name}_predictions.csv", index=False)
     metrics = evaluate(predictions, train)
-    metrics.update(micro_batch=micro, gpu=torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
+    metrics.update(trainable_parameters=trainable, frozen_parameters=frozen,
+                   micro_batch=micro, gpu=torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
                    best_epoch=int(np.nanargmax([h["val_auroc"] or -1 for h in history])),
                    epochs_run=len(history), seconds_per_epoch=float(np.mean([h["seconds"] for h in history])),
                    peak_gpu_gb=round(torch.cuda.max_memory_allocated() / 1e9, 2) if device.type == "cuda" else None)

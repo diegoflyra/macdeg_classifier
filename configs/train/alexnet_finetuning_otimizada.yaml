@@ -1,0 +1,26 @@
+# Configuração combinada proposta; o desempenho ainda precisa ser medido.
+# Mantém a receita anterior em alexnet_finetuning.yaml para comparação.
+name: alexnet_finetuning_otimizada
+
+dataset: ~/macdeg_data/dataset_1024
+splits: splits_nested_seed0.csv
+sources: null
+other_diseases: true
+
+model: alexnet
+pretrained: true
+freeze_first_convs: 3
+head_init: xavier
+image_size: 512
+batch_size: 16
+epochs: 20
+lr: 1.0e-5
+head_lr: 1.0e-4
+weight_decay: 1.0e-4
+warmup_epochs: 1
+patience: 5
+balance: pos_weight
+num_workers: 6
+
+augment: null
+shuffle_labels: false

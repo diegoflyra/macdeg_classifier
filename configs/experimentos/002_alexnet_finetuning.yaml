@@ -1,0 +1,7 @@
+# Fine-tuning parcial da AlexNet pré-treinada na ImageNet.
+# Um piloto usa uma dobra; o lote completo faz 5 externas x 4 internas.
+nome: alexnet_finetuning
+base: configs/train/alexnet_finetuning.yaml
+grade: {}
+variacoes: []
+referencia: null

@@ -1,0 +1,24 @@
+# AlexNet ImageNet: três primeiras convoluções congeladas;
+# conv4, conv5 e todo o classificador treináveis. Só a saída é reinicializada.
+name: alexnet_finetuning
+
+dataset: ~/macdeg_data/dataset_1024
+splits: splits_nested_seed0.csv
+sources: null
+other_diseases: true
+
+model: alexnet
+pretrained: true
+freeze_first_convs: 3
+image_size: 512
+batch_size: 16
+epochs: 20
+lr: 3.0e-4
+weight_decay: 1.0e-4
+warmup_epochs: 1
+patience: 5
+balance: pos_weight
+num_workers: 6
+
+augment: null
+shuffle_labels: false

@@ -195,3 +195,37 @@ def test_tasks_are_split_between_two_gpus(tiny_dataset, tmp_path, monkeypatch):
     history = pd.read_csv(cluster.task_dir(batch, lote["tarefas"][0]) / "history.csv")
     assert {"train_seconds", "data_wait_seconds"} <= set(history.columns)
 
+
+def test_alexnet_finetuning_runs_the_existing_training_pipeline(tiny_dataset, tmp_path, monkeypatch):
+    """Uma atualização real e inferência; seleção ImageNet com download substituído."""
+    import torchvision.models as tvm
+    from macdeg.train import PREDICTION_COLUMNS, run
+    original = tvm.alexnet
+    weights_requested = []
+
+    def without_download(*, weights):
+        weights_requested.append(weights)
+        return original(weights=None)
+
+    monkeypatch.setattr(tvm, "alexnet", without_download)
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    config = {"name": "alexnet_finetuning_smoke", "dataset": str(tiny_dataset), "model": "alexnet",
+              "pretrained": True, "freeze_first_convs": 3,
+              "image_size": 128, "batch_size": 4, "epochs": 1, "max_steps": 1,
+              "limit": 24, "lr": 1e-5, "head_lr": 1e-4, "head_init": "xavier",
+              "num_workers": 0, "balance": "pos_weight", "device": "cpu",
+              "augment": None}
+    target = tmp_path / "alexnet"
+    metrics = run(config, outer=0, inner=0, seed=0, out=target)
+    assert weights_requested == [tvm.AlexNet_Weights.IMAGENET1K_V1]
+    assert metrics["epochs_run"] == 1
+    assert metrics["frozen_parameters"] > 0 and metrics["trainable_parameters"] > 0
+    history = pd.read_csv(target / "history.csv")
+    assert np.allclose(history["head_lr"] / history["lr"], 10)
+    assert np.isfinite(history["train_loss"]).all()
+    for split in ("val", "test", "extra"):
+        predictions = pd.read_csv(target / f"{split}_predictions.csv")
+        assert list(predictions.columns) == PREDICTION_COLUMNS + ["prob"]
+        assert predictions["prob"].between(0, 1).all()
+    assert not (target / "last.pt").exists() and not (target / "best.pt").exists()
+
