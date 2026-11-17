@@ -53,6 +53,8 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 
 ## 4. Como fazer um experimento
 
+**Obrigatório: `docs/fluxo_experimentos.md`** (experimentos só na `experimentos-002` ou em branches que saem dela). Ambiente de quem entra: `docs/novo_membro.md`.
+
 - **Mude uma coisa por vez** em relação à referência. Crie um YAML novo em `configs/experimentos/`
   (`base`, `grade`, `variacoes`, `referencia: resultados/<lote>/<configuração>`). Veja `exemplo_grade.yaml`.
 - **Não edite** `configs/train/baseline.yaml` nem um YAML de experimento já lançado: crie outro. A
