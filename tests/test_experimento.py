@@ -462,3 +462,70 @@ def test_round3_base_changes_crop_and_alexnet_train_and_export(tiny_dataset, tmp
     assert model.card["crop"] == 0.6 and model.card["normalizacao"]["media"] == [0.485, 0.456, 0.406]
     image = cv2.imread(str(tiny_dataset / pd.read_csv(tiny_dataset / "manifest.csv")["image"][0]))
     assert 0.0 <= model.predict(image) <= 1.0
+def test_alexnet_finetuning_runs_the_existing_training_pipeline(tiny_dataset, tmp_path, monkeypatch):
+    """Uma atualização real e inferência; seleção ImageNet com download substituído."""
+    import torchvision.models as tvm
+    from macdeg.train import PREDICTION_COLUMNS, run
+    original = tvm.alexnet
+    weights_requested = []
+
+    def without_download(*, weights):
+        weights_requested.append(weights)
+        return original(weights=None)
+
+    monkeypatch.setattr(tvm, "alexnet", without_download)
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    config = {"name": "alexnet_finetuning_smoke", "dataset": str(tiny_dataset), "model": "alexnet",
+              "pretrained": True, "freeze_first_convs": 3,
+              "image_size": 128, "batch_size": 4, "epochs": 1, "max_steps": 1,
+              "limit": 24, "lr": 1e-5, "head_lr": 1e-4, "head_init": "xavier",
+              "num_workers": 0, "balance": "pos_weight", "device": "cpu",
+              "augment": None}
+    target = tmp_path / "alexnet"
+    metrics = run(config, outer=0, inner=0, seed=0, out=target)
+    assert weights_requested == [tvm.AlexNet_Weights.IMAGENET1K_V1]
+    assert metrics["epochs_run"] == 1
+    assert metrics["frozen_parameters"] > 0 and metrics["trainable_parameters"] > 0
+    history = pd.read_csv(target / "history.csv")
+    assert np.allclose(history["head_lr"] / history["lr"], 10)
+    assert np.isfinite(history["train_loss"]).all()
+    for split in ("val", "test", "extra"):
+        predictions = pd.read_csv(target / f"{split}_predictions.csv")
+        assert list(predictions.columns) == PREDICTION_COLUMNS + ["prob"]
+        assert predictions["prob"].between(0, 1).all()
+    assert not (target / "last.pt").exists() and not (target / "best.pt").exists()
+
+
+
+def test_experiment_files_have_unique_numbers_and_follow_the_flow():
+    """docs/fluxo_experimentos.md: número único por YAML; base sempre baseline.yaml (+ base_mudancas);
+    nenhuma base nova em configs/train."""
+    from macdeg.ambiente import PROJECT
+    from macdeg.cluster import expand
+    files = sorted((PROJECT / "configs/experimentos").glob("[0-9][0-9][0-9]_*.yaml"))
+    numbers = [f.name[:3] for f in files]
+    assert len(numbers) == len(set(numbers)), f"números repetidos: {numbers}"
+    assert [f.name for f in (PROJECT / "configs/train").glob("*.yaml")] == ["baseline.yaml"]
+    for f in files:
+        experiment = yaml.safe_load(f.read_text(encoding="utf-8"))
+        assert experiment["base"] == "configs/train/baseline.yaml", f.name
+        expand(experiment)                                         # todos expandem sem erro
+    gustavo = expand(yaml.safe_load((PROJECT / "configs/experimentos/004_gustavo_arquiteturas.yaml").read_text()))
+    rodada3 = expand(yaml.safe_load((PROJECT / "configs/experimentos/003_rodada3.yaml").read_text()))
+    strip = lambda c: {k: v for k, v in c["config"].items() if k != "name"}
+    assert strip(gustavo[0]) == strip(rodada3[0])                  # mesma base vigente
+    assert [c["mudancas"] for c in gustavo[1:]] == [{"model": "alexnet"}, {"model": "convnext_tiny.fb_in22k_ft_in1k_384"}]
+
+
+def test_placeholder_reference_is_refused_before_training(tiny_dataset, tmp_path, monkeypatch):
+    import macdeg.cluster as cluster
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": "m", "base": str(tmp_path / "base.yaml"),
+                                                       "referencia": "resultados/r-<AAAAMMDD-HHMM>/r-00"}))
+    with pytest.raises(SystemExit, match="marcador"):
+        cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset))
+    batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)   # --teste: vira a própria 00
+    assert json.loads((batch / "lote.json").read_text())["experimento"]["referencia"] is None

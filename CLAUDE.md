@@ -53,6 +53,9 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 
 ## 4. Como fazer um experimento
 
+**Obrigatório: `docs/fluxo_experimentos.md`** (branches, base vigente, uma mudança por vez, numeração
+dos YAMLs). Tarefa que não caiba nele: pare e pergunte aos donos.
+
 - **Mude uma coisa por vez** em relação à referência. Crie um YAML novo em `configs/experimentos/`
   (`base`, `grade`, `variacoes`, `referencia: resultados/<lote>/<configuração>`). Veja `exemplo_grade.yaml`.
 - **Fluxo por rodadas:** o que ganhou numa rodada entra na base da seguinte (`base_mudancas` no YAML, que

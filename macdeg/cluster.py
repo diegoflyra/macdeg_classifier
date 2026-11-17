@@ -102,6 +102,11 @@ def prepare(experiment_path: Path, dataset: str | None = None, test: bool = Fals
         name, experiment = source["nome"] + "-final", source["experimento"]
     else:
         experiment = yaml.safe_load(Path(experiment_path).read_text(encoding="utf-8"))
+        if "<" in str(experiment.get("referencia") or ""):     # marcador ainda não preenchido no YAML
+            if not test:
+                raise SystemExit(f"A referência ainda tem o marcador: {experiment['referencia']}. Troque pelo lote "
+                                 "real (branch resultados do GitHub) antes de lançar.")
+            experiment = {**experiment, "referencia": None}    # --teste: compara com a própria 00
         configs, name = expand(experiment), experiment["nome"]
     if pilot:
         name = "piloto-" + name

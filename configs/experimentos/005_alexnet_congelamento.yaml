@@ -1,0 +1,14 @@
+# Experimento 005 (Gustavo), PARTE 2, estudo próprio da AlexNet (apêndice): congelar as 3 primeiras
+# convoluções. Base = base nova da rodada 3 + AlexNet. Uma mudança: freeze_first_convs.
+# Referência = gustavo-01 (AlexNet sem congelamento, do experimento 004). Lance depois do 004.
+# ANTES DE LANÇAR: troque <AAAAMMDD-HHMM> pelo lote do experimento 004 no GitHub.
+nome: alexnet_congelamento
+base: configs/train/baseline.yaml
+base_mudancas:
+  augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}
+  aux_dr: 0.5
+  model: alexnet
+  freeze_first_convs: 3
+grade: {}
+variacoes: []
+referencia: resultados/gustavo-<AAAAMMDD-HHMM>/gustavo-01

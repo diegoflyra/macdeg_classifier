@@ -96,7 +96,7 @@ treinos idênticos (cuDNN não determinístico): diferenças de ~0,01 estão den
   até o fim; o ajuste (lr × weight decay) fica para a última rodada. Limitação: com a mesma receita, uma
   arquitetura pode perder por receita, não por arquitetura.
 - **Arquiteturas:** DenseNet-121, EfficientNetV2-S e EfficientNet-B4 (pré-treinos em 224, 300–384 e 380 px).
-  Cada rede usa a normalização do seu pré-treino. AlexNet (histórica) e ConvNeXt ficam com o parceiro, com a
+  Cada rede usa a normalização do seu pré-treino. AlexNet (histórica) e ConvNeXt ficam com o Gustavo (`004_gustavo_arquiteturas.yaml`), com a
   mesma base e referência = `rodada3-00`.
 - **Recorte central da mácula (`crop: 0.6`):** quadrado central com 60% do lado da imagem de 1024 px,
   reduzido a 512 px (1,67× mais pixels na mácula). Estudo prévio (só agregados): na fóvea marcada à mão no

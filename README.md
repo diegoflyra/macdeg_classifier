@@ -50,6 +50,11 @@ Treino no cluster Apuana: ver [`docs/cluster.md`](docs/cluster.md). Cada experim
 `configs/experimentos/` (configuração base + grade de variações) e roda como job array; a análise
 envia `resultados/<lote>/` para a branch `resultados`. No cluster: `sbatch cluster/experimento.sh`.
 
+AlexNet para DMRI: [`docs/alexnet.md`](docs/alexnet.md) explica o fine-tuning com pesos ImageNet,
+as três primeiras convoluções congeladas e as camadas profundas treináveis. Comparação com as
+outras arquiteturas: `004_gustavo_arquiteturas.yaml`; estudo próprio (congelamento, taxas, inicialização):
+`005`–`007_alexnet_*.yaml`. Como montar experimentos: [`docs/fluxo_experimentos.md`](docs/fluxo_experimentos.md).
+
 Avaliação:
 - métrica principal: **média do F2 dentro de cada base**, com o limiar sempre escolhido em outras dobras;
 - também: AUROC, AUPRC, sensibilidade, especificidade em normais, em outras doenças e por doença;

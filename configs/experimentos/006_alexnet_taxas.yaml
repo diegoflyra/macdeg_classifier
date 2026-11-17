@@ -1,0 +1,15 @@
+# Experimento 006 (Gustavo), PARTE 2 (apêndice AlexNet): taxa única de 1e-5 x saída a 1e-4.
+# Só head_lr muda entre as configurações; ambas com 3 convoluções congeladas e inicialização padrão.
+# Depende do 005: se o congelamento perder, discuta com os donos antes de lançar.
+nome: alexnet_taxas
+base: configs/train/baseline.yaml
+base_mudancas:
+  augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}
+  aux_dr: 0.5
+  model: alexnet
+  freeze_first_convs: 3
+  lr: 1.0e-5
+grade:
+  head_lr: [null, 1.0e-4]
+variacoes: []
+referencia: null
