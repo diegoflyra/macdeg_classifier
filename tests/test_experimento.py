@@ -365,3 +365,100 @@ def test_two_jobs_share_a_batch_without_training_the_same_task(tiny_dataset, tmp
     monkeypatch.setattr(sys, "argv", ["rodar.py", "--teste", "--retomar", str(batch), "--dados", str(tiny_dataset)])
     rodar.main()                                                      # ...e, sendo o último, analisa
     assert (batch / "analise" / "RESUMO.md").exists() and not (batch / "analise_em_andamento").exists()
+
+
+def test_round3_center_crop_alexnet_normalization_and_micro_batch(tiny_dataset, tmp_path, monkeypatch):
+    """Rodada 3: recorte central (cache próprio, mesmos pixels que o JPEG), AlexNet, normalização de cada
+    rede e micro-lote igual em qualquer GPU (o BatchNorm também)."""
+    import types
+    import torch
+    from macdeg import cache, train
+    image = np.arange(100 * 100 * 3, dtype=np.uint8).reshape(100, 100, 3)
+    assert cache.center_crop(image, 0.6).shape == (60, 60, 3)
+    assert np.array_equal(cache.center_crop(image, 0.6), image[20:80, 20:80])
+    with pytest.raises(ValueError):
+        cache.center_crop(image, 1.5)
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    manifest = pd.read_csv(tiny_dataset / "manifest.csv")
+    images = list(manifest["image"][:5])
+    plain = cache.build(tiny_dataset, images, 32)
+    cropped = cache.build(tiny_dataset, images, 32, crop=0.6)
+    assert plain[0] != cropped[0] and not np.array_equal(np.load(plain[0]), np.load(cropped[0]))
+    frame = manifest.head(5)
+    identity = lambda x: x
+    from_cache = train.FundusDataset(frame, tiny_dataset, identity, cropped, 32, None, 0.6)
+    from_jpeg = train.FundusDataset(frame, tiny_dataset, identity, None, 32, None, 0.6)
+    assert torch.equal(from_cache[2][0], from_jpeg[2][0])
+
+    alexnet = train.build_model("alexnet", pretrained=False, outputs=2)
+    assert alexnet(torch.zeros(1, 3, 64, 64)).shape == (1, 2)
+    assert train.normalization("resnet50") == (train.IMAGENET_MEAN, train.IMAGENET_STD)
+    assert train.normalization("tf_efficientnetv2_s.in21k_ft_in1k") == ((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+
+    cuda = types.SimpleNamespace(type="cuda")
+    micro = {}
+    for gb in (24, 80):
+        monkeypatch.setattr(train.torch.cuda, "get_device_properties", lambda d, g=gb: types.SimpleNamespace(total_memory=g * 1e9))
+        micro[gb] = [train.micro_batch({"batch_size": 16, "image_size": 512, "model": m}, cuda)
+                     for m in ("resnet50", "tf_efficientnet_b4.ns_jft_in1k")]
+    assert micro[24] == micro[80] == [16, 8]
+
+
+def test_stage_auroc_compares_each_stage_with_the_negatives_of_its_bases():
+    from macdeg.analysis import stage_auroc
+    preds = pd.DataFrame({"sample_id": list("abcdefg"), "source": ["h"] * 5 + ["o"] * 2,
+                          "label": [1, 1, 0, 0, 1, 1, 0], "prob": [0.9, 0.2, 0.3, 0.1, 0.8, 0.95, 0.99]})
+    manifest = pd.DataFrame({"sample_id": list("abcdefg"),
+                             "label_detail": ["precoce", "precoce", "dr", "dr", "tardia", "dmri", "normal"]})
+    out = stage_auroc(preds, manifest)
+    assert set(out) == {"precoce", "tardia"}                       # "dmri" sem estágio fica de fora
+    assert out["precoce"] == {"n": 2, "n_sem_dmri": 2, "bases": ["h"], "auroc": 0.75}
+    assert out["tardia"]["auroc"] == 1.0                          # o negativo da outra base não entra
+
+
+def test_round3_experiment_file_has_a_new_base_and_one_change_per_variation():
+    from macdeg.ambiente import PROJECT
+    from macdeg.cluster import expand
+    experiment = yaml.safe_load((PROJECT / "configs/experimentos/003_rodada3.yaml").read_text())
+    configs = expand(experiment)
+    assert [c["nome"] for c in configs] == [f"rodada3-{i:02d}" for i in range(5)]
+    assert configs[0]["mudancas"] == {}
+    assert all(len(c["mudancas"]) == 1 for c in configs[1:])
+    for c in configs:                                              # a base nova vale para todas
+        assert c["config"]["aux_dr"] == 0.5 and c["config"]["augment"]["rotate_deg"] == 15
+        assert c["config"]["image_size"] == 512
+    assert configs[4]["config"]["crop"] == 0.6 and configs[4]["config"]["model"] == "resnet50"
+
+
+def test_round3_base_changes_crop_and_alexnet_train_and_export(tiny_dataset, tmp_path, monkeypatch):
+    """base_mudancas vale para todas as configurações; recorte e AlexNet treinam; o ensemble final do
+    recorte guarda o recorte e a normalização no cartão e prevê com eles."""
+    import macdeg.cluster as cluster
+    from macdeg.analysis import analyze
+    from macdeg.hub import load_ensemble
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    experiment = {"nome": "r3", "base": str(tmp_path / "base.yaml"), "grade": {}, "referencia": None,
+                  "base_mudancas": {"aux_dr": 0.5, "augment": {"hflip": True}},
+                  "variacoes": [{"crop": 0.6}, {"model": "alexnet"}]}
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump(experiment))
+    batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)
+    configs = json.loads((batch / "lote.json").read_text())["configuracoes"]
+    assert all(c["config"]["aux_dr"] == 0.5 for c in configs) and configs[0]["mudancas"] == {}
+    cluster.run_local(batch, str(tiny_dataset))
+    result = analyze(batch, str(tiny_dataset), push=False)
+    assert result["tarefas_faltando"] == [] and set(result["configuracoes"]) == {"r3-00", "r3-01", "r3-02"}
+    assert "auroc_por_estagio" in result["configuracoes"]["r3-01"]
+
+    final = cluster.prepare(None, str(tiny_dataset), test=True, final=["r3-01"], from_batch=batch)
+    cluster.run_local(final, str(tiny_dataset))
+    analyze(final, str(tiny_dataset), push=False)
+    model = load_ensemble(str(final), "r3-01", device="cpu")
+    assert model.card["crop"] == 0.6 and model.card["normalizacao"]["media"] == [0.485, 0.456, 0.406]
+    image = cv2.imread(str(tiny_dataset / pd.read_csv(tiny_dataset / "manifest.csv")["image"][0]))
+    assert 0.0 <= model.predict(image) <= 1.0

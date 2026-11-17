@@ -1,0 +1,25 @@
+# Experimento 003: base nova = referência (ResNet-50, 512 px) + as duas melhorias quase significativas da
+# rodada 2 (augmentation: +0,013 [-0,000; +0,028]; cabeça auxiliar de DR: +0,012 [-0,001; +0,025]).
+# Cada variação muda UMA coisa sobre essa base; as que ganharem entram na base da rodada 4.
+# Hiperparâmetros fixos (receita da ResNet) em todas; o ajuste fica para o fim.
+#
+#   rodada3-00  a base nova. Comparada à rodada2-00 (à parte, pareada): a combinação ajudou?
+#   rodada3-01  DenseNet-121            (torchvision/timm, pré-treino em 224 px)
+#   rodada3-02  EfficientNetV2-S        (ImageNet-21k + 1k, pré-treino em 300-384 px; normalização 0,5)
+#   rodada3-03  EfficientNet-B4         (Noisy Student, pré-treino em 380 px; família do vencedor do ADAM)
+#   rodada3-04  recorte central de 60%  (mácula com 1,67x mais pixels; ResNet-50)
+#
+# AlexNet e ConvNeXt: experimento do parceiro, com a mesma base_mudancas e referência = rodada3-00.
+# Custo estimado: ~60 h de GPU (B4 e V2-S mais caras que a ResNet).
+nome: rodada3
+base: configs/train/baseline.yaml
+base_mudancas:
+  augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}
+  aux_dr: 0.5
+grade: {}
+variacoes:
+  - {model: densenet121.tv_in1k}
+  - {model: tf_efficientnetv2_s.in21k_ft_in1k}
+  - {model: tf_efficientnet_b4.ns_jft_in1k}
+  - {crop: 0.6}
+referencia: null

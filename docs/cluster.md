@@ -112,8 +112,10 @@ começa com `[gpu0]` ou `[gpu1]`. Com `--gres=gpu:1` antes do script, roda uma t
 - **Dados no disco do nó:** o zip é descompactado no `/tmp` do nó (NVMe) e apagado no fim, mesmo se o job
   falhar ou for cancelado.
 - **Assinatura dos dados e commit** ficam no `lote.json`; o código do commit é copiado para `codigo/`.
-- **Lote efetivo fixo (16):** em GPU com pouca memória (fatia MIG), o treino acumula gradientes; o
-  resultado não depende da GPU.
+- **Lote efetivo fixo (16):** o treino acumula gradientes em micro-lotes calculados para a menor GPU do
+  cluster (24 GB) e a arquitetura; o micro-lote, o BatchNorm e o resultado não dependem da GPU sorteada.
+- **Pesos pré-treinados do timm** (DenseNet, EfficientNet): baixados do Hugging Face na primeira tarefa e
+  guardados em `~/.cache/huggingface` (compartilhado entre os nós).
 - **Espaço:** lotes em `~/macdeg_runs` (cota de 100 GB). Treinos internos não guardam pesos; o treino final
   guarda ~0,5 GB por configuração.
 

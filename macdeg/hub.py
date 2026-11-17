@@ -36,6 +36,7 @@ import torch
 
 from macdeg.ambiente import secret
 from macdeg.cluster import task_dir
+from macdeg.train import normalization
 
 REPO_NAME = os.environ.get("HF_REPO", "macdeg_classifier")  # repositório do tipo "model"
 
@@ -72,9 +73,10 @@ def export_final(batch: Path | str, name: str, final: dict) -> Path:
     metrics = _source_metrics(batch, lote, name)
     card = {"configuracao": name, "lote_final": lote["nome"], "commit": lote["commit"],
             "assinatura_dados": lote["assinatura_dados"], "modelo": config["config"]["model"],
-            "image_size": config["config"]["image_size"], "normalizacao": "ImageNet (média 0.485 0.456 0.406; dp 0.229 0.224 0.225)",
+            "image_size": config["config"]["image_size"], "normalizacao": dict(zip(("media", "dp"), normalization(config["config"]["model"]))),
             "entrada": "retina inteira num quadrado (bordas pretas completam), RGB", "saida": "logit 0; sigmoide = P(DMRI) (logit 1, se houver, é a cabeça auxiliar de DR)",
             "saidas": 2 if config["config"].get("aux_dr") else 1, "preprocess": config["config"].get("preprocess"),
+            "crop": config["config"].get("crop"),
             "ensemble": "média das probabilidades das 5 dobras", "limiar": final["limiar"],
             "mudancas": config["mudancas"], "lote_de_origem": Path(lote["lote_de_origem"] or "").name,
             "metricas_validacao_aninhada": metrics, "exportado": time.strftime("%Y-%m-%d %H:%M")}
@@ -155,12 +157,19 @@ class Ensemble:
         import cv2
         from macdeg.data.build import fov_square
         from macdeg.train import IMAGENET_MEAN, IMAGENET_STD
-        from macdeg.cache import clahe
-        square = cv2.cvtColor(fov_square(image_bgr, self.card["image_size"]), cv2.COLOR_BGR2RGB)
-        if self.card.get("preprocess") == "clahe":
-            square = clahe(square)
+        from macdeg.cache import clahe, prepare
+        size = self.card["image_size"]
+        if self.card.get("crop"):      # como no treino: quadrado de 1024 px, recorte central, redução
+            square = prepare(cv2.cvtColor(fov_square(image_bgr, 1024), cv2.COLOR_BGR2RGB), size,
+                             self.card.get("preprocess"), self.card["crop"])
+        else:
+            square = cv2.cvtColor(fov_square(image_bgr, size), cv2.COLOR_BGR2RGB)
+            if self.card.get("preprocess") == "clahe":
+                square = clahe(square)
         x = torch.from_numpy(square).permute(2, 0, 1).float() / 255
-        x = ((x - torch.tensor(IMAGENET_MEAN)[:, None, None]) / torch.tensor(IMAGENET_STD)[:, None, None])[None]
+        mean, std = normalization(self.card["modelo"]) if isinstance(self.card.get("normalizacao"), dict) else (
+            IMAGENET_MEAN, IMAGENET_STD)              # cartões antigos: sempre ImageNet
+        x = ((x - torch.tensor(mean)[:, None, None]) / torch.tensor(std)[:, None, None])[None]
         x = x.to(self.device)
         return float(np.mean([torch.sigmoid(m(x)[0, 0]).item() for m in self.models]))
 

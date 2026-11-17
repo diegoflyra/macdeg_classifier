@@ -62,12 +62,12 @@ class FundusDataset(Dataset):
     Cada item: (imagem, rótulo DMRI, alvo auxiliar de DR: 1, 0 ou -1 = desconhecido)."""
 
     def __init__(self, frame: pd.DataFrame, root: Path, transform, cache: tuple[Path, dict] | None = None,
-                 size: int | None = None, preprocess: str | None = None):
+                 size: int | None = None, preprocess: str | None = None, crop: float | None = None):
         self.paths = [str(root / p) for p in frame["image"]]
         self.labels = frame["label"].to_numpy(np.float32)
         self.aux = dr_target(frame)
         self.transform = transform
-        self.size, self.preprocess = size, preprocess
+        self.size, self.preprocess, self.crop = size, preprocess, crop
         self.cache_path, lines = cache or (None, {})
         self.rows = [lines.get(p, -1) for p in frame["image"]]
         self._data = None                       # aberto em cada processo do DataLoader (mmap)
@@ -83,8 +83,8 @@ class FundusDataset(Dataset):
             image = np.array(self._data[row])
         else:
             image = image_cache.read_rgb(self.paths[index])
-            if self.preprocess:                 # o mesmo que o cache faz: reduz, depois pré-processa
-                image = image_cache.prepare(image, self.size, self.preprocess)
+            if self.preprocess or self.crop:    # o mesmo que o cache faz: recorta, reduz, pré-processa
+                image = image_cache.prepare(image, self.size, self.preprocess, self.crop)
         tensor = torch.from_numpy(image).permute(2, 0, 1)
         return self.transform(tensor), self.labels[index], self.aux[index]
 
@@ -119,6 +119,19 @@ def sample_weights(frame: pd.DataFrame, oversample: dict | None) -> np.ndarray |
     return weights
 
 
+TORCHVISION = ("resnet18", "resnet34", "resnet50", "alexnet")
+
+
+def normalization(model: str) -> tuple[tuple, tuple]:
+    """Média e desvio da normalização com que a rede foi pré-treinada. Quase todas usam as da ImageNet;
+    algumas do timm (ex.: EfficientNetV2 do TensorFlow) usam 0,5. Faz parte da arquitetura."""
+    if model in TORCHVISION:
+        return IMAGENET_MEAN, IMAGENET_STD
+    import timm
+    cfg = timm.get_pretrained_cfg(model)
+    return (tuple(cfg.mean), tuple(cfg.std)) if cfg else (IMAGENET_MEAN, IMAGENET_STD)
+
+
 def transforms(config: dict, train: bool):
     size, aug = config["image_size"], config.get("augment") or {}
     steps = []
@@ -133,20 +146,25 @@ def transforms(config: dict, train: bool):
             steps.append(v2.ColorJitter(brightness=aug["color"], contrast=aug["color"]))
     else:
         steps.append(v2.Resize(size, antialias=True))
-    steps += [v2.ToDtype(torch.float32, scale=True), v2.Normalize(IMAGENET_MEAN, IMAGENET_STD)]
+    mean, std = normalization(config.get("model", "resnet50"))
+    steps += [v2.ToDtype(torch.float32, scale=True), v2.Normalize(mean, std)]
     return v2.Compose(steps)
 
 
 def build_model(name: str, pretrained: bool, outputs: int = 1) -> nn.Module:
     """Saída 0 = logit de DMRI (a única usada em métricas e limiar). Com a cabeça auxiliar, saída 1 = DR."""
     import torchvision.models as tvm
-    if name in ("resnet18", "resnet34", "resnet50"):
+    if name in ("resnet18", "resnet34", "resnet50"):  # TORCHVISION
         weights = {"resnet18": tvm.ResNet18_Weights.IMAGENET1K_V1, "resnet34": tvm.ResNet34_Weights.IMAGENET1K_V1,
                    "resnet50": tvm.ResNet50_Weights.IMAGENET1K_V2}[name] if pretrained else None
         model = getattr(tvm, name)(weights=weights)
         model.fc = nn.Linear(model.fc.in_features, outputs)
         return model
-    import timm
+    if name == "alexnet":       # baseline histórico (2012); não existe no timm
+        model = tvm.alexnet(weights=tvm.AlexNet_Weights.IMAGENET1K_V1 if pretrained else None)
+        model.classifier[6] = nn.Linear(model.classifier[6].in_features, outputs)
+        return model
+    import timm               # qualquer outra: pelo nome do timm (ex.: densenet121, tf_efficientnetv2_s.in21k_ft_in1k)
     return timm.create_model(name, pretrained=pretrained, num_classes=outputs)
 
 
@@ -195,19 +213,27 @@ def split_frames(config: dict, outer: int, inner: int | None, seed: int):
 
 # Memória por imagem da ResNet-50 em 512 px com AMP, medida (4,2 GB com lote 16), com folga.
 GB_PER_IMAGE_512 = 0.3
+# Outras arquiteturas, em múltiplos da ResNet-50 (estimativas conservadoras; EfficientNets e DenseNet
+# guardam muitas ativações intermediárias).
+MEMORY_FACTOR = {"alexnet": 0.3, "densenet": 3.0, "efficientnetv2_s": 3.0, "efficientnet_b4": 5.0, "convnext_tiny": 2.0}
+# O micro-lote é calculado para a MENOR GPU do Apuana (RTX 3090, 24 GB), não para a sorteada: assim ele é
+# o mesmo em qualquer GPU, e o BatchNorm (que calcula médias dentro do micro-lote) também.
+SMALLEST_GPU_GB = 24.0
 
 
 def micro_batch(config: dict, device: torch.device) -> int:
-    """Pedaço do lote que cabe na GPU. O lote efetivo (batch_size) não muda: os gradientes dos pedaços
-    se acumulam antes de cada passo, então o resultado não depende da GPU sorteada pela fila."""
+    """Pedaço do lote que cabe na menor GPU do cluster. O lote efetivo (batch_size) não muda: os gradientes
+    dos pedaços se acumulam antes de cada passo. Como o pedaço não depende da GPU sorteada pela fila, nem
+    o BatchNorm depende, e o resultado é o mesmo em qualquer GPU."""
     batch = config["batch_size"]
     if config.get("micro_batch"):
         return int(config["micro_batch"])
     if device.type != "cuda":
         return batch
-    free = torch.cuda.get_device_properties(device).total_memory / 1e9 * 0.75
-    per_image = GB_PER_IMAGE_512 * (config["image_size"] / 512) ** 2
-    fits = max(1, int(free // per_image))
+    memory = min(torch.cuda.get_device_properties(device).total_memory / 1e9, SMALLEST_GPU_GB)
+    factor = next((f for key, f in MEMORY_FACTOR.items() if key in config.get("model", "")), 1.0)
+    per_image = GB_PER_IMAGE_512 * factor * (config["image_size"] / 512) ** 2
+    fits = max(1, int(memory * 0.75 // per_image))
     return max(d for d in range(1, batch + 1) if batch % d == 0 and d <= fits)
 
 
@@ -243,14 +269,15 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     if config.get("cache", True):   # mesmos pixels, sem decodificar 1024 px a cada época (macdeg.cache)
         frames = [f for f in (train, val, test, extra) if f is not None]
         cached = image_cache.build(root, [i for f in frames for i in f["image"]], config["image_size"],
-                                   preprocess=config.get("preprocess"))
+                                   preprocess=config.get("preprocess"), crop=config.get("crop"))
     torch.backends.cudnn.benchmark = True     # entrada de tamanho fixo: o cuDNN escolhe o algoritmo mais rápido
     micro = micro_batch(config, device)
     accumulate = config["batch_size"] // micro
     print(f"lote efetivo {config['batch_size']} = {accumulate} x {micro} imagens"
           + (f" | GPU: {torch.cuda.get_device_name(device)}" if device.type == "cuda" else ""), flush=True)
     dataset = lambda frame, train_mode: FundusDataset(frame, root, transforms(config, train_mode), cached,
-                                                      config["image_size"], config.get("preprocess"))
+                                                      config["image_size"], config.get("preprocess"),
+                                                      config.get("crop"))
     weights = sample_weights(train, config.get("oversample"))
     sampler = None
     if weights is not None:     # sorteio com reposição, mesmo número de imagens por época

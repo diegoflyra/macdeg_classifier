@@ -55,6 +55,9 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 
 - **Mude uma coisa por vez** em relação à referência. Crie um YAML novo em `configs/experimentos/`
   (`base`, `grade`, `variacoes`, `referencia: resultados/<lote>/<configuração>`). Veja `exemplo_grade.yaml`.
+- **Fluxo por rodadas:** o que ganhou numa rodada entra na base da seguinte (`base_mudancas` no YAML, que
+  vale para todas as configurações); cada variação muda uma coisa sobre essa base. Hiperparâmetros fixos
+  até o fim; o ajuste fino é a última rodada.
 - **Não edite** `configs/train/baseline.yaml` nem um YAML de experimento já lançado: crie outro. A
   referência atual é `001_referencia.yaml` (ResNet-50 ImageNet, 512 px, sem aumento de dados).
 - Opções novas de treino entram como **chave de configuração com padrão que mantém o comportamento
@@ -75,8 +78,9 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
     disease_group, prob. **Nunca** uid, path ou nome de arquivo.
   - Lote: `lote.json`, `tarefas/<configuração>/outer<k>_inner<j>|final/`, `logs/`,
     `analise/`. `macdeg.train.run(config, outer, inner, seed, out, log, on_model)`.
-- Lote efetivo fixo (`batch_size`), com acumulação de gradientes conforme a GPU (`micro_batch`): o
-  resultado não pode depender da GPU sorteada.
+- Lote efetivo fixo (`batch_size`), com acumulação de gradientes (`micro_batch`). O micro-lote é calculado
+  para a menor GPU do cluster (24 GB) e a arquitetura, nunca para a GPU sorteada: assim o BatchNorm (médias
+  dentro do micro-lote) e o resultado não dependem da GPU.
 - Pesos: `last.pt` é apagado ao fim da tarefa; `best.pt` só fica no treino final (cota do `$HOME`).
 
 ## 6. Cluster, serviços e Git

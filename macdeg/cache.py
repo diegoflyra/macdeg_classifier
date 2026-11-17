@@ -56,10 +56,23 @@ def clahe(image: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
 
 
-def prepare(image: np.ndarray, size: int, preprocess: str | None = None) -> np.ndarray:
-    """Imagem RGB original -> no tamanho do treino, com o pré-processamento (se houver) depois de reduzir."""
+def center_crop(image: np.ndarray, fraction: float) -> np.ndarray:
+    """Quadrado central com `fraction` do lado. As fotos são centradas na mácula: com 0,6, a fóvea fica
+    dentro do recorte em ~100% das imagens (fóvea marcada no ADAM; detector clássico nas outras bases)."""
+    if not 0 < fraction <= 1:
+        raise ValueError(f"crop deve estar em (0, 1]: {fraction!r}")
+    height, width = image.shape[:2]
+    side = int(round(min(height, width) * fraction))
+    top, left = (height - side) // 2, (width - side) // 2
+    return image[top:top + side, left:left + side]
+
+
+def prepare(image: np.ndarray, size: int, preprocess: str | None = None, crop: float | None = None) -> np.ndarray:
+    """Imagem RGB original -> recorte central (se houver) -> tamanho do treino -> pré-processamento (se houver)."""
     if preprocess not in PREPROCESS:
         raise ValueError(f"preprocess desconhecido: {preprocess!r} (opções: {PREPROCESS})")
+    if crop:
+        image = center_crop(image, crop)
     small = resize(image, size)
     return clahe(small) if preprocess == "clahe" else small
 
@@ -80,13 +93,13 @@ def _lock(path: Path):
 
 def _fill(args) -> list[int]:
     """Processo auxiliar: reduz um pedaço das imagens e grava direto no .npy (mmap)."""
-    data_path, root, size, preprocess, chunk = args
+    data_path, root, size, preprocess, crop, chunk = args
     cv2.setNumThreads(1)
     torch.set_num_threads(1)
     data = np.load(data_path, mmap_mode="r+")
     done = []
     for row, image in chunk:
-        small = prepare(read_rgb(str(Path(root) / image)), size, preprocess)
+        small = prepare(read_rgb(str(Path(root) / image)), size, preprocess, crop)
         if small.shape == (size, size, 3):
             data[row] = small
             done.append(row)
@@ -95,13 +108,14 @@ def _fill(args) -> list[int]:
 
 
 def build(root: Path, images: list[str], size: int, workers: int | None = None,
-          preprocess: str | None = None) -> tuple[Path, dict[str, int]] | None:
+          preprocess: str | None = None, crop: float | None = None) -> tuple[Path, dict[str, int]] | None:
     """Garante o cache de `images` (caminhos relativos ao conjunto) em `size` px. Devolve (arquivo .npy,
     {imagem: linha}). Se já existe um cache com todas essas imagens, só o reaproveita. Se o disco não
     tem espaço, devolve None: o treino lê os JPEGs (mais devagar, mesmos pixels)."""
     folder = folder_for(root)
     folder.mkdir(parents=True, exist_ok=True)
-    key = f"{size}px" + (f"-{preprocess}" if preprocess else "")     # um cache por tamanho e pré-processamento
+    key = (f"{size}px" + (f"-{preprocess}" if preprocess else "")    # um cache por tamanho, recorte e
+           + (f"-crop{crop:g}" if crop else ""))                       # pré-processamento
     index_path = folder / f"{key}.json"
     wanted = sorted(set(images))
     with _lock(folder / f"{key}.lock"):
@@ -129,11 +143,11 @@ def build(root: Path, images: list[str], size: int, workers: int | None = None,
         rows = list(enumerate(wanted))
         chunks = [rows[i::workers * 4] for i in range(min(len(rows), workers * 4))]
         if workers == 1:
-            done = [r for c in chunks for r in _fill((tmp, root, size, preprocess, c))]
+            done = [r for c in chunks for r in _fill((tmp, root, size, preprocess, crop, c))]
         else:
             import multiprocessing as mp      # fork: não reimporta o PyTorch (caro em disco de rede)
             with ProcessPoolExecutor(workers, mp_context=mp.get_context("fork")) as pool:
-                done = [r for part in pool.map(_fill, [(tmp, root, size, preprocess, c) for c in chunks]) for r in part]
+                done = [r for part in pool.map(_fill, [(tmp, root, size, preprocess, crop, c) for c in chunks]) for r in part]
         tmp.replace(data_path)
         lines = {wanted[r]: r for r in sorted(done)}
         index_path.write_text(json.dumps({"tamanho": size, "arquivo": data_path.name, "pedidas": wanted,

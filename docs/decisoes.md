@@ -33,7 +33,7 @@ Só agregados, sem IDs. Contexto e justificativas completas: `docs/proposta.md`.
 
 ### Treino e execução
 - **Referência:** ResNet-50 ImageNet, 512 px, sem aumento de dados, pos_weight, AdamW + cosseno, AMP.
-- **Lote efetivo fixo (16)** em qualquer GPU (acumulação de gradientes): o resultado não depende da GPU.
+- **Lote efetivo fixo (16)** em qualquer GPU (acumulação de gradientes; desde a rodada 3, micro-lote calculado para a menor GPU, para o BatchNorm também não depender da GPU).
 - **Apuana:** partição `short-simple` (QoS `simple`: até 2 GPUs por usuário), sem preempção; GPUs RTX 3090
   ou fatias de A100 (MIG, ~10 GB). Ambiente `venv` com o Python do sistema (3.10.12; os módulos vão só até
   3.10.8), instalado no nó `install`; pacotes sem versão fixa no cluster, registradas em `freeze.txt`. Dados descompactados no `/tmp`
@@ -77,6 +77,37 @@ Pontos fracos: especificidade 0,43 nos olhos com retinopatia diabética (HYAMD: 
 - Leitura crítica do levantamento bibliográfico feito com o Gemini (fora do repositório): vários números
   não se confirmaram nas fontes (ex.: um artigo de OCT citado como de retinografia); só entram no texto
   referências conferidas.
+
+## Rodada 3 (17/11/2026)
+
+Resultado da rodada 2 (`rodada2-20261115-1245`, contra a `rodada2-00`): nenhuma variação ganhou.
+Augmentation +0,013 [−0,000; +0,028] e cabeça de DR +0,012 [−0,001; +0,025] empataram no limite; sorteio
+de DR e CLAHE trocaram DMRI precoce por especificidade em DR; 1024 px perdeu (−0,036 [−0,053; −0,021]).
+A `rodada2-00` empatou com a referência antiga (−0,007), mas 5,6% das previsões mudaram entre os dois
+treinos idênticos (cuDNN não determinístico): diferenças de ~0,01 estão dentro dessa variação.
+
+- **AUROC por estágio** (acrescentada ao relatório; não substitui a métrica principal): só o HYAMD estadia,
+  e os "sem DMRI" dele são todos olhos com DR. DMRI precoce × DR: 0,49 a 0,63 em todas as configurações
+  (perto do acaso); intermediária/tardia × DR: ~0,83. O modelo detecta DMRI estabelecida, mas não separa
+  drusas iniciais de DR.
+- **Só 512 px daqui em diante.** 1024 px perdeu e custa 2–4× mais GPU.
+- **Fluxo por rodadas:** a base nova incorpora o que chegou mais perto de ganhar (augmentation + cabeça de
+  DR, `base_mudancas`); cada variação muda uma coisa sobre ela. Hiperparâmetros fixos (receita da ResNet)
+  até o fim; o ajuste (lr × weight decay) fica para a última rodada. Limitação: com a mesma receita, uma
+  arquitetura pode perder por receita, não por arquitetura.
+- **Arquiteturas:** DenseNet-121, EfficientNetV2-S e EfficientNet-B4 (pré-treinos em 224, 300–384 e 380 px).
+  Cada rede usa a normalização do seu pré-treino. AlexNet (histórica) e ConvNeXt ficam com o parceiro, com a
+  mesma base e referência = `rodada3-00`.
+- **Recorte central da mácula (`crop: 0.6`):** quadrado central com 60% do lado da imagem de 1024 px,
+  reduzido a 512 px (1,67× mais pixels na mácula). Estudo prévio (só agregados): na fóvea marcada à mão no
+  ADAM (915 imagens), supor a fóvea no centro erra 0,39 DD na mediana (94% a menos de 1 DD); o detector
+  clássico (`localization.py`, adaptado sem o lado do olho) erra mais, 0,49 DD (80%). Pelo detector, todas
+  as bases são centradas na mácula: 0,2% das fóveas fora de um recorte de 50% (nenhuma com DMRI). Por isso
+  o recorte é fixo, sem detector nem rede de localização. 60% em vez de 50%: a grade do AREDS (raio
+  ~1,7 DD) cabe inteira em quase todas as imagens.
+- **Micro-lote calculado para a menor GPU (24 GB) e a arquitetura:** a acumulação de gradientes iguala a
+  atualização, mas não o BatchNorm (médias dentro do micro-lote). Agora o micro-lote é o mesmo em qualquer
+  GPU. Em 512 px, a ResNet-50 continua com 16 (como em todas as tarefas de 512 px da rodada 2).
 
 ## Pré-processamento por ROI e auditoria (HYAMD, suspenso em 11/11/2026)
 

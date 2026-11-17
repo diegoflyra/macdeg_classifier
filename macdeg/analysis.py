@@ -97,6 +97,23 @@ def score_distribution(predictions: pd.DataFrame, extra: pd.DataFrame | None) ->
     return pd.DataFrame(rows)
 
 
+def stage_auroc(predictions: pd.DataFrame, manifest: pd.DataFrame | None) -> dict:
+    """AUROC de cada estágio de DMRI contra os "sem DMRI" das mesmas bases (só os estágios informados;
+    hoje, só o HYAMD estadia, e os "sem DMRI" dele são todos olhos com DR: é a separação precoce x DR)."""
+    if manifest is None or "label_detail" not in manifest:
+        return {}
+    detail = manifest.drop_duplicates("sample_id").set_index("sample_id")["label_detail"]
+    table = predictions.assign(estagio=predictions["sample_id"].map(detail))
+    out = {}
+    for stage, positives in table[(table["label"] == 1) & (table["estagio"] != "dmri")].groupby("estagio"):
+        sources = sorted(positives["source"].unique())
+        negatives = table[(table["label"] == 0) & table["source"].isin(sources)]
+        both = pd.concat([positives, negatives])
+        out[stage] = {"n": len(positives), "n_sem_dmri": len(negatives), "bases": sources,
+                      "auroc": auroc(both["label"], both["prob"])}
+    return out
+
+
 def discordances(reference: pd.DataFrame, candidate: pd.DataFrame, manifest: pd.DataFrame | None) -> list[dict]:
     """Onde a configuração e a referência discordam, imagem a imagem (mesmas imagens, cada uma com o seu
     limiar escolhido fora da dobra). Responde "que diagnósticos se ganham ou se perdem com a mudança?":
@@ -188,6 +205,7 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
         changes = next(c["mudancas"] for c in lote["configuracoes"] if c["nome"] == name)
         result["configuracoes"][name] = {"mudancas": changes, "dobras_externas": sorted(complete),
                                          **report(outer[name]), **rulers(outer[name], manifest),
+                                         "auroc_por_estagio": stage_auroc(outer[name], manifest),
                                          "nota_selecao_por_dobra": selection[name],
                                          "epocas_melhores": [r["metrics"]["best_epoch"] for r in usable.values()],
                                          "gpus": sorted({r["metrics"]["gpu"] for r in usable.values()})}
@@ -303,6 +321,10 @@ def summary_markdown(result: dict) -> str:
                 lines.append(f"| {d['grupo']} | {d['valor']} | {d['n_dmri']} | {d['dmri_so_referencia']} | {d['dmri_so_nova']} "
                              f"| {d['dmri_nenhuma']} | {d['n_sem_dmri']} | {d['falso_positivo_so_referencia']} "
                              f"| {d['falso_positivo_so_nova']} |")
+        if r.get("auroc_por_estagio"):
+            lines += ["", "AUROC por estágio de DMRI, contra os sem DMRI das mesmas bases: " + ", ".join(
+                f"{s} {v['auroc']:.3f} (n={v['n']} x {v['n_sem_dmri']}, {'/'.join(v['bases'])})"
+                for s, v in r["auroc_por_estagio"].items() if v["auroc"] is not None)]
         if r.get("especificidade_por_doenca"):
             lines += ["", "Especificidade por doença: " + ", ".join(
                 f"{g} {v['especificidade']:.2f} (n={v['n']})" for g, v in r["especificidade_por_doenca"].items())]

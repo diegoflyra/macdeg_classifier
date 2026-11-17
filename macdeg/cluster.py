@@ -50,8 +50,12 @@ def _set(config: dict, key: str, value) -> None:
 
 def expand(experiment: dict) -> list[dict]:
     """Configurações do experimento: a base, cada combinação da grade e cada variação avulsa.
-    Nomes: <nome>-00, <nome>-01, ... na ordem (a 00 é a base com a primeira combinação)."""
+    Nomes: <nome>-00, <nome>-01, ... na ordem (a 00 é a base com a primeira combinação).
+    `base_mudancas`: o que já foi incorporado à base (ex.: as melhorias da rodada anterior); vale para
+    todas as configurações e não conta como mudança da variação."""
     base = load_config(PROJECT / experiment["base"], [])
+    for key, value in (experiment.get("base_mudancas") or {}).items():
+        _set(base, key, value)
     grid = experiment.get("grade") or {}
     combos = [dict(zip(grid, values)) for values in itertools.product(*grid.values())] or [{}]
     combos += [dict(v) for v in experiment.get("variacoes") or []]
