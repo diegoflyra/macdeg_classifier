@@ -111,11 +111,11 @@ def build_model(name: str, pretrained: bool, *, freeze_first_convs: int = 0,
         raise ValueError("freeze_first_convs deve ser um inteiro entre 0 e 5.")
     if freeze_first_convs and name != "alexnet":
         raise ValueError("freeze_first_convs só é suportado para model: alexnet.")
-    import torchvision.models as tvm
     if name == "alexnet":
-        from macdeg.models import freeze_alexnet_features
-        weights = tvm.AlexNet_Weights.IMAGENET1K_V1 if pretrained else None
-        model = tvm.alexnet(weights=weights)
+        from macdeg.models import AlexNet, freeze_alexnet_features, load_alexnet_imagenet_weights
+        model = AlexNet()
+        if pretrained:
+            load_alexnet_imagenet_weights(model)
         model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, 1)
         if head_init == "xavier":
             nn.init.xavier_uniform_(model.classifier[-1].weight, gain=1.0)
@@ -123,6 +123,7 @@ def build_model(name: str, pretrained: bool, *, freeze_first_convs: int = 0,
         freeze_alexnet_features(model, freeze_first_convs)
         return model
     if name in ("resnet18", "resnet34", "resnet50"):
+        import torchvision.models as tvm
         weights = {"resnet18": tvm.ResNet18_Weights.IMAGENET1K_V1, "resnet34": tvm.ResNet34_Weights.IMAGENET1K_V1,
                    "resnet50": tvm.ResNet50_Weights.IMAGENET1K_V2}[name] if pretrained else None
         model = getattr(tvm, name)(weights=weights)

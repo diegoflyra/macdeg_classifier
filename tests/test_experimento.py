@@ -198,16 +198,15 @@ def test_tasks_are_split_between_two_gpus(tiny_dataset, tmp_path, monkeypatch):
 
 def test_alexnet_finetuning_runs_the_existing_training_pipeline(tiny_dataset, tmp_path, monkeypatch):
     """Uma atualização real e inferência; seleção ImageNet com download substituído."""
-    import torchvision.models as tvm
+    import macdeg.models as models
     from macdeg.train import PREDICTION_COLUMNS, run
-    original = tvm.alexnet
     weights_requested = []
 
-    def without_download(*, weights):
-        weights_requested.append(weights)
-        return original(weights=None)
+    def without_download(model):
+        assert model.classifier[-1].out_features == 1000
+        weights_requested.append(True)
 
-    monkeypatch.setattr(tvm, "alexnet", without_download)
+    monkeypatch.setattr(models, "load_alexnet_imagenet_weights", without_download)
     monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
     config = {"name": "alexnet_finetuning_smoke", "dataset": str(tiny_dataset), "model": "alexnet",
               "pretrained": True, "freeze_first_convs": 3,
@@ -217,7 +216,7 @@ def test_alexnet_finetuning_runs_the_existing_training_pipeline(tiny_dataset, tm
               "augment": None}
     target = tmp_path / "alexnet"
     metrics = run(config, outer=0, inner=0, seed=0, out=target)
-    assert weights_requested == [tvm.AlexNet_Weights.IMAGENET1K_V1]
+    assert weights_requested == [True]
     assert metrics["epochs_run"] == 1
     assert metrics["frozen_parameters"] > 0 and metrics["trainable_parameters"] > 0
     history = pd.read_csv(target / "history.csv")

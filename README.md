@@ -53,6 +53,8 @@ envia `resultados/<lote>/` para a branch `resultados`. No cluster: `sbatch clust
 AlexNet para DMRI: [`docs/alexnet.md`](docs/alexnet.md) explica o fine-tuning com pesos ImageNet,
 as três primeiras convoluções congeladas e as camadas profundas treináveis. O experimento é
 `002_alexnet_finetuning.yaml`, com saída binária e a avaliação já definida no projeto.
+A arquitetura está escrita camada por camada em `macdeg/models.py`; só os pesos pré-treinados
+são carregados do checkpoint oficial, separadamente.
 As propostas de taxas separadas e inicialização da saída estão nos experimentos
 `003_alexnet_taxas.yaml` e `004_alexnet_inicializacao.yaml`, com comparações controladas.
 

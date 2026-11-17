@@ -8,26 +8,86 @@ import torch
 import yaml
 from torch import nn
 
+from macdeg.models import AlexNet, ALEXNET_IMAGENET_URL, load_alexnet_imagenet_weights
 from macdeg.train import build_model, build_optimizer
 
 
 @pytest.mark.parametrize("pretrained", [False, True])
 def test_alexnet_selects_imagenet_weights_and_keeps_hidden_layers(monkeypatch, pretrained):
-    import torchvision.models as tvm
-    original, captured = tvm.alexnet, {}
+    import macdeg.models as models
+    captured, weights_requested = {}, []
 
-    def without_download(*, weights):
-        model = original(weights=None)
-        captured.update(weights=weights, first=model.features[0], hidden=model.classifier[4],
-                        output=model.classifier[-1])
+    def manual_model():
+        model = AlexNet()
+        captured.update(first=model.features[0], hidden=model.classifier[4], output=model.classifier[-1])
         return model
 
-    monkeypatch.setattr(tvm, "alexnet", without_download)
+    def without_download(model):
+        weights_requested.append(model)
+        assert model.classifier[-1].out_features == 1000
+        with torch.no_grad():
+            model.features[0].weight.fill_(0.125)
+            model.classifier[4].bias.fill_(0.25)
+
+    monkeypatch.setattr(models, "AlexNet", manual_model)
+    monkeypatch.setattr(models, "load_alexnet_imagenet_weights", without_download)
     model = build_model("alexnet", pretrained=pretrained, freeze_first_convs=3)
-    assert captured["weights"] == (tvm.AlexNet_Weights.IMAGENET1K_V1 if pretrained else None)
+    assert weights_requested == ([model] if pretrained else [])
+    assert isinstance(model, AlexNet)
     assert model.features[0] is captured["first"] and model.classifier[4] is captured["hidden"]
     assert model.classifier[-1] is not captured["output"]
     assert model.classifier[-1].out_features == 1
+    if pretrained:
+        assert torch.all(model.features[0].weight == 0.125)
+        assert torch.all(model.classifier[4].bias == 0.25)
+
+
+@pytest.mark.parametrize("size", [224, 512])
+def test_manual_alexnet_accepts_official_state_and_matches_outputs(size):
+    import torchvision.models as tvm
+    # O construtor oficial é usado só como referência de teste, sem baixar pesos.
+    reference = tvm.alexnet(weights=None).eval()
+    model = AlexNet().eval()
+    model.load_state_dict(reference.state_dict(), strict=True)
+    images = torch.randn(1, 3, size, size)
+    with torch.no_grad():
+        torch.testing.assert_close(model(images), reference(images))
+
+
+def test_imagenet_loader_checks_hash_and_loads_all_state_keys(monkeypatch):
+    model = AlexNet()
+    checkpoint = model.state_dict()
+    checkpoint["features.0.weight"] = torch.full_like(checkpoint["features.0.weight"], 0.125)
+    checkpoint["classifier.4.bias"] = torch.full_like(checkpoint["classifier.4.bias"], 0.25)
+    checkpoint["classifier.6.bias"] = torch.full_like(checkpoint["classifier.6.bias"], 0.5)
+    calls = []
+
+    def offline_checkpoint(url, **kwargs):
+        calls.append((url, kwargs))
+        return checkpoint
+
+    monkeypatch.setattr(torch.hub, "load_state_dict_from_url", offline_checkpoint)
+    load_alexnet_imagenet_weights(model)
+    assert calls == [(ALEXNET_IMAGENET_URL, {"map_location": "cpu", "progress": True,
+                                          "check_hash": True, "weights_only": True})]
+    assert torch.all(model.features[0].weight == 0.125)
+    assert torch.all(model.classifier[4].bias == 0.25)
+    assert torch.all(model.classifier[6].bias == 0.5)
+
+
+def test_incompatible_checkpoint_is_rejected(monkeypatch):
+    monkeypatch.setattr(torch.hub, "load_state_dict_from_url", lambda *a, **k: {"unexpected": torch.zeros(1)})
+    with pytest.raises(RuntimeError):
+        load_alexnet_imagenet_weights(AlexNet())
+
+
+def test_pretrained_model_does_not_fall_back_when_download_fails(monkeypatch):
+    def unavailable(*args, **kwargs):
+        raise OSError("download indisponível no teste")
+
+    monkeypatch.setattr(torch.hub, "load_state_dict_from_url", unavailable)
+    with pytest.raises(OSError, match="download indisponível"):
+        build_model("alexnet", pretrained=True)
 
 
 @pytest.mark.parametrize("size", [128, 224, 512])
