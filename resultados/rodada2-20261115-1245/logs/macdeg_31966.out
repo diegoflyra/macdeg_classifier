@@ -1,0 +1,867 @@
+==========================================
+job 31966 | nó cluster-node7 | 2026-11-16 21:44:55
+argumentos: --retomar /home/CIN/dfal/macdeg_runs/rodada2-20261115-1245 --do-fim
+==========================================
+python: /home/CIN/dfal/macdeg_classifier/.venv/bin/python
+GPU 0: NVIDIA A100 80GB PCIe (UUID: GPU-3713ead6-92b3-f047-72d6-9ecf7250660f)
+torch 2.14.1+cu130 | GPUs: NVIDIA A100 80GB PCIe
+disco local /tmp: 35 GB livres
+disco local /var/tmp: 35 GB livres
+copiando o conjunto para /tmp/dfal-macdeg-31966 ...
+conjunto pronto: 20871 imagens
+segredos: {'GITHUB_TOKEN': True, 'WANDB_API_KEY': True, 'HF_TOKEN': True, 'WANDB_ENTITY': False}
+commit: a3ab1ea9da | mudanças sem commit: False
+assinatura dos dados: 72e45dfc1003894a
+GitHub: envio testado e funcionando
+lote /home/CIN/dfal/macdeg_runs/rodada2-20261115-1245: 6 configuração(ões), 120 tarefas
+tarefa 120/120: {'id': 119, 'configuracao': 'rodada2-05', 'outer': 4, 'inner': 3}
+treino: 10825 imagens (909 DMRI); validação: 3607 (304 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9147363802605479, "val_auroc": 0.8706966951893812, "seconds": 248.2, "train_seconds": 185.1, "data_wait_seconds": 32.8, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7755045141561849, "val_auroc": 0.8693935537071563, "seconds": 204.1, "train_seconds": 159.0, "data_wait_seconds": 24.9, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.678016058714873, "val_auroc": 0.9254037398218524, "seconds": 202.9, "train_seconds": 160.3, "data_wait_seconds": 18.8, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6245730444568501, "val_auroc": 0.9420134407317112, "seconds": 210.2, "train_seconds": 166.0, "data_wait_seconds": 31.1, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.5814156618806914, "val_auroc": 0.9461330010994788, "seconds": 199.3, "train_seconds": 156.4, "data_wait_seconds": 25.0, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.497620830113983, "val_auroc": 0.9470676577911628, "seconds": 214.7, "train_seconds": 164.4, "data_wait_seconds": 29.0, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.4032476449126279, "val_auroc": 0.945554878340265, "seconds": 206.8, "train_seconds": 157.2, "data_wait_seconds": 18.0, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.33046419879961647, "val_auroc": 0.9553605573880205, "seconds": 221.1, "train_seconds": 159.6, "data_wait_seconds": 20.3, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.2716738730283267, "val_auroc": 0.9245567227560272, "seconds": 202.1, "train_seconds": 159.4, "data_wait_seconds": 27.9, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.2532163371828649, "val_auroc": 0.9397452674602037, "seconds": 215.1, "train_seconds": 160.1, "data_wait_seconds": 21.9, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.15854220262924265, "val_auroc": 0.9488961390761189, "seconds": 213.9, "train_seconds": 153.9, "data_wait_seconds": 14.4, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.11183963693694222, "val_auroc": 0.938418722214255, "seconds": 203.3, "train_seconds": 147.2, "data_wait_seconds": 8.6, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.053612603053231275, "val_auroc": 0.9394290676737257, "seconds": 216.7, "train_seconds": 164.4, "data_wait_seconds": 27.8, "lr": 8.190142503906798e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9553605573880205,
+ "auroc_ic95": [
+  0.9409,
+  0.9673
+ ],
+ "auprc": 0.7215347825627978,
+ "regua_origem_auroc": 0.791080576668738
+}
+tarefa 119/120: {'id': 118, 'configuracao': 'rodada2-05', 'outer': 4, 'inner': 2}
+treino: 10824 imagens (910 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9403270332903199, "val_auroc": 0.8621600435383932, "seconds": 234.7, "train_seconds": 180.8, "data_wait_seconds": 50.3, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7999338647405777, "val_auroc": 0.9189047497790627, "seconds": 189.1, "train_seconds": 147.4, "data_wait_seconds": 13.1, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.6967645294126674, "val_auroc": 0.9215225455979789, "seconds": 201.6, "train_seconds": 158.7, "data_wait_seconds": 20.2, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6458097444351255, "val_auroc": 0.9120234867662258, "seconds": 216.3, "train_seconds": 171.5, "data_wait_seconds": 35.3, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6009929275151188, "val_auroc": 0.9354258723905673, "seconds": 215.7, "train_seconds": 164.7, "data_wait_seconds": 26.7, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5250574251273151, "val_auroc": 0.920626313766021, "seconds": 225.2, "train_seconds": 161.6, "data_wait_seconds": 23.7, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.46258369696563517, "val_auroc": 0.934266013590769, "seconds": 196.0, "train_seconds": 153.7, "data_wait_seconds": 16.3, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3855402371901247, "val_auroc": 0.935419880868571, "seconds": 213.6, "train_seconds": 166.1, "data_wait_seconds": 30.0, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.3237417935346909, "val_auroc": 0.9322713360594759, "seconds": 205.7, "train_seconds": 162.9, "data_wait_seconds": 27.0, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.24645934672888434, "val_auroc": 0.9370415861555899, "seconds": 201.4, "train_seconds": 158.2, "data_wait_seconds": 25.3, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.192144185325996, "val_auroc": 0.9350014729158241, "seconds": 190.1, "train_seconds": 144.9, "data_wait_seconds": 2.5, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.14465323343257194, "val_auroc": 0.932518985635326, "seconds": 225.9, "train_seconds": 163.3, "data_wait_seconds": 25.8, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.07329108673635217, "val_auroc": 0.9373631311693953, "seconds": 209.2, "train_seconds": 165.1, "data_wait_seconds": 35.3, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.04444607445753104, "val_auroc": 0.9380781194609628, "seconds": 197.9, "train_seconds": 152.4, "data_wait_seconds": 16.3, "lr": 6.183221215612904e-05}
+{"epoch": 14, "train_loss": 0.02391451672794369, "val_auroc": 0.9380886046244564, "seconds": 220.0, "train_seconds": 171.9, "data_wait_seconds": 35.0, "lr": 4.3933982822017876e-05}
+{"epoch": 15, "train_loss": 0.015948016098898937, "val_auroc": 0.9358322972993215, "seconds": 204.7, "train_seconds": 146.9, "data_wait_seconds": 4.6, "lr": 2.8647450843757897e-05}
+{"epoch": 16, "train_loss": 0.006760681002289114, "val_auroc": 0.9383332584393083, "seconds": 212.2, "train_seconds": 160.4, "data_wait_seconds": 24.2, "lr": 1.634902137174483e-05}
+{"epoch": 17, "train_loss": 0.0048018754778886485, "val_auroc": 0.9388410399285012, "seconds": 211.8, "train_seconds": 167.4, "data_wait_seconds": 34.5, "lr": 7.34152255572697e-06}
+{"epoch": 18, "train_loss": 0.003287900151101722, "val_auroc": 0.9384815486087187, "seconds": 199.3, "train_seconds": 152.5, "data_wait_seconds": 14.1, "lr": 1.8467489107293509e-06}
+{"epoch": 19, "train_loss": 0.0029583503148882646, "val_auroc": 0.9391930418457882, "seconds": 213.7, "train_seconds": 168.6, "data_wait_seconds": 29.3, "lr": 0.0}
+{
+ "auroc": 0.9391930418457882,
+ "auroc_ic95": [
+  0.9213,
+  0.9556
+ ],
+ "auprc": 0.6693101518912948,
+ "regua_origem_auroc": 0.7926553926194435
+}
+tarefa 118/120: {'id': 117, 'configuracao': 'rodada2-05', 'outer': 4, 'inner': 1}
+treino: 10824 imagens (910 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9174354975084229, "val_auroc": 0.8704747781888628, "seconds": 227.0, "train_seconds": 172.5, "data_wait_seconds": 39.6, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.8002889402122539, "val_auroc": 0.9209952916622979, "seconds": 206.2, "train_seconds": 163.3, "data_wait_seconds": 33.0, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.698086187386742, "val_auroc": 0.9090736607700104, "seconds": 212.6, "train_seconds": 155.7, "data_wait_seconds": 14.0, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6398852117381681, "val_auroc": 0.9356136067464538, "seconds": 215.5, "train_seconds": 170.9, "data_wait_seconds": 41.9, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.590862158344254, "val_auroc": 0.917859728484195, "seconds": 215.6, "train_seconds": 173.8, "data_wait_seconds": 41.0, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5184388051096064, "val_auroc": 0.9363810208554895, "seconds": 215.8, "train_seconds": 171.5, "data_wait_seconds": 37.8, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.44899667912994967, "val_auroc": 0.946939081200102, "seconds": 189.7, "train_seconds": 147.3, "data_wait_seconds": 9.0, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3685746250712704, "val_auroc": 0.9404812190750089, "seconds": 216.0, "train_seconds": 169.8, "data_wait_seconds": 41.0, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.3006110135107659, "val_auroc": 0.9335095839387267, "seconds": 200.1, "train_seconds": 153.8, "data_wait_seconds": 18.1, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.2323239613689493, "val_auroc": 0.9294328525136931, "seconds": 228.1, "train_seconds": 166.9, "data_wait_seconds": 36.0, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.17374963602691768, "val_auroc": 0.925948782472801, "seconds": 210.1, "train_seconds": 163.2, "data_wait_seconds": 27.3, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.09850990608043159, "val_auroc": 0.934849687691916, "seconds": 227.3, "train_seconds": 171.6, "data_wait_seconds": 35.8, "lr": 0.0001036474508437579}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.946939081200102,
+ "auroc_ic95": [
+  0.9331,
+  0.9584
+ ],
+ "auprc": 0.6689048158437172,
+ "regua_origem_auroc": 0.792956965893261
+}
+tarefa 117/120: {'id': 116, 'configuracao': 'rodada2-05', 'outer': 4, 'inner': 0}
+treino: 10823 imagens (910 DMRI); validação: 3609 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9282665935581957, "val_auroc": 0.8883533090151119, "seconds": 227.4, "train_seconds": 164.2, "data_wait_seconds": 37.9, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7487702432292453, "val_auroc": 0.9014557989374254, "seconds": 202.7, "train_seconds": 142.8, "data_wait_seconds": 5.1, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.6991094988081935, "val_auroc": 0.9150010282334948, "seconds": 188.0, "train_seconds": 145.9, "data_wait_seconds": 9.2, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6287984824877166, "val_auroc": 0.9211809111945677, "seconds": 213.7, "train_seconds": 167.1, "data_wait_seconds": 36.9, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.5588268550917418, "val_auroc": 0.9237604794962255, "seconds": 208.7, "train_seconds": 155.0, "data_wait_seconds": 19.5, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.525618791150359, "val_auroc": 0.9134257345879778, "seconds": 201.4, "train_seconds": 158.3, "data_wait_seconds": 16.2, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.46709029519787204, "val_auroc": 0.940095915217656, "seconds": 213.5, "train_seconds": 166.9, "data_wait_seconds": 31.9, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3926750069908445, "val_auroc": 0.9330595037725187, "seconds": 218.3, "train_seconds": 170.0, "data_wait_seconds": 38.5, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.31401953273645694, "val_auroc": 0.9386254414915176, "seconds": 218.7, "train_seconds": 169.1, "data_wait_seconds": 36.4, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.2576552620818894, "val_auroc": 0.9351788627138575, "seconds": 199.7, "train_seconds": 148.8, "data_wait_seconds": 17.6, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.1694194075094189, "val_auroc": 0.9419038092556988, "seconds": 212.7, "train_seconds": 152.3, "data_wait_seconds": 15.2, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.13053122033522127, "val_auroc": 0.9338291814662409, "seconds": 212.8, "train_seconds": 167.9, "data_wait_seconds": 37.3, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.06758849166761019, "val_auroc": 0.9345045212325226, "seconds": 210.1, "train_seconds": 169.6, "data_wait_seconds": 38.6, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.0646465929101439, "val_auroc": 0.9418628795728938, "seconds": 202.8, "train_seconds": 153.0, "data_wait_seconds": 14.2, "lr": 6.183221215612904e-05}
+{"epoch": 14, "train_loss": 0.02885085634009626, "val_auroc": 0.9391330693867934, "seconds": 193.4, "train_seconds": 149.4, "data_wait_seconds": 7.0, "lr": 4.3933982822017876e-05}
+{"epoch": 15, "train_loss": 0.01348940291291808, "val_auroc": 0.9402032308494006, "seconds": 200.9, "train_seconds": 156.0, "data_wait_seconds": 21.9, "lr": 2.8647450843757897e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9419038092556988,
+ "auroc_ic95": [
+  0.9252,
+  0.9558
+ ],
+ "auprc": 0.6573555491724776,
+ "regua_origem_auroc": 0.7926467329128557
+}
+tarefa 116/120: {'id': 115, 'configuracao': 'rodada2-05', 'outer': 3, 'inner': 3}
+treino: 10824 imagens (909 DMRI); validação: 3607 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.90347747953289, "val_auroc": 0.9138782673666883, "seconds": 217.2, "train_seconds": 163.6, "data_wait_seconds": 29.2, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7606283198138313, "val_auroc": 0.9118395344377053, "seconds": 214.7, "train_seconds": 160.2, "data_wait_seconds": 23.9, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.6598137041785308, "val_auroc": 0.8975963728334093, "seconds": 218.0, "train_seconds": 158.6, "data_wait_seconds": 29.2, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6162034645345966, "val_auroc": 0.8804469429993846, "seconds": 219.9, "train_seconds": 167.4, "data_wait_seconds": 27.8, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6022678400285145, "val_auroc": 0.9132824299379091, "seconds": 218.1, "train_seconds": 169.5, "data_wait_seconds": 39.9, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.512325251463955, "val_auroc": 0.9294759227738754, "seconds": 214.9, "train_seconds": 159.5, "data_wait_seconds": 25.5, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.4539427428159135, "val_auroc": 0.9180081749095006, "seconds": 216.3, "train_seconds": 168.7, "data_wait_seconds": 35.7, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3992792526370234, "val_auroc": 0.9337976170498405, "seconds": 212.1, "train_seconds": 159.9, "data_wait_seconds": 25.1, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.3108354947121935, "val_auroc": 0.9244914654903748, "seconds": 214.1, "train_seconds": 162.0, "data_wait_seconds": 25.7, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.2239118513579552, "val_auroc": 0.9150010188670199, "seconds": 231.8, "train_seconds": 172.0, "data_wait_seconds": 40.2, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.18454688690212204, "val_auroc": 0.9291063337568624, "seconds": 223.8, "train_seconds": 172.0, "data_wait_seconds": 42.7, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.1449330678816193, "val_auroc": 0.9314607156841592, "seconds": 225.9, "train_seconds": 168.1, "data_wait_seconds": 39.4, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.09812792994945789, "val_auroc": 0.9327922350346414, "seconds": 211.3, "train_seconds": 165.4, "data_wait_seconds": 37.7, "lr": 8.190142503906798e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9337976170498405,
+ "auroc_ic95": [
+  0.9123,
+  0.9524
+ ],
+ "auprc": 0.6282150019817622,
+ "regua_origem_auroc": 0.7909025164017613
+}
+tarefa 115/120: {'id': 114, 'configuracao': 'rodada2-05', 'outer': 3, 'inner': 2}
+treino: 10823 imagens (909 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.942242447573405, "val_auroc": 0.7271261165450886, "seconds": 205.2, "train_seconds": 152.0, "data_wait_seconds": 13.4, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.8194954784135141, "val_auroc": 0.921806643599307, "seconds": 216.7, "train_seconds": 157.3, "data_wait_seconds": 28.9, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.7047583470837429, "val_auroc": 0.9344392684351641, "seconds": 224.4, "train_seconds": 170.4, "data_wait_seconds": 41.8, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6576260341739161, "val_auroc": 0.9470254589755496, "seconds": 217.3, "train_seconds": 159.0, "data_wait_seconds": 19.4, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6283418045726401, "val_auroc": 0.9356989859349022, "seconds": 187.1, "train_seconds": 144.0, "data_wait_seconds": 7.3, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.540920540155876, "val_auroc": 0.9371828862160043, "seconds": 205.6, "train_seconds": 151.8, "data_wait_seconds": 11.5, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.48071220841192636, "val_auroc": 0.9201265209728233, "seconds": 211.8, "train_seconds": 159.1, "data_wait_seconds": 25.2, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.402310252349449, "val_auroc": 0.9424813888347988, "seconds": 208.2, "train_seconds": 147.6, "data_wait_seconds": 10.4, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.3545749128035672, "val_auroc": 0.9551824168801146, "seconds": 204.8, "train_seconds": 155.3, "data_wait_seconds": 20.2, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.2692828381553943, "val_auroc": 0.9371199752350424, "seconds": 228.8, "train_seconds": 170.9, "data_wait_seconds": 28.8, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.18959948513519084, "val_auroc": 0.9504201554799958, "seconds": 200.0, "train_seconds": 150.6, "data_wait_seconds": 5.9, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.11913248035177099, "val_auroc": 0.9423630562753704, "seconds": 227.1, "train_seconds": 167.9, "data_wait_seconds": 40.5, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.1055002094829557, "val_auroc": 0.9518706030966183, "seconds": 219.8, "train_seconds": 162.4, "data_wait_seconds": 32.7, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.06738361674018228, "val_auroc": 0.9369607006086387, "seconds": 192.2, "train_seconds": 150.7, "data_wait_seconds": 15.2, "lr": 6.183221215612904e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9551824168801146,
+ "auroc_ic95": [
+  0.9398,
+  0.9662
+ ],
+ "auprc": 0.7061626161417259,
+ "regua_origem_auroc": 0.7927542527323836
+}
+tarefa 114/120: {'id': 113, 'configuracao': 'rodada2-05', 'outer': 3, 'inner': 1}
+treino: 10823 imagens (910 DMRI); validação: 3608 (302 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9181991338002435, "val_auroc": 0.8042646722996118, "seconds": 210.8, "train_seconds": 155.6, "data_wait_seconds": 18.4, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7801196855994371, "val_auroc": 0.8957885121573057, "seconds": 205.3, "train_seconds": 160.7, "data_wait_seconds": 27.2, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.6928343260275013, "val_auroc": 0.9229436344915727, "seconds": 200.7, "train_seconds": 153.8, "data_wait_seconds": 23.9, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6440783593164393, "val_auroc": 0.9110302159829808, "seconds": 211.8, "train_seconds": 163.2, "data_wait_seconds": 32.0, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.5920274051611681, "val_auroc": 0.9071685837109329, "seconds": 225.3, "train_seconds": 172.2, "data_wait_seconds": 46.4, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5286360259206425, "val_auroc": 0.944952083909248, "seconds": 202.9, "train_seconds": 152.8, "data_wait_seconds": 16.3, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.4696564400050591, "val_auroc": 0.9421205874929388, "seconds": 218.3, "train_seconds": 166.0, "data_wait_seconds": 31.5, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.38683723545352205, "val_auroc": 0.9279631054113934, "seconds": 212.9, "train_seconds": 158.7, "data_wait_seconds": 8.8, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.31870608855612004, "val_auroc": 0.9398279467794859, "seconds": 198.6, "train_seconds": 156.7, "data_wait_seconds": 23.7, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.25597913812201184, "val_auroc": 0.9392565393845427, "seconds": 213.6, "train_seconds": 162.8, "data_wait_seconds": 27.7, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.20422262288409576, "val_auroc": 0.9439409782734982, "seconds": 192.9, "train_seconds": 150.8, "data_wait_seconds": 7.2, "lr": 0.00012653483024396533}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.944952083909248,
+ "auroc_ic95": [
+  0.9284,
+  0.9572
+ ],
+ "auprc": 0.6468835949028546,
+ "regua_origem_auroc": 0.7922090279363629
+}
+tarefa 113/120: {'id': 112, 'configuracao': 'rodada2-05', 'outer': 3, 'inner': 0}
+treino: 10823 imagens (908 DMRI); validação: 3608 (304 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9097356219836593, "val_auroc": 0.8932309919395948, "seconds": 206.0, "train_seconds": 157.9, "data_wait_seconds": 26.2, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7510705118304526, "val_auroc": 0.9215111069517012, "seconds": 213.2, "train_seconds": 163.8, "data_wait_seconds": 35.3, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.6593684269302695, "val_auroc": 0.9168138500382311, "seconds": 207.8, "train_seconds": 159.3, "data_wait_seconds": 29.3, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6179061774825733, "val_auroc": 0.9382287817000128, "seconds": 201.0, "train_seconds": 158.3, "data_wait_seconds": 29.7, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.5444565049686728, "val_auroc": 0.9257658181470626, "seconds": 197.5, "train_seconds": 154.0, "data_wait_seconds": 20.2, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.48598749957670123, "val_auroc": 0.9227416727730342, "seconds": 214.1, "train_seconds": 172.2, "data_wait_seconds": 45.4, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.4251654090128354, "val_auroc": 0.9337868970625717, "seconds": 211.6, "train_seconds": 160.6, "data_wait_seconds": 19.4, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3443225959657565, "val_auroc": 0.9422425568688672, "seconds": 205.3, "train_seconds": 156.1, "data_wait_seconds": 26.3, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.266536957278473, "val_auroc": 0.9334862248311456, "seconds": 209.3, "train_seconds": 163.2, "data_wait_seconds": 28.8, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.187175776990621, "val_auroc": 0.9434228447177265, "seconds": 215.6, "train_seconds": 169.0, "data_wait_seconds": 36.8, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.1541437554319896, "val_auroc": 0.9302525049381929, "seconds": 211.6, "train_seconds": 161.6, "data_wait_seconds": 14.4, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.10482978464494123, "val_auroc": 0.9427294069389576, "seconds": 202.9, "train_seconds": 154.9, "data_wait_seconds": 19.9, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.05892838739185386, "val_auroc": 0.941271843538932, "seconds": 196.4, "train_seconds": 145.2, "data_wait_seconds": 8.2, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.04070868481110493, "val_auroc": 0.9381546092455715, "seconds": 206.1, "train_seconds": 162.8, "data_wait_seconds": 29.7, "lr": 6.183221215612904e-05}
+{"epoch": 14, "train_loss": 0.01681764363810861, "val_auroc": 0.9384353694086912, "seconds": 194.9, "train_seconds": 151.9, "data_wait_seconds": 13.8, "lr": 4.3933982822017876e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9434228447177265,
+ "auroc_ic95": [
+  0.9268,
+  0.9577
+ ],
+ "auprc": 0.6047318718430184,
+ "regua_origem_auroc": 0.7931589102523258
+}
+tarefa 112/120: {'id': 111, 'configuracao': 'rodada2-05', 'outer': 2, 'inner': 3}
+treino: 10824 imagens (909 DMRI); validação: 3607 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9145758496983164, "val_auroc": 0.8881503767810195, "seconds": 210.9, "train_seconds": 153.2, "data_wait_seconds": 24.4, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7639620966283527, "val_auroc": 0.9089552417711506, "seconds": 209.2, "train_seconds": 163.4, "data_wait_seconds": 30.5, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.6606853453100786, "val_auroc": 0.8965215680163658, "seconds": 220.4, "train_seconds": 168.2, "data_wait_seconds": 40.2, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6539457895567079, "val_auroc": 0.924777647256251, "seconds": 206.4, "train_seconds": 149.1, "data_wait_seconds": 8.9, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.5650548452742883, "val_auroc": 0.9321993942735678, "seconds": 209.7, "train_seconds": 160.9, "data_wait_seconds": 32.8, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5071648590421006, "val_auroc": 0.9317374080023015, "seconds": 211.1, "train_seconds": 158.1, "data_wait_seconds": 18.8, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.41936520465026944, "val_auroc": 0.9318328019242601, "seconds": 201.9, "train_seconds": 151.2, "data_wait_seconds": 10.9, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3718239495933012, "val_auroc": 0.9315785846139093, "seconds": 219.5, "train_seconds": 167.6, "data_wait_seconds": 34.3, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.2884191463387312, "val_auroc": 0.9308339126890897, "seconds": 203.4, "train_seconds": 152.8, "data_wait_seconds": 20.1, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.22135596020979334, "val_auroc": 0.9272553920040915, "seconds": 220.6, "train_seconds": 166.5, "data_wait_seconds": 27.7, "lr": 0.00015}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9321993942735678,
+ "auroc_ic95": [
+  0.913,
+  0.9483
+ ],
+ "auprc": 0.5766154460313196,
+ "regua_origem_auroc": 0.7926310942232238
+}
+tarefa 111/120: {'id': 110, 'configuracao': 'rodada2-05', 'outer': 2, 'inner': 2}
+treino: 10823 imagens (909 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9315390283759881, "val_auroc": 0.8699595072971744, "seconds": 208.5, "train_seconds": 164.1, "data_wait_seconds": 32.7, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.772579614844548, "val_auroc": 0.917930628161152, "seconds": 207.9, "train_seconds": 148.9, "data_wait_seconds": 16.9, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.6765987573841796, "val_auroc": 0.9362337292730787, "seconds": 213.6, "train_seconds": 167.7, "data_wait_seconds": 35.5, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6123850275624609, "val_auroc": 0.8866758536670611, "seconds": 211.4, "train_seconds": 167.1, "data_wait_seconds": 40.1, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.5832273493129649, "val_auroc": 0.9192392764238603, "seconds": 197.8, "train_seconds": 157.1, "data_wait_seconds": 24.1, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.527487896988995, "val_auroc": 0.9207076986064718, "seconds": 197.2, "train_seconds": 153.5, "data_wait_seconds": 17.9, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.43520143833121605, "val_auroc": 0.9330187784285237, "seconds": 218.4, "train_seconds": 165.9, "data_wait_seconds": 23.4, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.37780711882246226, "val_auroc": 0.9225515895008563, "seconds": 205.0, "train_seconds": 159.5, "data_wait_seconds": 26.2, "lr": 0.0001963525491562421}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9362337292730787,
+ "auroc_ic95": [
+  0.9189,
+  0.9532
+ ],
+ "auprc": 0.6156190053336604,
+ "regua_origem_auroc": 0.7927342809923958
+}
+tarefa 110/120: {'id': 109, 'configuracao': 'rodada2-05', 'outer': 2, 'inner': 1}
+treino: 10823 imagens (908 DMRI); validação: 3608 (304 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9513148553669453, "val_auroc": 0.8479788255065631, "seconds": 205.4, "train_seconds": 157.3, "data_wait_seconds": 19.6, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.8059992597565143, "val_auroc": 0.880030286255894, "seconds": 201.1, "train_seconds": 158.0, "data_wait_seconds": 27.0, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.7262182191851929, "val_auroc": 0.8681850946221485, "seconds": 205.5, "train_seconds": 162.0, "data_wait_seconds": 27.2, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6577337851097598, "val_auroc": 0.9251022484707531, "seconds": 216.3, "train_seconds": 162.3, "data_wait_seconds": 28.2, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6218334647920534, "val_auroc": 0.9251351033834586, "seconds": 222.2, "train_seconds": 169.7, "data_wait_seconds": 39.5, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5455943973481479, "val_auroc": 0.9317483990697082, "seconds": 225.4, "train_seconds": 166.4, "data_wait_seconds": 35.2, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.5036808862819298, "val_auroc": 0.9242136724225818, "seconds": 206.1, "train_seconds": 156.7, "data_wait_seconds": 14.1, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3984060208010074, "val_auroc": 0.9351439045176502, "seconds": 210.2, "train_seconds": 158.1, "data_wait_seconds": 15.0, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.3287015188259442, "val_auroc": 0.942253010704728, "seconds": 192.3, "train_seconds": 148.2, "data_wait_seconds": 9.3, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.2723486022830847, "val_auroc": 0.9372481123359245, "seconds": 221.6, "train_seconds": 168.0, "data_wait_seconds": 38.7, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.22228542788604483, "val_auroc": 0.9401702083598827, "seconds": 193.3, "train_seconds": 148.4, "data_wait_seconds": 5.1, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.1277488776494352, "val_auroc": 0.9375119472409839, "seconds": 219.9, "train_seconds": 164.8, "data_wait_seconds": 34.7, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.0993379077697779, "val_auroc": 0.935449056964445, "seconds": 195.9, "train_seconds": 153.8, "data_wait_seconds": 9.8, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.06572135703586704, "val_auroc": 0.9358253950554353, "seconds": 212.3, "train_seconds": 165.1, "data_wait_seconds": 31.9, "lr": 6.183221215612904e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.942253010704728,
+ "auroc_ic95": [
+  0.9259,
+  0.9554
+ ],
+ "auprc": 0.6252165174641728,
+ "regua_origem_auroc": 0.7912846868229898
+}
+tarefa 109/120: {'id': 108, 'configuracao': 'rodada2-05', 'outer': 2, 'inner': 0}
+treino: 10823 imagens (910 DMRI); validação: 3608 (302 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.926416819286946, "val_auroc": 0.8702324290974068, "seconds": 205.3, "train_seconds": 153.4, "data_wait_seconds": 20.6, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.780801649144768, "val_auroc": 0.8965512233426681, "seconds": 213.2, "train_seconds": 153.9, "data_wait_seconds": 16.9, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.6982257061764686, "val_auroc": 0.9355291202429459, "seconds": 216.5, "train_seconds": 166.2, "data_wait_seconds": 35.5, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.643701775980419, "val_auroc": 0.939995212397287, "seconds": 214.2, "train_seconds": 166.1, "data_wait_seconds": 38.6, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.5885817114616463, "val_auroc": 0.9396857209248286, "seconds": 206.0, "train_seconds": 149.1, "data_wait_seconds": 6.6, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5204455738710846, "val_auroc": 0.9423399358180792, "seconds": 212.1, "train_seconds": 157.0, "data_wait_seconds": 22.9, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.4634085261599111, "val_auroc": 0.9516812698565321, "seconds": 200.4, "train_seconds": 142.8, "data_wait_seconds": 4.1, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3907267022326853, "val_auroc": 0.9510217224953226, "seconds": 233.2, "train_seconds": 172.9, "data_wait_seconds": 45.7, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.33008780896652645, "val_auroc": 0.9519096324964044, "seconds": 206.8, "train_seconds": 159.3, "data_wait_seconds": 26.1, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.24660599049175236, "val_auroc": 0.952818075103264, "seconds": 216.0, "train_seconds": 153.0, "data_wait_seconds": 11.9, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.19944734428837047, "val_auroc": 0.9571464485603138, "seconds": 215.0, "train_seconds": 163.7, "data_wait_seconds": 32.4, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.14781574442408862, "val_auroc": 0.9499590349474967, "seconds": 207.3, "train_seconds": 163.1, "data_wait_seconds": 27.0, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.09635214039382695, "val_auroc": 0.9557397146668911, "seconds": 218.8, "train_seconds": 169.8, "data_wait_seconds": 36.5, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.06337044629184911, "val_auroc": 0.9582276655328661, "seconds": 205.8, "train_seconds": 164.0, "data_wait_seconds": 30.1, "lr": 6.183221215612904e-05}
+{"epoch": 14, "train_loss": 0.02834321268996785, "val_auroc": 0.9557632520442463, "seconds": 213.5, "train_seconds": 156.8, "data_wait_seconds": 19.4, "lr": 4.3933982822017876e-05}
+{"epoch": 15, "train_loss": 0.016248450680033256, "val_auroc": 0.9533784650024238, "seconds": 202.6, "train_seconds": 157.2, "data_wait_seconds": 20.7, "lr": 2.8647450843757897e-05}
+{"epoch": 16, "train_loss": 0.009329141059120666, "val_auroc": 0.954109626086225, "seconds": 210.3, "train_seconds": 158.2, "data_wait_seconds": 25.7, "lr": 1.634902137174483e-05}
+{"epoch": 17, "train_loss": 0.005306929679226516, "val_auroc": 0.9563977596423119, "seconds": 204.0, "train_seconds": 162.5, "data_wait_seconds": 28.4, "lr": 7.34152255572697e-06}
+{"epoch": 18, "train_loss": 0.0036078563246697073, "val_auroc": 0.9557657560205607, "seconds": 202.2, "train_seconds": 154.2, "data_wait_seconds": 17.0, "lr": 1.8467489107293509e-06}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9582276655328661,
+ "auroc_ic95": [
+  0.9444,
+  0.9688
+ ],
+ "auprc": 0.737886359444554,
+ "regua_origem_auroc": 0.7925145130467182
+}
+tarefa 108/120: {'id': 107, 'configuracao': 'rodada2-05', 'outer': 1, 'inner': 3}
+treino: 10823 imagens (908 DMRI); validação: 3608 (304 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9261188453294822, "val_auroc": 0.8999174644768702, "seconds": 208.3, "train_seconds": 162.4, "data_wait_seconds": 31.2, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7947810182689562, "val_auroc": 0.8983459044857908, "seconds": 207.4, "train_seconds": 166.7, "data_wait_seconds": 30.6, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.6996105567789113, "val_auroc": 0.9333597831974003, "seconds": 213.7, "train_seconds": 167.9, "data_wait_seconds": 26.2, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6807940667880886, "val_auroc": 0.912729884828597, "seconds": 204.4, "train_seconds": 158.3, "data_wait_seconds": 26.5, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6324236025074883, "val_auroc": 0.9232016415509113, "seconds": 211.2, "train_seconds": 164.8, "data_wait_seconds": 32.8, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5313576474653546, "val_auroc": 0.9233778633554224, "seconds": 212.6, "train_seconds": 167.2, "data_wait_seconds": 32.8, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.4874846510941813, "val_auroc": 0.9361524507773672, "seconds": 218.8, "train_seconds": 172.3, "data_wait_seconds": 44.1, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.4093409536527635, "val_auroc": 0.918835920574742, "seconds": 206.6, "train_seconds": 155.6, "data_wait_seconds": 22.9, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.35064828247052326, "val_auroc": 0.9318559242385624, "seconds": 217.2, "train_seconds": 166.4, "data_wait_seconds": 30.7, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.2581169847826082, "val_auroc": 0.9359886740155474, "seconds": 215.5, "train_seconds": 157.8, "data_wait_seconds": 17.5, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.184160006664123, "val_auroc": 0.9297228439212437, "seconds": 212.1, "train_seconds": 166.8, "data_wait_seconds": 36.3, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.11515120142511473, "val_auroc": 0.8996795152606092, "seconds": 203.2, "train_seconds": 159.0, "data_wait_seconds": 22.2, "lr": 0.0001036474508437579}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9361524507773672,
+ "auroc_ic95": [
+  0.9186,
+  0.9518
+ ],
+ "auprc": 0.5828333876180732,
+ "regua_origem_auroc": 0.7934262297693387
+}
+tarefa 107/120: {'id': 106, 'configuracao': 'rodada2-05', 'outer': 1, 'inner': 2}
+treino: 10824 imagens (909 DMRI); validação: 3607 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9326400545883108, "val_auroc": 0.8066624913096637, "seconds": 221.5, "train_seconds": 158.7, "data_wait_seconds": 27.3, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7966252179628999, "val_auroc": 0.9158660569446775, "seconds": 198.7, "train_seconds": 150.9, "data_wait_seconds": 10.3, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.7179433344670477, "val_auroc": 0.9170592301360886, "seconds": 224.8, "train_seconds": 169.5, "data_wait_seconds": 40.9, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.635610154019834, "val_auroc": 0.8991586355972159, "seconds": 202.9, "train_seconds": 159.4, "data_wait_seconds": 25.7, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.5811658217048151, "val_auroc": 0.9092009685230025, "seconds": 199.3, "train_seconds": 158.7, "data_wait_seconds": 27.1, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5181213650224212, "val_auroc": 0.924038469222225, "seconds": 213.8, "train_seconds": 164.8, "data_wait_seconds": 30.6, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.43318141152057243, "val_auroc": 0.9201647767682338, "seconds": 200.4, "train_seconds": 148.2, "data_wait_seconds": 10.9, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.388670577452733, "val_auroc": 0.9297965662183652, "seconds": 204.1, "train_seconds": 159.9, "data_wait_seconds": 26.8, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.3458364605545424, "val_auroc": 0.9240554503392227, "seconds": 221.0, "train_seconds": 169.6, "data_wait_seconds": 38.6, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.23547791823546385, "val_auroc": 0.9296717050639689, "seconds": 219.6, "train_seconds": 172.2, "data_wait_seconds": 39.2, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.16785696904263156, "val_auroc": 0.9203900262907646, "seconds": 210.8, "train_seconds": 170.5, "data_wait_seconds": 42.1, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.1265673335297543, "val_auroc": 0.9395067684734575, "seconds": 217.8, "train_seconds": 160.9, "data_wait_seconds": 19.5, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.08217173208621711, "val_auroc": 0.9356265832394377, "seconds": 206.1, "train_seconds": 159.8, "data_wait_seconds": 27.2, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.03834939420740475, "val_auroc": 0.9290518942935457, "seconds": 220.7, "train_seconds": 169.3, "data_wait_seconds": 26.3, "lr": 6.183221215612904e-05}
+{"epoch": 14, "train_loss": 0.04232106229725352, "val_auroc": 0.9295683200281287, "seconds": 197.8, "train_seconds": 156.4, "data_wait_seconds": 16.2, "lr": 4.3933982822017876e-05}
+{"epoch": 15, "train_loss": 0.01633181073223369, "val_auroc": 0.9289005625744173, "seconds": 202.6, "train_seconds": 157.6, "data_wait_seconds": 14.9, "lr": 2.8647450843757897e-05}
+{"epoch": 16, "train_loss": 0.01041998897050404, "val_auroc": 0.9286508402656246, "seconds": 210.3, "train_seconds": 158.9, "data_wait_seconds": 21.9, "lr": 1.634902137174483e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9395067684734575,
+ "auroc_ic95": [
+  0.9234,
+  0.9536
+ ],
+ "auprc": 0.6698288732513074,
+ "regua_origem_auroc": 0.7927194959205364
+}
+tarefa 106/120: {'id': 105, 'configuracao': 'rodada2-05', 'outer': 1, 'inner': 1}
+treino: 10823 imagens (910 DMRI); validação: 3608 (302 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9106855665350101, "val_auroc": 0.902828691962837, "seconds": 189.8, "train_seconds": 140.5, "data_wait_seconds": 4.0, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7935377984092786, "val_auroc": 0.8913684931671495, "seconds": 204.2, "train_seconds": 159.0, "data_wait_seconds": 28.7, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.7154307797462982, "val_auroc": 0.9152394001674659, "seconds": 200.1, "train_seconds": 158.2, "data_wait_seconds": 25.4, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.647333956604614, "val_auroc": 0.9194555954856312, "seconds": 206.2, "train_seconds": 153.2, "data_wait_seconds": 22.3, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6046711825187037, "val_auroc": 0.9097336570473913, "seconds": 203.1, "train_seconds": 147.3, "data_wait_seconds": 8.7, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5346678376925238, "val_auroc": 0.9239902965909865, "seconds": 202.9, "train_seconds": 155.4, "data_wait_seconds": 18.6, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.4710609734984192, "val_auroc": 0.9463117430479602, "seconds": 208.9, "train_seconds": 158.1, "data_wait_seconds": 24.8, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3915799249558759, "val_auroc": 0.9340417583121998, "seconds": 202.4, "train_seconds": 154.8, "data_wait_seconds": 22.4, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.3361909125281288, "val_auroc": 0.9489694635080508, "seconds": 219.0, "train_seconds": 170.5, "data_wait_seconds": 34.9, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.2251571774160346, "val_auroc": 0.9325629099009227, "seconds": 236.3, "train_seconds": 175.4, "data_wait_seconds": 44.1, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.18514999002149363, "val_auroc": 0.953112542717836, "seconds": 193.6, "train_seconds": 144.3, "data_wait_seconds": 6.3, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.13995342317434062, "val_auroc": 0.948368008397335, "seconds": 212.0, "train_seconds": 153.3, "data_wait_seconds": 15.3, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.08849492244904285, "val_auroc": 0.9494206800399033, "seconds": 208.1, "train_seconds": 155.6, "data_wait_seconds": 16.6, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.05097315348731715, "val_auroc": 0.9506255934423865, "seconds": 208.2, "train_seconds": 166.3, "data_wait_seconds": 33.9, "lr": 6.183221215612904e-05}
+{"epoch": 14, "train_loss": 0.03397494471327258, "val_auroc": 0.9478176344034326, "seconds": 209.1, "train_seconds": 166.6, "data_wait_seconds": 37.2, "lr": 4.3933982822017876e-05}
+{"epoch": 15, "train_loss": 0.013065729536639304, "val_auroc": 0.9449751204913404, "seconds": 183.8, "train_seconds": 142.1, "data_wait_seconds": 3.0, "lr": 2.8647450843757897e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.953112542717836,
+ "auroc_ic95": [
+  0.9342,
+  0.9667
+ ],
+ "auprc": 0.7238235761598497,
+ "regua_origem_auroc": 0.7923011742647323
+}
+tarefa 105/120: {'id': 104, 'configuracao': 'rodada2-05', 'outer': 1, 'inner': 0}
+treino: 10823 imagens (909 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9310977268280715, "val_auroc": 0.8802070070849749, "seconds": 205.5, "train_seconds": 148.9, "data_wait_seconds": 14.0, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7700753770989074, "val_auroc": 0.9308937852938093, "seconds": 204.2, "train_seconds": 155.5, "data_wait_seconds": 20.7, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.6863075842717167, "val_auroc": 0.9162744716226539, "seconds": 205.6, "train_seconds": 164.1, "data_wait_seconds": 31.0, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6228003730920292, "val_auroc": 0.9262144066146403, "seconds": 226.5, "train_seconds": 167.1, "data_wait_seconds": 37.3, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.5675186947120364, "val_auroc": 0.9386383267676237, "seconds": 205.2, "train_seconds": 154.2, "data_wait_seconds": 19.3, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.4874385211219978, "val_auroc": 0.9408646764827768, "seconds": 206.2, "train_seconds": 161.6, "data_wait_seconds": 29.5, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.4452702819683848, "val_auroc": 0.951259467852988, "seconds": 199.4, "train_seconds": 156.4, "data_wait_seconds": 21.2, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3456289160544791, "val_auroc": 0.931651213532851, "seconds": 213.8, "train_seconds": 169.0, "data_wait_seconds": 41.2, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.27482711026698525, "val_auroc": 0.938748670631057, "seconds": 205.5, "train_seconds": 154.5, "data_wait_seconds": 17.0, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.23763252041693886, "val_auroc": 0.9446053833825138, "seconds": 226.7, "train_seconds": 166.8, "data_wait_seconds": 32.2, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.15463561304953755, "val_auroc": 0.9542742020041641, "seconds": 221.4, "train_seconds": 171.4, "data_wait_seconds": 37.7, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.09595627079686128, "val_auroc": 0.9428288971105885, "seconds": 210.9, "train_seconds": 159.0, "data_wait_seconds": 23.4, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.06089563319778925, "val_auroc": 0.9443951808191409, "seconds": 207.8, "train_seconds": 158.4, "data_wait_seconds": 24.3, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.041548355366867545, "val_auroc": 0.9382688495778473, "seconds": 204.9, "train_seconds": 162.5, "data_wait_seconds": 20.9, "lr": 6.183221215612904e-05}
+{"epoch": 14, "train_loss": 0.017122668298302873, "val_auroc": 0.9404582515740227, "seconds": 218.2, "train_seconds": 168.1, "data_wait_seconds": 34.8, "lr": 4.3933982822017876e-05}
+{"epoch": 15, "train_loss": 0.006307529649291491, "val_auroc": 0.9424094905708422, "seconds": 197.8, "train_seconds": 154.1, "data_wait_seconds": 10.8, "lr": 2.8647450843757897e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9542742020041641,
+ "auroc_ic95": [
+  0.9419,
+  0.9654
+ ],
+ "auprc": 0.7018709251341879,
+ "regua_origem_auroc": 0.7927342809923958
+}
+tarefa 104/120: {'id': 103, 'configuracao': 'rodada2-05', 'outer': 0, 'inner': 3}
+treino: 10824 imagens (908 DMRI); validação: 3607 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9222111392259245, "val_auroc": 0.9020504199330345, "seconds": 188.9, "train_seconds": 143.6, "data_wait_seconds": 7.3, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7704541960720127, "val_auroc": 0.9121262156481993, "seconds": 221.8, "train_seconds": 164.2, "data_wait_seconds": 32.4, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.7187703790572973, "val_auroc": 0.9245928527477446, "seconds": 216.5, "train_seconds": 163.9, "data_wait_seconds": 26.6, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6513012123663398, "val_auroc": 0.9274966237543852, "seconds": 196.0, "train_seconds": 154.2, "data_wait_seconds": 19.3, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6003011398943219, "val_auroc": 0.9282877440286401, "seconds": 210.6, "train_seconds": 168.8, "data_wait_seconds": 35.4, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.49751225621411965, "val_auroc": 0.9292396854697577, "seconds": 223.4, "train_seconds": 162.9, "data_wait_seconds": 26.7, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.4665106758530411, "val_auroc": 0.9472576494937629, "seconds": 212.6, "train_seconds": 162.1, "data_wait_seconds": 21.9, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.3659691026340619, "val_auroc": 0.9402034937149889, "seconds": 204.1, "train_seconds": 158.7, "data_wait_seconds": 22.0, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.30083737556806067, "val_auroc": 0.9400077114248956, "seconds": 226.7, "train_seconds": 171.5, "data_wait_seconds": 34.4, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.24789489114370483, "val_auroc": 0.9394438384516418, "seconds": 214.2, "train_seconds": 164.1, "data_wait_seconds": 33.1, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.17860013190222926, "val_auroc": 0.942015978232206, "seconds": 205.0, "train_seconds": 162.0, "data_wait_seconds": 28.1, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.12819639790666112, "val_auroc": 0.9355776376669143, "seconds": 208.6, "train_seconds": 148.4, "data_wait_seconds": 6.8, "lr": 0.0001036474508437579}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9472576494937629,
+ "auroc_ic95": [
+  0.9344,
+  0.9591
+ ],
+ "auprc": 0.5727962687647242,
+ "regua_origem_auroc": 0.7928413604072272
+}
+tarefa 103/120: {'id': 102, 'configuracao': 'rodada2-05', 'outer': 0, 'inner': 2}
+treino: 10823 imagens (908 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.9306051694077148, "val_auroc": 0.8965528776780856, "seconds": 231.8, "train_seconds": 166.2, "data_wait_seconds": 32.2, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7784452466569709, "val_auroc": 0.8865390472481439, "seconds": 202.8, "train_seconds": 150.6, "data_wait_seconds": 14.7, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.7160598877707177, "val_auroc": 0.9160188333508086, "seconds": 196.7, "train_seconds": 155.4, "data_wait_seconds": 19.2, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6273320228875389, "val_auroc": 0.8966737067050123, "seconds": 208.3, "train_seconds": 156.3, "data_wait_seconds": 23.6, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.586640753799818, "val_auroc": 0.9147760918300605, "seconds": 215.2, "train_seconds": 167.9, "data_wait_seconds": 38.4, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5257954865187053, "val_auroc": 0.9443162924461888, "seconds": 203.7, "train_seconds": 158.7, "data_wait_seconds": 17.9, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.4245080859262562, "val_auroc": 0.9246636010045785, "seconds": 207.3, "train_seconds": 160.6, "data_wait_seconds": 26.1, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.39123702615764017, "val_auroc": 0.9510332878976249, "seconds": 203.1, "train_seconds": 152.7, "data_wait_seconds": 12.5, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.29130571457618, "val_auroc": 0.9460543331186371, "seconds": 214.3, "train_seconds": 170.2, "data_wait_seconds": 37.9, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.21360677559295196, "val_auroc": 0.9468027740746844, "seconds": 206.4, "train_seconds": 161.4, "data_wait_seconds": 24.8, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.17140049358658332, "val_auroc": 0.9456199477739, "seconds": 207.3, "train_seconds": 155.0, "data_wait_seconds": 14.4, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.12167671462314303, "val_auroc": 0.9347792873084586, "seconds": 196.4, "train_seconds": 150.2, "data_wait_seconds": 11.7, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.1108980925373813, "val_auroc": 0.9400882750907467, "seconds": 227.6, "train_seconds": 167.8, "data_wait_seconds": 36.7, "lr": 8.190142503906798e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9510332878976249,
+ "auroc_ic95": [
+  0.9395,
+  0.9622
+ ],
+ "auprc": 0.673560254785302,
+ "regua_origem_auroc": 0.7907955243330688
+}
+tarefa 102/120: {'id': 101, 'configuracao': 'rodada2-05', 'outer': 0, 'inner': 1}
+treino: 10823 imagens (908 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA A100 80GB PCIe
+{"epoch": 0, "train_loss": 0.927658426360442, "val_auroc": 0.8813703609392709, "seconds": 201.1, "train_seconds": 149.9, "data_wait_seconds": 10.7, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.7645728576200954, "val_auroc": 0.8957150631855924, "seconds": 217.5, "train_seconds": 165.4, "data_wait_seconds": 34.3, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.702312926172152, "val_auroc": 0.915270891688261, "seconds": 198.8, "train_seconds": 156.2, "data_wait_seconds": 19.7, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.6910120916922065, "val_auroc": 0.9258274541523743, "seconds": 214.1, "train_seconds": 154.5, "data_wait_seconds": 14.3, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6128442421467346, "val_auroc": 0.9331171392479642, "seconds": 190.6, "train_seconds": 150.5, "data_wait_seconds": 19.3, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.542817308550932, "val_auroc": 0.9409021234952543, "seconds": 195.7, "train_seconds": 152.3, "data_wait_seconds": 14.2, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.45370836065497977, "val_auroc": 0.9432103573443577, "seconds": 199.4, "train_seconds": 156.3, "data_wait_seconds": 22.3, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.4082007360253373, "val_auroc": 0.9309991362222454, "seconds": 214.3, "train_seconds": 152.6, "data_wait_seconds": 15.6, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.3367640779893735, "val_auroc": 0.9444695755505959, "seconds": 203.4, "train_seconds": 161.4, "data_wait_seconds": 25.3, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.26894017572090384, "val_auroc": 0.9404477664105291, "seconds": 213.1, "train_seconds": 170.0, "data_wait_seconds": 36.7, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.2074379700658975, "val_auroc": 0.9447167258329463, "seconds": 211.9, "train_seconds": 165.1, "data_wait_seconds": 33.9, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.12141700248911112, "val_auroc": 0.9340488209184004, "seconds": 210.1, "train_seconds": 156.2, "data_wait_seconds": 20.1, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.10894696249526005, "val_auroc": 0.9480405226604355, "seconds": 230.2, "train_seconds": 173.2, "data_wait_seconds": 44.0, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.051116606800656106, "val_auroc": 0.9408317231117967, "seconds": 205.5, "train_seconds": 163.6, "data_wait_seconds": 25.7, "lr": 6.183221215612904e-05}
+{"epoch": 14, "train_loss": 0.029841042930031602, "val_auroc": 0.9424104891578418, "seconds": 210.9, "train_seconds": 169.9, "data_wait_seconds": 39.5, "lr": 4.3933982822017876e-05}
+{"epoch": 15, "train_loss": 0.020228531292505823, "val_auroc": 0.9367055616302931, "seconds": 206.4, "train_seconds": 165.8, "data_wait_seconds": 27.6, "lr": 2.8647450843757897e-05}
+{"epoch": 16, "train_loss": 0.007168877850788101, "val_auroc": 0.9386258444301314, "seconds": 201.7, "train_seconds": 151.3, "data_wait_seconds": 13.7, "lr": 1.634902137174483e-05}
+{"epoch": 17, "train_loss": 0.008522418079572958, "val_auroc": 0.9417499238577414, "seconds": 209.3, "train_seconds": 166.3, "data_wait_seconds": 27.6, "lr": 7.34152255572697e-06}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9480405226604355,
+ "auroc_ic95": [
+  0.932,
+  0.961
+ ],
+ "auprc": 0.6666328024361384,
+ "regua_origem_auroc": 0.7926553926194435
+}
+tarefa 101/120: {'id': 100, 'configuracao': 'rodada2-05', 'outer': 0, 'inner': 0}
+tarefa 100/120: {'id': 99, 'configuracao': 'rodada2-04', 'outer': 4, 'inner': 3}
+tarefa 99/120: {'id': 98, 'configuracao': 'rodada2-04', 'outer': 4, 'inner': 2}
+tarefa 98/120: {'id': 97, 'configuracao': 'rodada2-04', 'outer': 4, 'inner': 1}
+tarefa 97/120: {'id': 96, 'configuracao': 'rodada2-04', 'outer': 4, 'inner': 0}
+tarefa 96/120: {'id': 95, 'configuracao': 'rodada2-04', 'outer': 3, 'inner': 3}
+tarefa 95/120: {'id': 94, 'configuracao': 'rodada2-04', 'outer': 3, 'inner': 2}
+tarefa 94/120: {'id': 93, 'configuracao': 'rodada2-04', 'outer': 3, 'inner': 1}
+tarefa 93/120: {'id': 92, 'configuracao': 'rodada2-04', 'outer': 3, 'inner': 0}
+tarefa 92/120: {'id': 91, 'configuracao': 'rodada2-04', 'outer': 2, 'inner': 3}
+tarefa 91/120: {'id': 90, 'configuracao': 'rodada2-04', 'outer': 2, 'inner': 2}
+tarefa 90/120: {'id': 89, 'configuracao': 'rodada2-04', 'outer': 2, 'inner': 1}
+tarefa 89/120: {'id': 88, 'configuracao': 'rodada2-04', 'outer': 2, 'inner': 0}
+tarefa 88/120: {'id': 87, 'configuracao': 'rodada2-04', 'outer': 1, 'inner': 3}
+tarefa 87/120: {'id': 86, 'configuracao': 'rodada2-04', 'outer': 1, 'inner': 2}
+tarefa 86/120: {'id': 85, 'configuracao': 'rodada2-04', 'outer': 1, 'inner': 1}
+tarefa 85/120: {'id': 84, 'configuracao': 'rodada2-04', 'outer': 1, 'inner': 0}
+tarefa 84/120: {'id': 83, 'configuracao': 'rodada2-04', 'outer': 0, 'inner': 3}
+tarefa 83/120: {'id': 82, 'configuracao': 'rodada2-04', 'outer': 0, 'inner': 2}
+tarefa 82/120: {'id': 81, 'configuracao': 'rodada2-04', 'outer': 0, 'inner': 1}
+tarefa 81/120: {'id': 80, 'configuracao': 'rodada2-04', 'outer': 0, 'inner': 0}
+tarefa 80/120: {'id': 79, 'configuracao': 'rodada2-03', 'outer': 4, 'inner': 3}
+tarefa 79/120: {'id': 78, 'configuracao': 'rodada2-03', 'outer': 4, 'inner': 2}
+tarefa 78/120: {'id': 77, 'configuracao': 'rodada2-03', 'outer': 4, 'inner': 1}
+tarefa 77/120: {'id': 76, 'configuracao': 'rodada2-03', 'outer': 4, 'inner': 0}
+tarefa 76/120: {'id': 75, 'configuracao': 'rodada2-03', 'outer': 3, 'inner': 3}
+tarefa 75/120: {'id': 74, 'configuracao': 'rodada2-03', 'outer': 3, 'inner': 2}
+tarefa 74/120: {'id': 73, 'configuracao': 'rodada2-03', 'outer': 3, 'inner': 1}
+tarefa 73/120: {'id': 72, 'configuracao': 'rodada2-03', 'outer': 3, 'inner': 0}
+tarefa 72/120: {'id': 71, 'configuracao': 'rodada2-03', 'outer': 2, 'inner': 3}
+tarefa 71/120: {'id': 70, 'configuracao': 'rodada2-03', 'outer': 2, 'inner': 2}
+tarefa 70/120: {'id': 69, 'configuracao': 'rodada2-03', 'outer': 2, 'inner': 1}
+tarefa 69/120: {'id': 68, 'configuracao': 'rodada2-03', 'outer': 2, 'inner': 0}
+tarefa 68/120: {'id': 67, 'configuracao': 'rodada2-03', 'outer': 1, 'inner': 3}
+tarefa 67/120: {'id': 66, 'configuracao': 'rodada2-03', 'outer': 1, 'inner': 2}
+tarefa 66/120: {'id': 65, 'configuracao': 'rodada2-03', 'outer': 1, 'inner': 1}
+tarefa 65/120: {'id': 64, 'configuracao': 'rodada2-03', 'outer': 1, 'inner': 0}
+tarefa 64/120: {'id': 63, 'configuracao': 'rodada2-03', 'outer': 0, 'inner': 3}
+tarefa 63/120: {'id': 62, 'configuracao': 'rodada2-03', 'outer': 0, 'inner': 2}
+tarefa 62/120: {'id': 61, 'configuracao': 'rodada2-03', 'outer': 0, 'inner': 1}
+tarefa 61/120: {'id': 60, 'configuracao': 'rodada2-03', 'outer': 0, 'inner': 0}
+tarefa 60/120: {'id': 59, 'configuracao': 'rodada2-02', 'outer': 4, 'inner': 3}
+tarefa 59/120: {'id': 58, 'configuracao': 'rodada2-02', 'outer': 4, 'inner': 2}
+tarefa 58/120: {'id': 57, 'configuracao': 'rodada2-02', 'outer': 4, 'inner': 1}
+GitHub: enviado
+# rodada2-20261115-1245
+
+- commit: `0aff867a4985a37474222743d4d4a4e3a3e0b219`
+- assinatura dos dados: `72e45dfc1003894a`
+- analisado: 2026-11-17 14:38
+
+Referência: `rodada2-00`
+
+| configuração | mudanças | F2 médio por base [IC95] | AUROC | sens. | esp. normais | esp. outras | régua origem | veredito |
+|---|---|---|---|---|---|---|---|---|
+| rodada2-01 | `{"augment": {"crop_scale": [0.85, 1.0], "hflip": true, "rotate_deg": 15, "color": 0.1}}` | 0.776 [0.757, 0.795] | 0.970 | 0.864 | 0.986 | 0.858 | 0.792 | empatou |
+| rodada2-04 | `{"aux_dr": 0.5}` | 0.775 [0.756, 0.794] | 0.966 | 0.865 | 0.984 | 0.850 | 0.792 | empatou |
+| rodada2-03 | `{"preprocess": "clahe"}` | 0.769 [0.747, 0.788] | 0.968 | 0.830 | 0.990 | 0.875 | 0.792 | empatou |
+| rodada2-00 | `{}` | 0.763 [0.743, 0.781] | 0.967 | 0.890 | 0.977 | 0.811 | 0.792 | referência |
+| rodada2-02 | `{"oversample": {"retinopatia_diabetica": 3}}` | 0.763 [0.742, 0.782] | 0.964 | 0.830 | 0.988 | 0.862 | 0.792 | empatou |
+| rodada2-05 | `{"image_size": 1024, "cache": false}` | 0.727 [0.705, 0.745] | 0.955 | 0.859 | 0.984 | 0.793 | 0.792 | perdeu |
+
+**Aninhado** (escolha da melhor configuração feita só com validação interna): F2 médio por base 0.781 [0.7623, 0.7987]; escolhida por dobra: {0: 'rodada2-00', 1: 'rodada2-03', 2: 'rodada2-01', 3: 'rodada2-01', 4: 'rodada2-01'}
+
+## rodada2-00
+
+| base | DMRI | sem DMRI | F2 | AUROC | sens. | esp. |
+|---|---|---|---|---|---|---|
+| adam | 263 | 662 | 0.850 | 0.957 | 0.932 | 0.781 |
+| brset | 261 | 8881 | 0.729 | 0.985 | 0.851 | 0.971 |
+| hyamd | 532 | 560 | 0.842 | 0.773 | 0.970 | 0.248 |
+| odir | 280 | 4362 | 0.640 | 0.915 | 0.754 | 0.927 |
+| rfmid | 179 | 2059 | 0.756 | 0.957 | 0.860 | 0.928 |
+
+Distribuição das notas (quantis) e fração acima do limiar:
+
+| tipo | n | p10 | p50 | p90 | acima do limiar |
+|---|---|---|---|---|---|
+| normal | 11017 | 0.0 | 0.0005 | 0.0394 | 0.0134 |
+| outra | 5507 | 0.0001 | 0.0219 | 0.522 | 0.1471 |
+| drusas | 2832 | 0.0003 | 0.0209 | 0.7288 | 0.1949 |
+| dmri | 1515 | 0.2669 | 0.9025 | 0.9993 | 0.8601 |
+
+Especificidade por doença: catarata 1.00 (n=288), cicatriz 0.72 (n=206), descolamento 0.92 (n=25), edema_macular 0.93 (n=395), glaucoma 0.97 (n=671), hemorragia 0.86 (n=85), membrana_epirretiniana 0.87 (n=390), miopia 0.79 (n=616), nao_especificada 0.78 (n=662), nevo 0.95 (n=97), oclusao_vascular 0.90 (n=326), outra 0.84 (n=671), retinopatia_diabetica 0.37 (n=671), retinopatia_hipertensiva 0.94 (n=404)
+
+## rodada2-01
+
+| base | DMRI | sem DMRI | F2 | AUROC | sens. | esp. |
+|---|---|---|---|---|---|---|
+| adam | 263 | 662 | 0.841 | 0.955 | 0.890 | 0.840 |
+| brset | 261 | 8881 | 0.762 | 0.989 | 0.820 | 0.984 |
+| hyamd | 532 | 560 | 0.848 | 0.793 | 0.966 | 0.305 |
+| odir | 280 | 4362 | 0.654 | 0.924 | 0.714 | 0.952 |
+| rfmid | 179 | 2059 | 0.775 | 0.969 | 0.821 | 0.959 |
+
+Distribuição das notas (quantis) e fração acima do limiar:
+
+| tipo | n | p10 | p50 | p90 | acima do limiar |
+|---|---|---|---|---|---|
+| normal | 11017 | 0.0001 | 0.0035 | 0.0927 | 0.0113 |
+| outra | 5507 | 0.0008 | 0.0596 | 0.6451 | 0.1237 |
+| drusas | 2832 | 0.0033 | 0.0654 | 0.8471 | 0.1829 |
+| dmri | 1515 | 0.4005 | 0.9629 | 0.9995 | 0.8422 |
+
+Discordâncias com a referência (mesmas imagens). DMRI: só a referência detectou (perdida) / só esta detectou (ganha); sem DMRI: falso positivo só da referência (corrigido) / só desta (criado):
+
+| grupo | valor | DMRI | perdidas | ganhas | nenhuma detectou | sem DMRI | FP corrigidos | FP criados |
+|---|---|---|---|---|---|---|---|---|
+| geral | todas | 1515 | 72 | 33 | 134 | 16524 | 526 | 172 |
+| base | adam | 263 | 12 | 1 | 17 | 662 | 71 | 32 |
+| base | brset | 261 | 17 | 9 | 30 | 8881 | 138 | 28 |
+| base | hyamd | 532 | 10 | 8 | 8 | 560 | 62 | 30 |
+| base | odir | 280 | 22 | 11 | 58 | 4362 | 173 | 64 |
+| base | rfmid | 179 | 11 | 4 | 21 | 2059 | 82 | 18 |
+| estagio_dmri | dmri | 983 | 62 | 25 | 126 | 0 | 0 | 0 |
+| estagio_dmri | dmri_intermediaria_tardia | 424 | 8 | 6 | 4 | 0 | 0 | 0 |
+| estagio_dmri | dmri_precoce | 108 | 2 | 2 | 4 | 0 | 0 | 0 |
+| doenca | catarata | 0 | 0 | 0 | 0 | 288 | 0 | 0 |
+| doenca | cicatriz | 0 | 0 | 0 | 0 | 206 | 29 | 2 |
+| doenca | descolamento | 0 | 0 | 0 | 0 | 25 | 1 | 0 |
+| doenca | edema_macular | 0 | 0 | 0 | 0 | 395 | 19 | 3 |
+| doenca | glaucoma | 0 | 0 | 0 | 0 | 671 | 16 | 7 |
+| doenca | hemorragia | 0 | 0 | 0 | 0 | 85 | 5 | 3 |
+| doenca | membrana_epirretiniana | 0 | 0 | 0 | 0 | 390 | 32 | 6 |
+| doenca | miopia | 0 | 0 | 0 | 0 | 616 | 70 | 22 |
+| doenca | nao_especificada | 0 | 0 | 0 | 0 | 662 | 71 | 32 |
+| doenca | nevo | 0 | 0 | 0 | 0 | 97 | 2 | 0 |
+| doenca | normal | 0 | 0 | 0 | 0 | 11017 | 142 | 45 |
+| doenca | oclusao_vascular | 0 | 0 | 0 | 0 | 326 | 21 | 2 |
+| doenca | outra | 0 | 0 | 0 | 0 | 671 | 42 | 17 |
+| doenca | retinopatia_diabetica | 0 | 0 | 0 | 0 | 671 | 65 | 31 |
+| doenca | retinopatia_hipertensiva | 0 | 0 | 0 | 0 | 404 | 11 | 2 |
+
+Especificidade por doença: catarata 1.00 (n=288), cicatriz 0.85 (n=206), descolamento 0.96 (n=25), edema_macular 0.97 (n=395), glaucoma 0.99 (n=671), hemorragia 0.88 (n=85), membrana_epirretiniana 0.94 (n=390), miopia 0.86 (n=616), nao_especificada 0.84 (n=662), nevo 0.97 (n=97), oclusao_vascular 0.96 (n=326), outra 0.88 (n=671), retinopatia_diabetica 0.42 (n=671), retinopatia_hipertensiva 0.96 (n=404)
+
+## rodada2-02
+
+| base | DMRI | sem DMRI | F2 | AUROC | sens. | esp. |
+|---|---|---|---|---|---|---|
+| adam | 263 | 662 | 0.856 | 0.948 | 0.920 | 0.819 |
+| brset | 261 | 8881 | 0.748 | 0.987 | 0.812 | 0.982 |
+| hyamd | 532 | 560 | 0.794 | 0.779 | 0.855 | 0.498 |
+| odir | 280 | 4362 | 0.654 | 0.912 | 0.714 | 0.952 |
+| rfmid | 179 | 2059 | 0.761 | 0.960 | 0.832 | 0.945 |
+
+Distribuição das notas (quantis) e fração acima do limiar:
+
+| tipo | n | p10 | p50 | p90 | acima do limiar |
+|---|---|---|---|---|---|
+| normal | 11017 | 0.0003 | 0.0042 | 0.1042 | 0.0121 |
+| outra | 5507 | 0.0016 | 0.0762 | 0.5036 | 0.1424 |
+| drusas | 2832 | 0.0032 | 0.0487 | 0.7264 | 0.1896 |
+| dmri | 1515 | 0.2513 | 0.8611 | 0.9982 | 0.8337 |
+
+Discordâncias com a referência (mesmas imagens). DMRI: só a referência detectou (perdida) / só esta detectou (ganha); sem DMRI: falso positivo só da referência (corrigido) / só desta (criado):
+
+| grupo | valor | DMRI | perdidas | ganhas | nenhuma detectou | sem DMRI | FP corrigidos | FP criados |
+|---|---|---|---|---|---|---|---|---|
+| geral | todas | 1515 | 128 | 38 | 129 | 16524 | 596 | 193 |
+| base | adam | 263 | 10 | 7 | 11 | 662 | 53 | 28 |
+| base | brset | 261 | 22 | 12 | 27 | 8881 | 136 | 42 |
+| base | hyamd | 532 | 64 | 3 | 13 | 560 | 162 | 22 |
+| base | odir | 280 | 23 | 12 | 57 | 4362 | 173 | 64 |
+| base | rfmid | 179 | 9 | 4 | 21 | 2059 | 72 | 37 |
+| estagio_dmri | dmri | 983 | 64 | 35 | 116 | 0 | 0 | 0 |
+| estagio_dmri | dmri_intermediaria_tardia | 424 | 28 | 3 | 7 | 0 | 0 | 0 |
+| estagio_dmri | dmri_precoce | 108 | 36 | 0 | 6 | 0 | 0 | 0 |
+| doenca | catarata | 0 | 0 | 0 | 0 | 288 | 0 | 0 |
+| doenca | cicatriz | 0 | 0 | 0 | 0 | 206 | 24 | 4 |
+| doenca | descolamento | 0 | 0 | 0 | 0 | 25 | 1 | 0 |
+| doenca | edema_macular | 0 | 0 | 0 | 0 | 395 | 17 | 4 |
+| doenca | glaucoma | 0 | 0 | 0 | 0 | 671 | 12 | 3 |
+| doenca | hemorragia | 0 | 0 | 0 | 0 | 85 | 6 | 1 |
+| doenca | membrana_epirretiniana | 0 | 0 | 0 | 0 | 390 | 25 | 11 |
+| doenca | miopia | 0 | 0 | 0 | 0 | 616 | 64 | 37 |
+| doenca | nao_especificada | 0 | 0 | 0 | 0 | 662 | 53 | 28 |
+| doenca | nevo | 0 | 0 | 0 | 0 | 97 | 4 | 1 |
+| doenca | normal | 0 | 0 | 0 | 0 | 11017 | 162 | 40 |
+| doenca | oclusao_vascular | 0 | 0 | 0 | 0 | 326 | 14 | 11 |
+| doenca | outra | 0 | 0 | 0 | 0 | 671 | 36 | 18 |
+| doenca | retinopatia_diabetica | 0 | 0 | 0 | 0 | 671 | 165 | 23 |
+| doenca | retinopatia_hipertensiva | 0 | 0 | 0 | 0 | 404 | 13 | 12 |
+
+Especificidade por doença: catarata 1.00 (n=288), cicatriz 0.82 (n=206), descolamento 0.96 (n=25), edema_macular 0.96 (n=395), glaucoma 0.99 (n=671), hemorragia 0.92 (n=85), membrana_epirretiniana 0.91 (n=390), miopia 0.83 (n=616), nao_especificada 0.82 (n=662), nevo 0.98 (n=97), oclusao_vascular 0.91 (n=326), outra 0.87 (n=671), retinopatia_diabetica 0.58 (n=671), retinopatia_hipertensiva 0.94 (n=404)
+
+## rodada2-03
+
+| base | DMRI | sem DMRI | F2 | AUROC | sens. | esp. |
+|---|---|---|---|---|---|---|
+| adam | 263 | 662 | 0.853 | 0.951 | 0.886 | 0.878 |
+| brset | 261 | 8881 | 0.760 | 0.986 | 0.805 | 0.986 |
+| hyamd | 532 | 560 | 0.811 | 0.773 | 0.895 | 0.409 |
+| odir | 280 | 4362 | 0.649 | 0.919 | 0.689 | 0.960 |
+| rfmid | 179 | 2059 | 0.769 | 0.962 | 0.816 | 0.958 |
+
+Distribuição das notas (quantis) e fração acima do limiar:
+
+| tipo | n | p10 | p50 | p90 | acima do limiar |
+|---|---|---|---|---|---|
+| normal | 11017 | 0.0002 | 0.0031 | 0.0576 | 0.0098 |
+| outra | 5507 | 0.0017 | 0.0475 | 0.5029 | 0.1277 |
+| drusas | 2832 | 0.0018 | 0.0285 | 0.757 | 0.1875 |
+| dmri | 1515 | 0.2607 | 0.9224 | 0.9995 | 0.8356 |
+
+Discordâncias com a referência (mesmas imagens). DMRI: só a referência detectou (perdida) / só esta detectou (ganha); sem DMRI: falso positivo só da referência (corrigido) / só desta (criado):
+
+| grupo | valor | DMRI | perdidas | ganhas | nenhuma detectou | sem DMRI | FP corrigidos | FP criados |
+|---|---|---|---|---|---|---|---|---|
+| geral | todas | 1515 | 132 | 42 | 125 | 16524 | 665 | 176 |
+| base | adam | 263 | 16 | 4 | 14 | 662 | 80 | 16 |
+| base | brset | 261 | 25 | 13 | 26 | 8881 | 162 | 33 |
+| base | hyamd | 532 | 46 | 6 | 10 | 560 | 133 | 43 |
+| base | odir | 280 | 31 | 13 | 56 | 4362 | 199 | 55 |
+| base | rfmid | 179 | 14 | 6 | 19 | 2059 | 91 | 29 |
+| estagio_dmri | dmri | 983 | 86 | 36 | 115 | 0 | 0 | 0 |
+| estagio_dmri | dmri_intermediaria_tardia | 424 | 16 | 6 | 4 | 0 | 0 | 0 |
+| estagio_dmri | dmri_precoce | 108 | 30 | 0 | 6 | 0 | 0 | 0 |
+| doenca | catarata | 0 | 0 | 0 | 0 | 288 | 0 | 0 |
+| doenca | cicatriz | 0 | 0 | 0 | 0 | 206 | 29 | 9 |
+| doenca | descolamento | 0 | 0 | 0 | 0 | 25 | 2 | 0 |
+| doenca | edema_macular | 0 | 0 | 0 | 0 | 395 | 18 | 7 |
+| doenca | glaucoma | 0 | 0 | 0 | 0 | 671 | 15 | 5 |
+| doenca | hemorragia | 0 | 0 | 0 | 0 | 85 | 8 | 1 |
+| doenca | membrana_epirretiniana | 0 | 0 | 0 | 0 | 390 | 30 | 7 |
+| doenca | miopia | 0 | 0 | 0 | 0 | 616 | 86 | 15 |
+| doenca | nao_especificada | 0 | 0 | 0 | 0 | 662 | 80 | 16 |
+| doenca | nevo | 0 | 0 | 0 | 0 | 97 | 4 | 0 |
+| doenca | normal | 0 | 0 | 0 | 0 | 11017 | 172 | 33 |
+| doenca | oclusao_vascular | 0 | 0 | 0 | 0 | 326 | 20 | 11 |
+| doenca | outra | 0 | 0 | 0 | 0 | 671 | 50 | 21 |
+| doenca | retinopatia_diabetica | 0 | 0 | 0 | 0 | 671 | 137 | 43 |
+| doenca | retinopatia_hipertensiva | 0 | 0 | 0 | 0 | 404 | 14 | 8 |
+
+Especificidade por doença: catarata 1.00 (n=288), cicatriz 0.82 (n=206), descolamento 1.00 (n=25), edema_macular 0.96 (n=395), glaucoma 0.99 (n=671), hemorragia 0.94 (n=85), membrana_epirretiniana 0.93 (n=390), miopia 0.90 (n=616), nao_especificada 0.88 (n=662), nevo 0.99 (n=97), oclusao_vascular 0.93 (n=326), outra 0.88 (n=671), retinopatia_diabetica 0.51 (n=671), retinopatia_hipertensiva 0.96 (n=404)
+
+## rodada2-04
+
+| base | DMRI | sem DMRI | F2 | AUROC | sens. | esp. |
+|---|---|---|---|---|---|---|
+| adam | 263 | 662 | 0.863 | 0.951 | 0.916 | 0.843 |
+| brset | 261 | 8881 | 0.769 | 0.983 | 0.858 | 0.979 |
+| hyamd | 532 | 560 | 0.828 | 0.766 | 0.934 | 0.327 |
+| odir | 280 | 4362 | 0.655 | 0.916 | 0.725 | 0.948 |
+| rfmid | 179 | 2059 | 0.760 | 0.964 | 0.816 | 0.952 |
+
+Distribuição das notas (quantis) e fração acima do limiar:
+
+| tipo | n | p10 | p50 | p90 | acima do limiar |
+|---|---|---|---|---|---|
+| normal | 11017 | 0.0 | 0.0012 | 0.0439 | 0.0143 |
+| outra | 5507 | 0.0002 | 0.0265 | 0.4903 | 0.1547 |
+| drusas | 2832 | 0.0013 | 0.0392 | 0.7889 | 0.2214 |
+| dmri | 1515 | 0.2434 | 0.9304 | 0.9998 | 0.8607 |
+
+Discordâncias com a referência (mesmas imagens). DMRI: só a referência detectou (perdida) / só esta detectou (ganha); sem DMRI: falso positivo só da referência (corrigido) / só desta (criado):
+
+| grupo | valor | DMRI | perdidas | ganhas | nenhuma detectou | sem DMRI | FP corrigidos | FP criados |
+|---|---|---|---|---|---|---|---|---|
+| geral | todas | 1515 | 78 | 41 | 126 | 16524 | 507 | 214 |
+| base | adam | 263 | 10 | 6 | 12 | 662 | 62 | 21 |
+| base | brset | 261 | 11 | 13 | 26 | 8881 | 128 | 61 |
+| base | hyamd | 532 | 23 | 4 | 12 | 560 | 76 | 32 |
+| base | odir | 280 | 24 | 16 | 53 | 4362 | 166 | 76 |
+| base | rfmid | 179 | 10 | 2 | 23 | 2059 | 75 | 24 |
+| estagio_dmri | dmri | 983 | 55 | 37 | 114 | 0 | 0 | 0 |
+| estagio_dmri | dmri_intermediaria_tardia | 424 | 9 | 3 | 7 | 0 | 0 | 0 |
+| estagio_dmri | dmri_precoce | 108 | 14 | 1 | 5 | 0 | 0 | 0 |
+| doenca | catarata | 0 | 0 | 0 | 0 | 288 | 0 | 1 |
+| doenca | cicatriz | 0 | 0 | 0 | 0 | 206 | 24 | 10 |
+| doenca | descolamento | 0 | 0 | 0 | 0 | 25 | 0 | 0 |
+| doenca | edema_macular | 0 | 0 | 0 | 0 | 395 | 19 | 5 |
+| doenca | glaucoma | 0 | 0 | 0 | 0 | 671 | 14 | 9 |
+| doenca | hemorragia | 0 | 0 | 0 | 0 | 85 | 5 | 2 |
+| doenca | membrana_epirretiniana | 0 | 0 | 0 | 0 | 390 | 20 | 15 |
+| doenca | miopia | 0 | 0 | 0 | 0 | 616 | 69 | 22 |
+| doenca | nao_especificada | 0 | 0 | 0 | 0 | 662 | 62 | 21 |
+| doenca | nevo | 0 | 0 | 0 | 0 | 97 | 4 | 1 |
+| doenca | normal | 0 | 0 | 0 | 0 | 11017 | 147 | 69 |
+| doenca | oclusao_vascular | 0 | 0 | 0 | 0 | 326 | 12 | 12 |
+| doenca | outra | 0 | 0 | 0 | 0 | 671 | 40 | 8 |
+| doenca | retinopatia_diabetica | 0 | 0 | 0 | 0 | 671 | 78 | 32 |
+| doenca | retinopatia_hipertensiva | 0 | 0 | 0 | 0 | 404 | 13 | 7 |
+
+Especificidade por doença: catarata 0.99 (n=288), cicatriz 0.79 (n=206), descolamento 0.92 (n=25), edema_macular 0.97 (n=395), glaucoma 0.98 (n=671), hemorragia 0.89 (n=85), membrana_epirretiniana 0.88 (n=390), miopia 0.86 (n=616), nao_especificada 0.84 (n=662), nevo 0.98 (n=97), oclusao_vascular 0.90 (n=326), outra 0.89 (n=671), retinopatia_diabetica 0.43 (n=671), retinopatia_hipertensiva 0.96 (n=404)
+
+## rodada2-05
+
+| base | DMRI | sem DMRI | F2 | AUROC | sens. | esp. |
+|---|---|---|---|---|---|---|
+| adam | 263 | 662 | 0.846 | 0.942 | 0.962 | 0.711 |
+| brset | 261 | 8881 | 0.694 | 0.977 | 0.774 | 0.976 |
+| hyamd | 532 | 560 | 0.842 | 0.765 | 0.989 | 0.163 |
+| odir | 280 | 4362 | 0.572 | 0.879 | 0.646 | 0.935 |
+| rfmid | 179 | 2059 | 0.681 | 0.939 | 0.777 | 0.919 |
+
+Distribuição das notas (quantis) e fração acima do limiar:
+
+| tipo | n | p10 | p50 | p90 | acima do limiar |
+|---|---|---|---|---|---|
+| normal | 11017 | 0.0015 | 0.0255 | 0.1723 | 0.0162 |
+| outra | 5507 | 0.0081 | 0.1269 | 0.7002 | 0.2065 |
+| drusas | 2832 | 0.0212 | 0.1623 | 0.8746 | 0.2662 |
+| dmri | 1515 | 0.3337 | 0.9003 | 0.9994 | 0.8587 |
+
+Discordâncias com a referência (mesmas imagens). DMRI: só a referência detectou (perdida) / só esta detectou (ganha); sem DMRI: falso positivo só da referência (corrigido) / só desta (criado):
+
+| grupo | valor | DMRI | perdidas | ganhas | nenhuma detectou | sem DMRI | FP corrigidos | FP criados |
+|---|---|---|---|---|---|---|---|---|
+| geral | todas | 1515 | 101 | 54 | 113 | 16524 | 440 | 469 |
+| base | adam | 263 | 3 | 11 | 7 | 662 | 20 | 66 |
+| base | brset | 261 | 31 | 11 | 28 | 8881 | 151 | 104 |
+| base | hyamd | 532 | 2 | 12 | 4 | 560 | 21 | 69 |
+| base | odir | 280 | 44 | 14 | 55 | 4362 | 177 | 142 |
+| base | rfmid | 179 | 21 | 6 | 19 | 2059 | 71 | 88 |
+| estagio_dmri | dmri | 983 | 99 | 42 | 109 | 0 | 0 | 0 |
+| estagio_dmri | dmri_intermediaria_tardia | 424 | 0 | 6 | 4 | 0 | 0 | 0 |
+| estagio_dmri | dmri_precoce | 108 | 2 | 6 | 0 | 0 | 0 | 0 |
+| doenca | catarata | 0 | 0 | 0 | 0 | 288 | 0 | 0 |
+| doenca | cicatriz | 0 | 0 | 0 | 0 | 206 | 31 | 7 |
+| doenca | descolamento | 0 | 0 | 0 | 0 | 25 | 2 | 1 |
+| doenca | edema_macular | 0 | 0 | 0 | 0 | 395 | 17 | 10 |
+| doenca | glaucoma | 0 | 0 | 0 | 0 | 671 | 9 | 23 |
+| doenca | hemorragia | 0 | 0 | 0 | 0 | 85 | 7 | 4 |
+| doenca | membrana_epirretiniana | 0 | 0 | 0 | 0 | 390 | 29 | 29 |
+| doenca | miopia | 0 | 0 | 0 | 0 | 616 | 54 | 85 |
+| doenca | nao_especificada | 0 | 0 | 0 | 0 | 662 | 20 | 66 |
+| doenca | nevo | 0 | 0 | 0 | 0 | 97 | 4 | 0 |
+| doenca | normal | 0 | 0 | 0 | 0 | 11017 | 163 | 92 |
+| doenca | oclusao_vascular | 0 | 0 | 0 | 0 | 326 | 16 | 25 |
+| doenca | outra | 0 | 0 | 0 | 0 | 671 | 51 | 42 |
+| doenca | retinopatia_diabetica | 0 | 0 | 0 | 0 | 671 | 22 | 75 |
+| doenca | retinopatia_hipertensiva | 0 | 0 | 0 | 0 | 404 | 15 | 10 |
+
+Especificidade por doença: catarata 1.00 (n=288), cicatriz 0.84 (n=206), descolamento 0.96 (n=25), edema_macular 0.95 (n=395), glaucoma 0.95 (n=671), hemorragia 0.89 (n=85), membrana_epirretiniana 0.87 (n=390), miopia 0.74 (n=616), nao_especificada 0.71 (n=662), nevo 0.99 (n=97), oclusao_vascular 0.87 (n=326), outra 0.85 (n=671), retinopatia_diabetica 0.29 (n=671), retinopatia_hipertensiva 0.95 (n=404)
+
+fim: /home/CIN/dfal/macdeg_runs/rodada2-20261115-1245
