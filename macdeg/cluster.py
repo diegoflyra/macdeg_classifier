@@ -22,6 +22,7 @@ import os
 import subprocess
 import tarfile
 import time
+import traceback
 from pathlib import Path
 
 import pandas as pd
@@ -39,6 +40,8 @@ TEST_OUTERS = [0, 1]
 # Uma tarefa "em andamento" cuja pasta não muda há tanto tempo foi largada (job morto) e pode ser retomada.
 # O last.pt é regravado a cada época (~2 min em 512 px, ~8 min em 1024 px).
 STALE_SECONDS = 45 * 60
+# Marca de tarefa que deu erro (com o fim do traceback). Some quando a tarefa é refeita com sucesso.
+FAILED = "falhou.txt"
 # Apuana (sinfo de 2026-11): short-simple = todos os nós e GPUs, até 2 dias, prioridade mais alta, sem
 # preempção. O QoS precisa acompanhar a partição (simple ou complex).
 def _set(config: dict, key: str, value) -> None:
@@ -184,9 +187,35 @@ def run_task(batch: Path, task_id: int, dataset: str | None = None, wandb_mode: 
         print(f"tarefa {task_id + 1}: em andamento em outro job, pulando", flush=True)
         return None
     try:
-        return _run_claimed(lote, task, config, out, wandb_mode)
+        result = _run_claimed(lote, task, config, out, wandb_mode)
+        (out / FAILED).unlink(missing_ok=True)
+        return result
+    except Exception:
+        (out / FAILED).write_text(traceback.format_exc()[-5000:], encoding="utf-8")
+        raise
     finally:
         (out / "em_andamento").unlink(missing_ok=True)
+
+
+def failed_tasks(batch: Path, lote: dict | None = None) -> list[int]:
+    """Tarefas que falharam (falhou.txt) e ainda não foram refeitas nem estão em andamento."""
+    lote = lote or json.loads((Path(batch) / "lote.json").read_text(encoding="utf-8"))
+    return [t["id"] for t in lote["tarefas"]
+            if (task_dir(Path(batch), t) / FAILED).exists() and not (task_dir(Path(batch), t) / "metrics.json").exists()
+            and not (task_dir(Path(batch), t) / "em_andamento").exists()]
+
+
+def _run_guarded(batch: Path, task_id: int, total: int, dataset: str | None, wandb_mode: str | None) -> bool:
+    """Roda uma tarefa; se ela der erro, registra e devolve False em vez de derrubar o job (as outras
+    tarefas seguem). Erros que valem para o lote inteiro (SystemExit, ex.: assinatura dos dados) param tudo."""
+    try:
+        run_task(batch, task_id, dataset, wandb_mode)
+        return True
+    except Exception:
+        traceback.print_exc()
+        print(f"tarefa {task_id + 1}/{total} FALHOU (detalhes no .err e em falhou.txt); seguindo para a próxima",
+              flush=True)
+        return False
 
 
 def _run_claimed(lote: dict, task: dict, config: dict, out: Path, wandb_mode: str | None):
@@ -253,9 +282,13 @@ def run_local(batch: Path, dataset: str | None = None, wandb_mode: str | None = 
         pending.reverse()
     gpus = visible_gpus() if gpus is None else gpus
     if len(gpus) <= 1 or len(pending) <= 1:
+        failed = []
         for task_id in pending:
             print(f"tarefa {task_id + 1}/{total}: {lote['tarefas'][task_id]}", flush=True)
-            run_task(batch, task_id, dataset, wandb_mode)
+            if not _run_guarded(batch, task_id, total, dataset, wandb_mode):
+                failed.append(task_id + 1)
+        if failed:
+            raise SystemExit(f"tarefa(s) {failed} falharam; veja o .err e falhou.txt. Depois: --retomar {batch}")
         return
 
     import multiprocessing as mp
@@ -305,6 +338,9 @@ def _gpu_worker(batch: str, dataset: str | None, wandb_mode: str | None, gpu: st
     import torch
     torch.set_num_threads(threads)
     lote = json.loads((Path(batch) / "lote.json").read_text(encoding="utf-8"))
+    failed = False
     while (task_id := queue.get()) is not None:
         print(f"tarefa {task_id + 1}/{total}: {lote['tarefas'][task_id]}", flush=True)
-        run_task(Path(batch), task_id, dataset, wandb_mode)
+        failed |= not _run_guarded(Path(batch), task_id, total, dataset, wandb_mode)
+    if failed:   # o processo principal vê o código de saída e acusa a falha no fim
+        sys.exit(1)

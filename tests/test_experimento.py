@@ -528,3 +528,70 @@ def test_placeholder_reference_is_refused_before_training(tiny_dataset, tmp_path
         cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset))
     batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)   # --teste: vira a própria 00
     assert json.loads((batch / "lote.json").read_text())["experimento"]["referencia"] is None
+
+
+def _tiny_experiment(tmp_path, tiny_dataset, nome: str) -> Path:
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": nome, "base": str(tmp_path / "base.yaml")}))
+    return tmp_path / "exp.yaml"
+
+
+def test_nan_scores_stop_the_task_with_a_diagnosis(tiny_dataset, tmp_path, monkeypatch):
+    """Notas NaN na validação (ex.: estouro do fp16 que contamina as médias do BatchNorm): a tarefa para com
+    um diagnóstico (pesos e médias guardadas finitos?) em vez do erro opaco do sklearn."""
+    from macdeg import train
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    original = train.predict
+
+    def corrupted(model, loader, device):        # simula o estouro: a média guardada do BatchNorm virou NaN
+        with train.torch.no_grad():
+            model.bn1.running_mean.fill_(float("nan"))
+        return original(model, loader, device)
+
+    monkeypatch.setattr(train, "predict", corrupted)
+    config = {
+        "name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+        "batch_size": 4, "epochs": 2, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None, "limit": 48}
+    out = tmp_path / "tarefa"
+    with pytest.raises(FloatingPointError, match="não finitas"):
+        train.run(config, outer=0, inner=0, seed=0, out=out)
+    diagnosis = json.loads((out / "falha_nan.json").read_text())
+    assert diagnosis["epoca"] == 0 and diagnosis["notas_nao_finitas"] == diagnosis["notas"] > 0
+    assert diagnosis["parametros_nao_finitos"] == []
+    assert "bn1.running_mean" in diagnosis["buffers_nao_finitos"]
+    assert not (out / "metrics.json").exists()
+
+
+def test_a_failing_task_does_not_stop_the_others(tiny_dataset, tmp_path, monkeypatch):
+    """Uma tarefa que falha fica registrada (falhou.txt) e o job segue com as outras; no fim, o job acusa a
+    falha (sem análise) e o --retomar repete só ela."""
+    import macdeg.cluster as cluster
+    from macdeg import train
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    batch = cluster.prepare(_tiny_experiment(tmp_path, tiny_dataset, "f"), str(tiny_dataset), test=True)
+    lote = json.loads((batch / "lote.json").read_text())
+    original = train.run
+
+    def flaky(config, outer, inner, *args, **kwargs):
+        if (outer, inner) == (0, 1):
+            raise FloatingPointError("notas não finitas")
+        return original(config, outer, inner, *args, **kwargs)
+
+    monkeypatch.setattr(train, "run", flaky)
+    with pytest.raises(SystemExit, match="tarefa"):
+        cluster.run_local(batch, str(tiny_dataset))
+    bad = next(t for t in lote["tarefas"] if (t["outer"], t["inner"]) == (0, 1))
+    folder = cluster.task_dir(batch, bad)
+    assert cluster.failed_tasks(batch, lote) == [bad["id"]]
+    assert "FloatingPointError" in (folder / "falhou.txt").read_text() and not (folder / "em_andamento").exists()
+    assert cluster.pending_tasks(batch, lote) == [bad["id"]]          # todas as outras terminaram
+
+    monkeypatch.setattr(train, "run", original)                         # --retomar: repete só a que falhou
+    cluster.run_local(batch, str(tiny_dataset))
+    assert cluster.pending_tasks(batch, lote) == [] and cluster.failed_tasks(batch, lote) == []
+    assert not (folder / "falhou.txt").exists()

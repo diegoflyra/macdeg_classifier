@@ -270,6 +270,18 @@ def micro_batch(config: dict, device: torch.device) -> int:
     return max(d for d in range(1, batch + 1) if batch % d == 0 and d <= fits)
 
 
+def nonfinite_report(model: nn.Module, probs: np.ndarray, losses: list[float], epoch: int, scaler) -> dict:
+    """Diagnóstico quando a validação dá notas NaN/infinitas (ex.: estouro do fp16). Diz se o problema está
+    nos pesos (o treino divergiu) ou só nas médias guardadas do BatchNorm (buffers), que o treino não usa
+    mas a validação usa. Só nomes de camadas e contagens."""
+    bad_params = [n for n, p in model.named_parameters() if not torch.isfinite(p).all()]
+    bad_buffers = [n for n, b in model.named_buffers() if b.is_floating_point() and not torch.isfinite(b).all()]
+    return {"epoca": epoch, "notas": int(len(probs)), "notas_nao_finitas": int((~np.isfinite(probs)).sum()),
+            "parametros_nao_finitos": bad_params, "buffers_nao_finitos": bad_buffers,
+            "perdas_treino_nao_finitas": int(sum(not math.isfinite(x) for x in losses)), "micro_lotes": len(losses),
+            "escala_gradscaler": float(scaler.get_scale()) if scaler.is_enabled() else None}
+
+
 @torch.no_grad()
 def predict(model, loader, device) -> np.ndarray:
     model.eval()
@@ -387,6 +399,11 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
             asked = time.time()
         train_seconds = time.time() - began
         probs = predict(model, val_loader, device)
+        if not np.isfinite(probs).all():   # sem isto, o sklearn só diz "Input contains NaN"
+            report = nonfinite_report(model, probs, losses, epoch, scaler)
+            (out / "falha_nan.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
+            raise FloatingPointError(f"época {epoch}: {report['notas_nao_finitas']} de {report['notas']} notas de "
+                                     f"validação não finitas; diagnóstico em {out / 'falha_nan.json'}: {report}")
         val_auroc = auroc(val["label"], probs)
         row = {"epoch": epoch, "train_loss": float(np.mean(losses)), "val_auroc": val_auroc,
                "seconds": round(time.time() - began, 1), "train_seconds": round(train_seconds, 1),

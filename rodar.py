@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 
 from macdeg.ambiente import commit_info, load_dotenv, push_results, which_secrets
-from macdeg.cluster import RUNS, dataset_signature, pending_tasks, prepare, run_local
+from macdeg.cluster import RUNS, dataset_signature, failed_tasks, pending_tasks, prepare, run_local
 from macdeg.data.sources import resolve
 
 REFERENCIA = "configs/experimentos/001_referencia.yaml"
@@ -81,6 +81,9 @@ def main() -> None:
     run_local(batch, args.dados, wandb_mode, from_end=args.do_fim)
 
     missing = pending_tasks(batch, lote)
+    failed = failed_tasks(batch, lote)
+    if failed:    # falharam em outro job: ninguém vai analisar até alguém refazê-las
+        sys.exit(f"tarefa(s) {[i + 1 for i in failed]} falharam (falhou.txt); refaça com --retomar {batch}")
     if missing:   # outro job ainda está nelas: ele faz a análise quando terminar
         print(f"faltam {len(missing)} tarefa(s) em andamento em outro job; a análise fica com ele", flush=True)
         return
