@@ -67,10 +67,9 @@ Se passar de 30 minutos, peça outro `salloc` e rode de novo: o que já foi inst
 
 ## Cada experimento
 
-Um experimento = **um job com 2 GPUs** (o máximo do QoS `simple`). O `cluster/experimento.sh` confere o
-ambiente, copia o conjunto para o disco do nó, roda as tarefas (`rodar.py`: um processo por GPU, cada um
-pegando a próxima tarefa livre), a análise e o envio ao GitHub e ao W&B. No log, cada linha das tarefas
-começa com `[gpu0]` ou `[gpu1]`. Com `--gres=gpu:1` antes do script, roda uma tarefa por vez.
+Cada job pede **uma GPU** e usa os padrões de CPU e memória da partição. O `cluster/experimento.sh`
+confere o ambiente, copia o conjunto para o disco do nó e roda as tarefas. Um segundo job pode retomar
+o mesmo lote pela última tarefa. A análise e o envio dos resultados acontecem quando o lote termina.
 
 1. No seu computador: crie ou edite `configs/experimentos/<n>_<nome>.yaml`, **commit e push**.
 2. No cluster (nó de login, na raiz do repositório):
@@ -78,7 +77,11 @@ começa com `[gpu0]` ou `[gpu1]`. Com `--gres=gpu:1` antes do script, roda uma t
    cd ~/macdeg_classifier && git pull && mkdir -p logs
    sbatch -p debug --qos=complex --time=00:30:00 cluster/experimento.sh --teste    # teste rápido
    sbatch cluster/experimento.sh                                                    # a referência, valendo
-   sbatch cluster/experimento.sh configs/experimentos/002_x.yaml                   # outro experimento
+   job1=$(sbatch --parsable cluster/experimento.sh configs/experimentos/002_x.yaml)
+
+   # Assim que o primeiro job criar logs/macdeg_<job>.lote, submeta o segundo.
+   lote=$(cat "logs/macdeg_${job1%%;*}.lote") &&
+     sbatch cluster/experimento.sh --retomar "$lote" --do-fim
    ```
 3. Acompanhar: `squeue -u $USER`; saída em `logs/macdeg_<job>.out` (`tail -f` mostra ao vivo) e erros em
    `logs/macdeg_<job>.err`; curvas no W&B.
@@ -91,12 +94,11 @@ começa com `[gpu0]` ou `[gpu1]`. Com `--gres=gpu:1` antes do script, roda uma t
 
 ## O que cada peça faz e por quê
 
-- **Um job por experimento, 2 GPUs:** pede as GPUs uma vez e divide as tarefas entre elas (fila comum:
-  quem termina pega a próxima). Menos espera na fila e nada de jobs encadeados. Cada tarefa = configuração
-  × dobra externa × dobra interna. O resultado de uma tarefa não depende da GPU em que rodou.
+- Cada tarefa corresponde a uma configuração, uma dobra externa e uma dobra interna. Os dois jobs
+  percorrem a lista em sentidos opostos e pulam as tarefas concluídas ou em execução no outro job.
 - **Cache das imagens reduzidas (`macdeg/cache.py`):** na referência, a A100 passava ~2/3 do tempo esperando
   a CPU decodificar JPEGs de 1024 px e reduzi-los (117 s por época, contra ~35 s de GPU). Agora a primeira
-  tarefa do job reduz todas as imagens uma vez (~1 min, 16 processos) para um `.npy` no disco do nó e
+  tarefa do job reduz todas as imagens uma vez para um `.npy` no disco do nó e
   os treinos leem dele por mmap. Os pixels são idênticos (testado), então os resultados continuam
   comparáveis com a referência. `cache: false` na configuração desliga. Com augmentation, os recortes
   partem da imagem já em `image_size` (prática comum; com `crop_scale` ≥ 0,85 a perda de detalhe é mínima).

@@ -477,7 +477,10 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
         metrics.update(peak_gpu_gb=round(torch.cuda.max_memory_allocated(device) / 1e9, 2),
                        peak_reserved_gpu_gb=round(torch.cuda.max_memory_reserved(device) / 1e9, 2),
                        gpu_total_gb=round(torch.cuda.get_device_properties(device).total_memory / 1e9, 2))
-    (out / "metrics.json").write_text(json.dumps(metrics, indent=1), encoding="utf-8")
+    # A fila compartilhada só vê a tarefa como concluída quando o JSON está inteiro.
+    metrics_tmp = out / "metrics.tmp"
+    metrics_tmp.write_text(json.dumps(metrics, indent=1), encoding="utf-8")
+    metrics_tmp.replace(out / "metrics.json")
     # Pesos ocupam muito (~400 MB por tarefa na ResNet-50): last.pt só serve para retomar, e best.pt só
     # é preciso no treino final (vai para o Hugging Face). As previsões já estão salvas.
     (out / "last.pt").unlink(missing_ok=True)

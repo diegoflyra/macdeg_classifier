@@ -346,9 +346,11 @@ sbatch cluster/experimento.sh configs/experimentos/011_convnext_arquiteturas_aug
 sbatch cluster/experimento.sh configs/experimentos/012_convnext_aux_dr.yaml --piloto
 sbatch cluster/experimento.sh configs/experimentos/012_convnext_aux_dr.yaml
 
-# Quatro arquiteturas com augmentation e cabeça de DR
-sbatch cluster/experimento.sh configs/experimentos/013_convnext_arquiteturas_aux_dr.yaml --piloto
-sbatch cluster/experimento.sh configs/experimentos/013_convnext_arquiteturas_aux_dr.yaml
+# Quatro arquiteturas com augmentation e cabeça de DR, um job de uma GPU por ponta
+job1=$(sbatch --parsable cluster/experimento.sh configs/experimentos/013_convnext_arquiteturas_aux_dr.yaml)
+# Quando o primeiro job criar logs/macdeg_<job>.lote, submeta o segundo.
+lote=$(cat "logs/macdeg_${job1%%;*}.lote") &&
+  sbatch cluster/experimento.sh --retomar "$lote" --do-fim
 
 # Se o tempo do job acabar, retome o caminho exato impresso no log
 sbatch cluster/experimento.sh --retomar ~/macdeg_runs/NOME_EXATO_DO_LOTE

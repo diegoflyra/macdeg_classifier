@@ -7,11 +7,13 @@ Um experimento (configs/experimentos/*.yaml) vira um LOTE em $MACDEG_RUNS/<nome>
   logs/           saída e erros do job do SLURM
   analise/        o que vai para o GitHub (macdeg.analysis)
 Cada tarefa = (configuração, dobra externa, dobra interna). Tarefa concluída nunca roda de novo.
+Dois jobs podem dividir o lote com --retomar --do-fim. Cada tarefa tem um lock no diretório compartilhado.
 Quem lança: rodar.py (no cluster, dentro de cluster/experimento.sh).
 """
 from __future__ import annotations
 
 import copy
+import errno
 import hashlib
 import io
 import itertools
@@ -20,6 +22,7 @@ import os
 import subprocess
 import tarfile
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 import pandas as pd
@@ -124,8 +127,32 @@ def task_dir(batch: Path, task: dict) -> Path:
     return batch / "tarefas" / task["configuracao"] / f"outer{task['outer']}_{inner}"
 
 
+@contextmanager
+def job_lock(path: Path):
+    """Tenta obter um lock exclusivo, liberado quando o processo fecha o arquivo ou termina."""
+    with path.open("a+b") as handle:
+        try:
+            if os.name == "nt":
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as error:
+            if error.errno not in (errno.EACCES, errno.EAGAIN):
+                raise
+            yield False
+        else:
+            yield True
+
+
+def pending_tasks(batch: Path, lote: dict) -> list[int]:
+    """Tarefas sem metrics.json, incluindo as em execução em outro job."""
+    return [task["id"] for task in lote["tarefas"] if not (task_dir(batch, task) / "metrics.json").exists()]
+
+
 def run_task(batch: Path, task_id: int, dataset: str | None = None, wandb_mode: str | None = None) -> dict | None:
-    """Executa uma tarefa do lote. Confere a assinatura dos dados."""
+    """Confere os dados e executa a tarefa se estiver pendente e livre."""
     from macdeg.train import run
     batch = Path(batch)
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
@@ -139,14 +166,21 @@ def run_task(batch: Path, task_id: int, dataset: str | None = None, wandb_mode: 
         raise SystemExit(f"O conjunto mudou desde o lançamento ({signature} != {lote['assinatura_dados']}): "
                          "os resultados não seriam comparáveis. Relance o experimento.")
     out = task_dir(batch, task)
-    log = on_model = finish = None
-    if wandb_mode != "disabled":
-        log, on_model, finish = _wandb(lote, task, config, out, wandb_mode)
-    try:
-        return run(config, task["outer"], task["inner"], seed=0, out=out, log=log, on_model=on_model)
-    finally:
-        if finish:
-            finish()
+    out.mkdir(parents=True, exist_ok=True)
+    with job_lock(out / "treino.lock") as acquired:
+        if not acquired:
+            print(f"tarefa {task_id + 1}: em andamento em outro job", flush=True)
+            return None
+        if (out / "metrics.json").exists():
+            return None
+        log = on_model = finish = None
+        if wandb_mode != "disabled":
+            log, on_model, finish = _wandb(lote, task, config, out, wandb_mode)
+        try:
+            return run(config, task["outer"], task["inner"], seed=0, out=out, log=log, on_model=on_model)
+        finally:
+            if finish:
+                finish()
 
 
 def _wandb(lote: dict, task: dict, config: dict, out: Path, mode: str | None):
@@ -187,20 +221,22 @@ def visible_gpus() -> list[str]:
 
 
 def run_local(batch: Path, dataset: str | None = None, wandb_mode: str | None = "disabled",
-              gpus: list[str] | None = None) -> None:
+              gpus: list[str] | None = None, from_end: bool = False) -> None:
     """Roda as tarefas do lote. Com uma GPU (ou nenhuma), uma por vez neste processo. Com várias, um
     processo por GPU, cada um pegando a próxima tarefa livre de uma fila comum. Tarefas já concluídas são
     puladas; uma tarefa interrompida continua do last.pt. O resultado de cada tarefa não depende da GPU
-    (lote efetivo fixo), então dividir as tarefas entre GPUs não muda os números."""
+    (lote efetivo fixo). Com `from_end`, o job começa pela última tarefa pendente."""
     batch = Path(batch)
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
     total = len(lote["tarefas"])
-    pending = [t["id"] for t in lote["tarefas"] if not (task_dir(batch, t) / "metrics.json").exists()]
+    pending = pending_tasks(batch, lote)
+    if from_end:
+        pending.reverse()
     gpus = visible_gpus() if gpus is None else gpus
     if len(gpus) <= 1 or len(pending) <= 1:
-        for task in lote["tarefas"]:
-            print(f"tarefa {task['id'] + 1}/{total}: {task}", flush=True)
-            run_task(batch, task["id"], dataset, wandb_mode)
+        for task_id in pending:
+            print(f"tarefa {task_id + 1}/{total}: {lote['tarefas'][task_id]}", flush=True)
+            run_task(batch, task_id, dataset, wandb_mode)
         return
 
     import multiprocessing as mp

@@ -108,6 +108,8 @@ def test_rodar_runs_a_whole_test_experiment(tiny_dataset, tmp_path, monkeypatch)
     monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
     monkeypatch.setattr(rodar, "RUNS", tmp_path / "runs")
     monkeypatch.setattr(rodar, "load_dotenv", lambda *a, **k: None)   # o teste não usa as chaves reais
+    pointer = tmp_path / "macdeg_1.lote"
+    monkeypatch.setenv("MACDEG_JOB_LOTE", str(pointer))
     base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
             "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
     (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
@@ -115,12 +117,88 @@ def test_rodar_runs_a_whole_test_experiment(tiny_dataset, tmp_path, monkeypatch)
     monkeypatch.setattr(sys, "argv", ["rodar.py", str(tmp_path / "exp.yaml"), "--teste", "--dados", str(tiny_dataset)])
     rodar.main()
     batch = Path((tmp_path / "runs" / "ultimo_lote.txt").read_text())
+    assert Path(pointer.read_text(encoding="utf-8")) == batch
     assert (batch / "analise" / "RESUMO.md").exists() and (batch / "logs").is_dir()
     lote = json.loads((batch / "lote.json").read_text())
     assert all((cluster.task_dir(batch, t) / "metrics.json").exists() for t in lote["tarefas"])
-    # retomar um lote pronto não treina de novo
-    monkeypatch.setattr(sys, "argv", ["rodar.py", "--teste", "--retomar", str(batch), "--dados", str(tiny_dataset)])
+    from macdeg import analysis
+
+    def analyze_twice(*args, **kwargs):
+        pytest.fail("um segundo job tentou analisar um lote já analisado")
+
+    monkeypatch.setattr(analysis, "analyze", analyze_twice)
+    monkeypatch.setattr(sys, "argv", ["rodar.py", "--retomar", str(batch), "--do-fim", "--dados", str(tiny_dataset)])
     rodar.main()
+
+
+def test_single_gpu_jobs_share_tasks_from_opposite_ends(tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+
+    from macdeg import cluster, train
+
+    tasks = [{"id": i, "configuracao": "shared-00", "outer": 0, "inner": i} for i in range(4)]
+    lote = {"tarefas": tasks, "splits": "splits.csv", "assinatura_dados": "test",
+            "configuracoes": [{"nome": "shared-00", "config": {"dataset": str(tmp_path)}}]}
+    (tmp_path / "lote.json").write_text(json.dumps(lote), encoding="utf-8")
+    monkeypatch.setattr(cluster, "dataset_signature", lambda *args: "test")
+    first_started, finish_first = Event(), Event()
+    trained = []
+
+    def train_once(config, outer, inner, *, out, **kwargs):
+        trained.append(inner)
+        if inner == 0:
+            first_started.set()
+            assert finish_first.wait(timeout=10)
+        (out / "metrics.json").write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(train, "run", train_once)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        first = executor.submit(cluster.run_local, tmp_path, gpus=["0"])
+        try:
+            assert first_started.wait(timeout=10)
+            cluster.run_local(tmp_path, gpus=["0"], from_end=True)
+            assert trained == [0, 3, 2, 1]
+            assert cluster.pending_tasks(tmp_path, lote) == [0]
+        finally:
+            finish_first.set()
+        first.result(timeout=10)
+    assert trained == [0, 3, 2, 1]
+    assert cluster.pending_tasks(tmp_path, lote) == []
+
+
+def test_resumed_job_waits_for_all_tasks_before_analysis(tmp_path, monkeypatch):
+    import sys
+
+    import rodar
+    from macdeg import analysis, cluster
+
+    batch = tmp_path / "lote"
+    batch.mkdir()
+    task = {"id": 0, "configuracao": "shared-00", "outer": 0, "inner": 0}
+    lote = {"tarefas": [task], "configuracoes": [{}], "teste": True}
+    (batch / "lote.json").write_text(json.dumps(lote), encoding="utf-8")
+    pointer = tmp_path / "macdeg_2.lote"
+    monkeypatch.setenv("MACDEG_JOB_LOTE", str(pointer))
+    monkeypatch.setattr(sys, "argv", ["rodar.py", "--retomar", str(batch), "--do-fim"])
+    monkeypatch.setattr(rodar, "RUNS", tmp_path)
+    monkeypatch.setattr(rodar, "load_dotenv", lambda: None)
+    monkeypatch.setattr(rodar, "check", lambda *args: None)
+    directions, analyses = [], []
+    monkeypatch.setattr(rodar, "run_local", lambda *args, from_end: directions.append(from_end))
+    monkeypatch.setattr(analysis, "analyze", lambda batch, *args, push: analyses.append((batch, push)))
+
+    rodar.main()
+    assert analyses == []
+    assert Path(pointer.read_text(encoding="utf-8")) == batch
+
+    out = cluster.task_dir(batch, task)
+    out.mkdir(parents=True)
+    (out / "metrics.json").write_text("{}", encoding="utf-8")
+    rodar.main()
+    rodar.main()
+    assert directions == [True, True, True]
+    assert analyses == [(batch, False)]
 
 
 def test_experiment_script_is_valid_bash():
@@ -129,7 +207,7 @@ def test_experiment_script_is_valid_bash():
     script = PROJECT / "cluster" / "experimento.sh"
     assert subprocess.run(["bash", "-n", str(script)]).returncode == 0
     text = script.read_text()
-    assert "--partition=short-simple" in text and "--qos=simple" in text and "--gres=gpu:2" in text
+    assert "--partition=short-simple" in text and "--qos=simple" in text and "#SBATCH --gres=gpu:1" in text
     assert "--error=logs/%x_%j.err" in text and "python rodar.py" in text and "trap 'rm -rf" in text
 
 

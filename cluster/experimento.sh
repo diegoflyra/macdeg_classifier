@@ -1,6 +1,5 @@
 #!/bin/bash
-# Um experimento = um job. Pede 2 GPUs (o máximo do QoS simple) e roda uma tarefa em cada, ao mesmo tempo;
-# depois a análise e o envio dos resultados. Com 1 GPU (--gres=gpu:1), roda uma tarefa por vez.
+# Cada job pede 1 GPU. Um segundo job pode retomar o mesmo lote pela última tarefa.
 #
 # Do nó de login, na raiz do repositório (crie a pasta de logs uma vez: mkdir -p logs):
 #   sbatch cluster/experimento.sh                                        # a referência
@@ -8,15 +7,14 @@
 #   sbatch -p debug --qos=complex --time=00:30:00 cluster/experimento.sh --teste       # teste rápido
 #   sbatch --gres=gpu:1 --time=02:00:00 cluster/experimento.sh --piloto   # uma tarefa por configuração
 #   sbatch cluster/experimento.sh --retomar ~/macdeg_runs/<lote>          # continua um lote interrompido
+#   sbatch cluster/experimento.sh --retomar ~/macdeg_runs/<lote> --do-fim # 2º job no mesmo lote
 #   sbatch cluster/experimento.sh --final ~/macdeg_runs/<lote> <configuração>   # modelo final -> HF
 # Os argumentos vão direto para o rodar.py. Saída em logs/macdeg_<job>.out, erros em logs/macdeg_<job>.err.
 #SBATCH --job-name=macdeg
 #SBATCH --partition=short-simple
 #SBATCH --qos=simple
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=64G
 #SBATCH --time=2-00:00:00
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
@@ -40,6 +38,8 @@ python -c "import torch; assert torch.cuda.is_available(), 'CUDA indisponível';
 # 2. Pastas
 export MACDEG_RUNS=${MACDEG_RUNS:-$HOME/macdeg_runs}
 mkdir -p "$MACDEG_RUNS" logs
+export MACDEG_JOB_LOTE="$SLURM_SUBMIT_DIR/logs/macdeg_${SLURM_JOB_ID}.lote"
+rm -f -- "$MACDEG_JOB_LOTE"
 
 # 3. Dados no disco local do nó (rápido); apagados no fim, mesmo se o job falhar ou for cancelado.
 #    A primeira tarefa ainda reduz as imagens ao tamanho do treino uma vez só (macdeg/cache.py).
@@ -57,10 +57,10 @@ STATUS=$?
 set -e
 
 # 5. Logs do job vão junto com o lote (e para o GitHub, exceto no teste)
-LOTE=$(cat "$MACDEG_RUNS/ultimo_lote.txt" 2>/dev/null || true)
+echo "fim | status $STATUS | $(date '+%Y-%m-%d %H:%M:%S')"
+LOTE=$(cat "$MACDEG_JOB_LOTE" 2>/dev/null || true)
 if [ -n "$LOTE" ] && [ -d "$LOTE" ]; then
   cp "logs/macdeg_${SLURM_JOB_ID}.out" "logs/macdeg_${SLURM_JOB_ID}.err" "$LOTE/logs/" 2>/dev/null || true
   python -m macdeg.analysis logs "$LOTE" || true
 fi
-echo "fim | status $STATUS | $(date '+%Y-%m-%d %H:%M:%S')"
 exit $STATUS
