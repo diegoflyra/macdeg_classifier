@@ -51,9 +51,11 @@ Treino no cluster Apuana: ver [`docs/cluster.md`](docs/cluster.md). Cada experim
 envia `resultados/<lote>/` para a branch `resultados`. No cluster: `sbatch cluster/experimento.sh`.
 
 AlexNet para DMRI: [`docs/alexnet.md`](docs/alexnet.md) explica o fine-tuning com pesos ImageNet,
-as três primeiras convoluções congeladas e as camadas profundas treináveis. Comparação com as
-outras arquiteturas: `004_gustavo_arquiteturas.yaml`; estudo próprio (congelamento, taxas, inicialização):
-`005`–`007_alexnet_*.yaml`. Como montar experimentos: [`docs/fluxo_experimentos.md`](docs/fluxo_experimentos.md).
+as três primeiras convoluções congeladas e as camadas profundas treináveis. A arquitetura está escrita
+camada por camada em `macdeg/models.py`; só os pesos pré-treinados são carregados do checkpoint oficial.
+Comparação com as outras arquiteturas: `004_gustavo_arquiteturas.yaml`; estudo próprio (congelamento,
+taxas, inicialização): `005`–`007_alexnet_*.yaml`. Como montar experimentos:
+[`docs/fluxo_experimentos.md`](docs/fluxo_experimentos.md).
 
 Avaliação:
 - métrica principal: **média do F2 dentro de cada base**, com o limiar sempre escolhido em outras dobras;

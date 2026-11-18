@@ -11,8 +11,15 @@
 Vamos usar a **AlexNet pré-treinada na ImageNet**, mantendo as convoluções
 superficiais congeladas e adaptando as camadas profundas às retinografias.
 O alvo é DMRI (1) × sem DMRI (0), com os dados e a avaliação já definidos no
-projeto. A implementação usada é a do torchvision, compatível com seus pesos
-`AlexNet_Weights.IMAGENET1K_V1`.
+projeto. A arquitetura está escrita camada por camada na classe `AlexNet`, em
+`macdeg/models.py`, usando `nn.Conv2d`, `nn.ReLU`, pooling, `nn.Linear` e dropout.
+O treino não chama o construtor `torchvision.models.alexnet`.
+
+Os pesos são carregados separadamente do checkpoint oficial equivalente a
+`AlexNet_Weights.IMAGENET1K_V1`. Escrever a arquitetura à mão e começar com pesos
+aleatórios são escolhas independentes; aqui mantemos o fine-tuning da ImageNet.
+Para encaixar esses pesos, preservamos canais, tamanhos das camadas, índices e
+o cálculo do forward da variante do torchvision.
 
 Nesta primeira etapa, a entrada fica sem tratamentos de realce e sem augmentation
 (`augment: null`). CLAHE, equalização, remoção de ruído e alterações aleatórias
@@ -29,7 +36,7 @@ esta etapa não reconstrói os dados nem altera suas divisões.
 
 ## O que fica congelado e o que aprende
 
-| Camada | Módulo do torchvision | Inicialização | Durante o treino |
+| Camada | Módulo no nosso código | Inicialização | Durante o treino |
 |---|---|---|---|
 | Conv1, 64 filtros de 11 × 11 | `features[0]` | ImageNet | congelada |
 | Conv2, 192 filtros de 5 × 5 | `features[3]` | ImageNet | congelada |
@@ -59,7 +66,7 @@ têm pesos. Os parâmetros congelados usam `requires_grad=False` e ficam fora do
 otimizador. O otimizador recebe só parâmetros com `requires_grad=True`.
 
 O congelamento fica fixo durante todo o treino. Não há descongelamento por
-época nesta versão. A AlexNet do torchvision não tem BatchNorm, e não há dropout
+época nesta versão. Nossa implementação, compatível com o torchvision, não tem BatchNorm, e não há dropout
 no extrator convolucional; chamar `model.train()` não muda os parâmetros das
 convoluções congeladas. O dropout do classificador fica ativo durante o treino
 e desligado na avaliação.
@@ -99,7 +106,7 @@ separada. Não está implementado. O warmup atual aumenta as taxas gradualmente;
 não muda quais camadas estão congeladas.
 
 Mantemos a resolução de 512 px do projeto. O pooling adaptativo original do
-torchvision leva os mapas convolucionais a 6 × 6 antes do classificador.
+torchvision foi mantido e leva os mapas convolucionais a 6 × 6 antes do classificador.
 Preservar mais detalhes na entrada é uma hipótese; a primeira convolução tem
 stride 4 e ainda pode perder estruturas pequenas. Comparar resoluções exige
 uma avaliação própria.
@@ -156,7 +163,7 @@ não isola a contribuição de cada ajuste.
   transferência de aprendizado, mas não valida especificamente congelar as três
   primeiras convoluções da AlexNet. Essa escolha é nossa hipótese inicial.
 - [Torchvision, código da AlexNet](https://docs.pytorch.org/vision/stable/_modules/torchvision/models/alexnet.html)
-  documenta a arquitetura e os pesos usados.
+  documenta a variante implementada à mão e o checkpoint de pesos usado.
 - [PyTorch, Transfer Learning Tutorial](https://docs.pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)
   explica congelar parâmetros com `requires_grad=False` e otimizar só os
   parâmetros treináveis.
@@ -180,12 +187,20 @@ sbatch cluster/experimento.sh configs/experimentos/007_alexnet_inicializacao.yam
 
 A primeira execução precisa ter acesso ao download dos pesos ImageNet, ou os
 pesos precisam estar previamente disponíveis no cache do PyTorch do cluster.
-Sem os pesos, o construtor falha; ele não segue silenciosamente do zero.
+`load_alexnet_imagenet_weights` usa `torch.hub.load_state_dict_from_url` para
+obter só o dicionário de pesos, com verificação do hash no download e
+`weights_only=True`. A transferência usa `load_state_dict(..., strict=True)`.
+Primeiro são carregadas todas as camadas, incluindo a saída original de 1000
+classes; só depois o código substitui a saída por um logit e inicializa a nova
+camada conforme a configuração. Sem os pesos, o carregamento falha; ele não
+segue silenciosamente do zero.
 
 Testes usam tensores e imagens sintéticos. Quando simulam a seleção de pesos
 ImageNet, substituem só o download, sem pretender medir transferência de
 aprendizado. Os testes verificam também que uma atualização muda pesos profundos
-e preserva exatamente os pesos congelados.
+e preserva exatamente os pesos congelados. Há uma comparação da implementação
+manual com a oficial: transfere-se o mesmo state_dict, sem download, e comparam-se
+as saídas em 224 e 512 px. Isso testa a compatibilidade de parâmetros e do forward.
 
 ```bash
 python -m pytest -q tests/test_models.py
