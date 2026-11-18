@@ -132,6 +132,11 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
     result = {"lote": lote["nome"], "commit": lote["commit"], "assinatura_dados": lote["assinatura_dados"],
               "teste": lote["teste"], "piloto": lote.get("piloto", False), "tarefas_faltando": missing, "analisado": time.strftime("%Y-%m-%d %H:%M"),
               "configuracoes": {}}
+    if result["piloto"]:
+        fields = ("gpu", "micro_batch", "epochs_run", "seconds_per_epoch", "task_seconds",
+                  "peak_gpu_gb", "peak_reserved_gpu_gb", "gpu_total_gb")
+        result["recursos_piloto"] = {name: {key: tasks[(0, 0)]["metrics"].get(key) for key in fields}
+                                     for name, tasks in runs.items() if (0, 0) in tasks}
     if lote["final"]:
         result["final"] = {name: final_threshold(r) for name, r in runs.items()}
         _write(out, lote, result, None, None)
@@ -224,7 +229,8 @@ def summary_markdown(result: dict) -> str:
     if result["teste"]:
         lines.append("- **MODO DE TESTE: os números não servem como resultado.**")
     if result.get("piloto"):
-        lines.append("- **PILOTO: um treino só (dobra externa 0). Números reais, mas de 1/5 do conjunto; IC largo.**")
+        lines.append("- **PILOTO: uma tarefa por configuração (externa 0, interna 0). "
+                     "Use tempo e memória para planejar; desempenho ainda não representa a validação 5 × 4.**")
     if result["tarefas_faltando"]:
         lines.append(f"- tarefas faltando: {len(result['tarefas_faltando'])}")
     if result.get("final"):
@@ -233,6 +239,15 @@ def summary_markdown(result: dict) -> str:
             lines.append(f"- {name}: limiar {f['limiar']:.4f}, F2 médio por base fora da dobra "
                          f"{_fmt(f['f2_media_bases_fora_da_dobra'])}")
         return "\n".join(lines) + "\n"
+    if result.get("recursos_piloto"):
+        lines += ["", "## Tempo e memória do piloto", "",
+                  "| Configuração | GPU | Microbatch | Épocas | s/época | s/tarefa | Alocado (GB) | Reservado (GB) | VRAM (GB) |",
+                  "|---|---|---:|---:|---:|---:|---:|---:|---:|"]
+        for name, r in result["recursos_piloto"].items():
+            lines.append(f"| {name} | {_fmt(r['gpu'])} | {_fmt(r['micro_batch'])} | {_fmt(r['epochs_run'])} | "
+                         f"{_fmt(r['seconds_per_epoch'], 1)} | {_fmt(r['task_seconds'], 1)} | "
+                         f"{_fmt(r['peak_gpu_gb'], 2)} | {_fmt(r['peak_reserved_gpu_gb'], 2)} | "
+                         f"{_fmt(r['gpu_total_gb'], 2)} |")
     lines += ["", f"Referência: `{result.get('referencia')}`", "",
               "| configuração | mudanças | F2 médio por base [IC95] | AUROC | sens. | esp. normais | esp. outras | régua origem | veredito |",
               "|---|---|---|---|---|---|---|---|---|"]

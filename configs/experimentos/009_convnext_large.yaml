@@ -1,0 +1,8 @@
+# Comparação opcional das duas variantes maiores (40 tarefas completas).
+# O piloto mede memória e tempo de Base e Large com a mesma receita.
+nome: convnext_large
+base: configs/train/convnext_cluster.yaml
+grade:
+  model: [convnext_base, convnext_large]
+variacoes: []
+referencia: null

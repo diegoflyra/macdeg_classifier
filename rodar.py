@@ -7,7 +7,7 @@ rode direto.
     python rodar.py                                   # a referência (configs/experimentos/001_referencia.yaml)
     python rodar.py configs/experimentos/002_x.yaml   # outro experimento
     python rodar.py --teste                           # passada rápida: minutos, números sem valor, nada é enviado
-    python rodar.py --piloto                          # UM treino de verdade (dobra 0): números reais em ~1-2 h
+    python rodar.py --piloto                          # uma tarefa por configuração (externa 0, interna 0)
     python rodar.py --retomar ~/macdeg_runs/<lote>    # continua um lote interrompido (pula o que já terminou)
     python rodar.py --final ~/macdeg_runs/<lote> <configuração>   # modelo final (5 dobras) -> Hugging Face
 
@@ -51,7 +51,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("experimento", nargs="?", default=REFERENCIA)
     ap.add_argument("--teste", action="store_true", help="passada rápida; os números não servem")
-    ap.add_argument("--piloto", action="store_true", help="um treino de verdade só (dobra externa 0, interna 0)")
+    ap.add_argument("--piloto", action="store_true", help="uma tarefa por configuração (dobra externa 0, interna 0)")
     ap.add_argument("--retomar", type=Path, default=None, help="pasta de um lote já criado")
     ap.add_argument("--final", nargs="+", metavar=("LOTE", "CONFIG"), help="modelo final de configurações de um lote")
     ap.add_argument("--dados", default="~/macdeg_data/dataset_1024", help="pasta do conjunto (com as imagens)")

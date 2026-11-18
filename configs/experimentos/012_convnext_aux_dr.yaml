@@ -1,0 +1,10 @@
+# Mantém a augmentation da rodada2-01 em ambas as configurações da Tiny.
+# A configuração 01 acrescenta a cabeça auxiliar da rodada2-04.
+nome: convnext_aux_dr
+base: configs/train/convnext_cluster.yaml
+grade:
+  augment:
+    - {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, rotate_interpolation: bilinear, color: 0.1}
+  aux_dr: [null, 0.5]
+variacoes: []
+referencia: null

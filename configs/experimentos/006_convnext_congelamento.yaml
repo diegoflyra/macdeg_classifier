@@ -1,0 +1,8 @@
+# Só varia o congelamento. Configuração 00 é o controle com todas as camadas treináveis.
+# Configuração 01 é o fine-tuning parcial; 2 configurações x 20 treinos = 40 tarefas.
+nome: convnext_congelamento
+base: configs/train/convnext_tiny_finetuning.yaml
+grade:
+  freeze_first_stages: [0, 2]
+variacoes: []
+referencia: null

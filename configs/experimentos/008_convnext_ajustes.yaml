@@ -1,0 +1,14 @@
+# 6 configurações x 5 externas x 4 internas = 120 treinos completos.
+# Variações independentes; não há produto cartesiano entre os ajustes.
+# O lote fica definido antes de olhar os testes externos do 007.
+nome: convnext_ajustes
+base: configs/train/convnext_cluster.yaml
+grade: {}
+variacoes:
+  - {freeze_first_stages: 1}
+  - {freeze_first_stages: 3}
+  - {lr: 3.0e-5}
+  - {weight_decay: 1.0e-2}
+  - {stochastic_depth_prob: 0.2}
+# A receita candidata da Tiny (00) é o controle.
+referencia: null

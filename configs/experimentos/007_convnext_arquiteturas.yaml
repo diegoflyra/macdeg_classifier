@@ -1,0 +1,9 @@
+# 3 configurações x 5 externas x 4 internas = 60 treinos completos.
+# --piloto: 3 treinos (um por arquitetura), para medir tempo/memória.
+nome: convnext_arquiteturas
+base: configs/train/convnext_cluster.yaml
+grade:
+  model: [convnext_tiny, convnext_small, convnext_base]
+variacoes: []
+# A Tiny (00) é o controle dentro deste lote.
+referencia: null

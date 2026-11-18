@@ -55,8 +55,25 @@ as três primeiras convoluções congeladas e as camadas profundas treináveis. 
 `002_alexnet_finetuning.yaml`, com saída binária e a avaliação já definida no projeto.
 A arquitetura está escrita camada por camada em `macdeg/models.py`; só os pesos pré-treinados
 são carregados do checkpoint oficial, separadamente.
+As camadas de `macdeg/layers.py` usam `nn.Parameter` e operações funcionais; o `forward`
+da AlexNet está explícito por etapas, sem `nn.Sequential`.
 As propostas de taxas separadas e inicialização da saída estão nos experimentos
 `003_alexnet_taxas.yaml` e `004_alexnet_inicializacao.yaml`, com comparações controladas.
+
+ConvNeXt para DMRI: [`docs/convnext.md`](docs/convnext.md) descreve a implementação manual
+com pesos ImageNet, blocos depthwise, LayerNorm, GELU e fine-tuning dos estágios profundos.
+O experimento inicial é `005_convnext_tiny_finetuning.yaml`; `006_convnext_congelamento.yaml`
+compara o congelamento de dois estágios com todas as camadas treináveis.
+Para o cluster, `007_convnext_arquiteturas.yaml` compara Tiny, Small e Base (60 treinos),
+e `008_convnext_ajustes.yaml` compara seis receitas da Tiny (120 treinos), com pilotos
+antes dos lotes completos. `009_convnext_large.yaml` compara Base e Large em um lote opcional
+de 40 treinos. A receita `convnext_cluster.yaml` usa entradas de 512 px, microbatch fixo,
+checkpointing de ativações e ajustes opcionais do otimizador.
+`010_convnext_augmentation.yaml` mede o efeito da receita de augmentation na Tiny (40 treinos).
+`011_convnext_arquiteturas_augmentation.yaml` compara Tiny, Small, Base e Large com a mesma
+receita de augmentation durante o treino (80 treinos).
+`012_convnext_aux_dr.yaml` compara a Tiny com e sem a cabeça auxiliar de retinopatia diabética.
+`013_convnext_arquiteturas_aux_dr.yaml` compara as quatro arquiteturas com augmentation e cabeça auxiliar.
 
 Avaliação:
 - métrica principal: **média do F2 dentro de cada base**, com o limiar sempre escolhido em outras dobras;

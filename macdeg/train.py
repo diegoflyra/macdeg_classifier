@@ -33,9 +33,9 @@ import torch
 import yaml
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-from torchvision.transforms import v2
 
 from macdeg import cache as image_cache
+from macdeg.convnext import CONVNEXT_MODELS
 from macdeg.data.sources import resolve
 from macdeg.data.splits import kind
 from macdeg.metrics import auroc, evaluate
@@ -60,9 +60,11 @@ def load_config(path: Path, overrides: list[str]) -> dict:
 class FundusDataset(Dataset):
     """Lê do cache de imagens reduzidas (macdeg.cache) quando há; senão, do JPEG. Os pixels são os mesmos."""
 
-    def __init__(self, frame: pd.DataFrame, root: Path, transform, cache: tuple[Path, dict] | None = None):
+    def __init__(self, frame: pd.DataFrame, root: Path, transform, cache: tuple[Path, dict] | None = None,
+                 *, aux_dr: bool = False):
         self.paths = [str(root / p) for p in frame["image"]]
         self.labels = frame["label"].to_numpy(np.float32)
+        self.dr_labels = dr_target(frame) if aux_dr else None
         self.transform = transform
         self.cache_path, lines = cache or (None, {})
         self.rows = [lines.get(p, -1) for p in frame["image"]]
@@ -80,10 +82,48 @@ class FundusDataset(Dataset):
         else:
             image = image_cache.read_rgb(self.paths[index])
         tensor = torch.from_numpy(image).permute(2, 0, 1)
-        return self.transform(tensor), self.labels[index]
+        sample = (self.transform(tensor), self.labels[index])
+        if self.dr_labels is not None:
+            return (*sample, self.dr_labels[index])
+        return sample
+
+
+def dr_target(frame: pd.DataFrame) -> np.ndarray:
+    """Rótulo auxiliar da rodada 002. Nos olhos com DMRI o estado da DR é desconhecido."""
+    if "disease" not in frame:
+        raise ValueError("aux_dr requer a coluna disease no manifesto.")
+    without_dmri = frame["label"].to_numpy() == 0
+    diseases = frame.loc[without_dmri, "disease"].fillna("").astype(str).str.split("|")
+    target = np.full(len(frame), -1.0, np.float32)
+    target[without_dmri] = diseases.map(lambda names: "retinopatia_diabetica" in names).to_numpy(np.float32)
+    return target
+
+
+def dr_loss(logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """BCE média dos alvos conhecidos no microbatch. Vale zero quando o microbatch não tem nenhum."""
+    known = target >= 0
+    masked_logits = logits.masked_fill(~known, 0)
+    loss = nn.functional.binary_cross_entropy_with_logits(
+        masked_logits, target.clamp_min(0), weight=known.to(logits.dtype), reduction="sum")
+    return loss / known.sum().clamp_min(1)
+
+
+def aux_dr_weight(config: dict) -> float:
+    weight = config.get("aux_dr")
+    if weight is None:
+        return 0.0
+    if type(weight) not in (int, float) or not math.isfinite(weight) or weight < 0:
+        raise ValueError("aux_dr deve ser null ou um peso finito e não negativo.")
+    return float(weight)
+
+
+def outputs_for(config: dict) -> int:
+    return 2 if aux_dr_weight(config) > 0 else 1
 
 
 def transforms(config: dict, train: bool):
+    from torchvision.transforms import v2
+
     size, aug = config["image_size"], config.get("augment") or {}
     steps = []
     if train and aug:  # augment vazio ou null = sem augmentation: só redimensiona
@@ -92,7 +132,10 @@ def transforms(config: dict, train: bool):
         if aug.get("hflip", True):
             steps.append(v2.RandomHorizontalFlip())
         if aug.get("rotate_deg", 0):
-            steps.append(v2.RandomRotation(aug["rotate_deg"]))
+            interpolation = aug.get("rotate_interpolation", "nearest")
+            if interpolation not in ("nearest", "bilinear"):
+                raise ValueError("rotate_interpolation deve ser nearest ou bilinear.")
+            steps.append(v2.RandomRotation(aug["rotate_deg"], interpolation=v2.InterpolationMode(interpolation)))
         if aug.get("color", 0):
             steps.append(v2.ColorJitter(brightness=aug["color"], contrast=aug["color"]))
     else:
@@ -101,36 +144,65 @@ def transforms(config: dict, train: bool):
     return v2.Compose(steps)
 
 
-def build_model(name: str, pretrained: bool, *, freeze_first_convs: int = 0,
-                head_init: str | None = None) -> nn.Module:
+def build_model(name: str, pretrained: bool, outputs: int = 1, *, freeze_first_convs: int = 0,
+                head_init: str | None = None, freeze_first_stages: int = 0,
+                stochastic_depth_prob: float | None = None, gradient_checkpointing: bool = False) -> nn.Module:
+    """O logit 0 é o de DMRI. O logit 1, quando habilitado, supervisiona DR."""
+    if type(outputs) is not int or outputs not in (1, 2):
+        raise ValueError("outputs deve ser 1 ou 2.")
+    is_convnext = name in CONVNEXT_MODELS
     if head_init not in (None, "xavier"):
         raise ValueError("head_init deve ser null ou xavier.")
-    if head_init is not None and name != "alexnet":
-        raise ValueError("head_init só é suportado para model: alexnet.")
+    if head_init is not None and name != "alexnet" and not is_convnext:
+        raise ValueError("head_init só é suportado para alexnet e convnext.")
     if type(freeze_first_convs) is not int or not 0 <= freeze_first_convs <= 5:
         raise ValueError("freeze_first_convs deve ser um inteiro entre 0 e 5.")
     if freeze_first_convs and name != "alexnet":
         raise ValueError("freeze_first_convs só é suportado para model: alexnet.")
+    if type(freeze_first_stages) is not int or not 0 <= freeze_first_stages <= 4:
+        raise ValueError("freeze_first_stages deve ser um inteiro entre 0 e 4.")
+    if freeze_first_stages and not is_convnext:
+        raise ValueError("freeze_first_stages só é suportado para convnext.")
+    if type(gradient_checkpointing) is not bool:
+        raise ValueError("gradient_checkpointing deve ser true ou false.")
+    if not is_convnext and (gradient_checkpointing or stochastic_depth_prob is not None):
+        raise ValueError("gradient_checkpointing e stochastic_depth_prob só são suportados para convnext.")
     if name == "alexnet":
+        from macdeg.layers import Linear
         from macdeg.models import AlexNet, freeze_alexnet_features, load_alexnet_imagenet_weights
         model = AlexNet()
         if pretrained:
             load_alexnet_imagenet_weights(model)
-        model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, 1)
+        model.classifier[-1] = Linear(model.classifier[-1].in_features, outputs)
         if head_init == "xavier":
             nn.init.xavier_uniform_(model.classifier[-1].weight, gain=1.0)
             nn.init.zeros_(model.classifier[-1].bias)
         freeze_alexnet_features(model, freeze_first_convs)
+        return model
+    if is_convnext:
+        from macdeg.convnext import (freeze_convnext_stages, load_convnext_imagenet_weights,
+                                     load_convnext_tiny_imagenet_weights)
+        from macdeg.layers import Linear
+        model = CONVNEXT_MODELS[name](stochastic_depth_prob=stochastic_depth_prob,
+                                      gradient_checkpointing=gradient_checkpointing)
+        if pretrained:
+            loader = load_convnext_tiny_imagenet_weights if name == "convnext_tiny" else load_convnext_imagenet_weights
+            loader(model)
+        model.classifier[-1] = Linear(model.classifier[-1].in_features, outputs)
+        if head_init == "xavier":
+            nn.init.xavier_uniform_(model.classifier[-1].weight, gain=1.0)
+            nn.init.zeros_(model.classifier[-1].bias)
+        freeze_convnext_stages(model, freeze_first_stages)
         return model
     if name in ("resnet18", "resnet34", "resnet50"):
         import torchvision.models as tvm
         weights = {"resnet18": tvm.ResNet18_Weights.IMAGENET1K_V1, "resnet34": tvm.ResNet34_Weights.IMAGENET1K_V1,
                    "resnet50": tvm.ResNet50_Weights.IMAGENET1K_V2}[name] if pretrained else None
         model = getattr(tvm, name)(weights=weights)
-        model.fc = nn.Linear(model.fc.in_features, 1)
+        model.fc = nn.Linear(model.fc.in_features, outputs)
         return model
     import timm
-    return timm.create_model(name, pretrained=pretrained, num_classes=1)
+    return timm.create_model(name, pretrained=pretrained, num_classes=outputs)
 
 
 def build_optimizer(model: nn.Module, config: dict) -> torch.optim.Optimizer:
@@ -138,14 +210,31 @@ def build_optimizer(model: nn.Module, config: dict) -> torch.optim.Optimizer:
     parameters = [p for p in model.parameters() if p.requires_grad]
     head_lr = config.get("head_lr")
     if head_lr is not None:
-        if config.get("model") != "alexnet":
-            raise ValueError("head_lr só é suportado para model: alexnet.")
+        name = config.get("model")
+        if name != "alexnet" and name not in CONVNEXT_MODELS:
+            raise ValueError("head_lr só é suportado para alexnet e convnext.")
         if not math.isfinite(head_lr) or head_lr <= 0:
             raise ValueError("head_lr deve ser positivo e finito.")
         head = [p for p in model.classifier[-1].parameters() if p.requires_grad]
         head_ids = {id(p) for p in head}
         parameters = [{"params": [p for p in parameters if id(p) not in head_ids], "lr": config["lr"]},
                       {"params": head, "lr": head_lr}]
+    if config.get("exclude_norm_bias_from_weight_decay", False):
+        # Escalas, vieses e LayerScale não recebem penalização nesta opção explícita.
+        head_ids = {id(p) for p in model.classifier[-1].parameters()} if head_lr is not None else set()
+        groups = {}
+        for name, parameter in model.named_parameters():
+            if not parameter.requires_grad:
+                continue
+            is_head = id(parameter) in head_ids
+            no_decay = parameter.ndim <= 1 or name.endswith(".bias") or name.endswith(".layer_scale")
+            key = (is_head, no_decay)
+            if key not in groups:
+                groups[key] = {"params": [], "lr": head_lr if is_head else config["lr"],
+                               "weight_decay": 0.0 if no_decay else config.get("weight_decay", 1e-4)}
+            groups[key]["params"].append(parameter)
+        # Mantém os grupos da saída por último, para histórico e retomada.
+        parameters = [groups[key] for key in sorted(groups)]
     return torch.optim.AdamW(parameters, lr=config["lr"], weight_decay=config.get("weight_decay", 1e-4))
 
 
@@ -196,8 +285,13 @@ def micro_batch(config: dict, device: torch.device) -> int:
     """Pedaço do lote que cabe na GPU. O lote efetivo (batch_size) não muda: os gradientes dos pedaços
     se acumulam antes de cada passo, então o resultado não depende da GPU sorteada pela fila."""
     batch = config["batch_size"]
-    if config.get("micro_batch"):
-        return int(config["micro_batch"])
+    if type(batch) is not int or batch <= 0:
+        raise ValueError("batch_size deve ser um inteiro positivo.")
+    if config.get("micro_batch") is not None:
+        micro = config["micro_batch"]
+        if type(micro) is not int or micro <= 0 or batch % micro:
+            raise ValueError("micro_batch deve ser um inteiro positivo que divide batch_size.")
+        return micro
     if device.type != "cuda":
         return batch
     free = torch.cuda.get_device_properties(device).total_memory / 1e9 * 0.75
@@ -210,11 +304,11 @@ def micro_batch(config: dict, device: torch.device) -> int:
 def predict(model, loader, device) -> np.ndarray:
     model.eval()
     probs = []
-    for images, _ in loader:
+    for images, *_ in loader:
         with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
             logits = model(images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last))
-        probs.append(torch.sigmoid(logits.float()).squeeze(1).cpu().numpy())
-    return np.concatenate(probs)
+        probs.append(torch.sigmoid(logits[:, 0].float()))
+    return torch.cat(probs).cpu().numpy()
 
 
 def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=None, on_model=None) -> dict | None:
@@ -223,10 +317,22 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     if (out / "metrics.json").exists():
         print(f"{out}: já concluído, pulando")
         return None
+    task_started = time.perf_counter()
+    aux_weight = aux_dr_weight(config)
     out.mkdir(parents=True, exist_ok=True)
     torch.manual_seed(seed)
     np.random.seed(seed)
     device = torch.device(config.get("device") or ("cuda" if torch.cuda.is_available() else "cpu"))
+    if device.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(device)
+    if config.get("torch_num_threads") is not None:
+        threads = config["torch_num_threads"]
+        if type(threads) is not int or threads <= 0:
+            raise ValueError("torch_num_threads deve ser um inteiro positivo.")
+        torch.set_num_threads(threads)
+    max_grad_norm = config.get("max_grad_norm")
+    if max_grad_norm is not None and (not math.isfinite(max_grad_norm) or max_grad_norm <= 0):
+        raise ValueError("max_grad_norm deve ser positivo e finito.")
     train, val, test, extra, root = split_frames(config, outer, inner, seed)
     (out / "config.json").write_text(json.dumps({**config, "outer": outer, "inner": inner, "seed": seed}, indent=1),
                                      encoding="utf-8")
@@ -234,6 +340,8 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
           f"validação: {len(val)} ({int(val['label'].sum())} DMRI); dispositivo: {device}", flush=True)
 
     workers = config.get("num_workers", 6)
+    train_transform = transforms(config, True)
+    eval_transform = transforms(config, False)
     cached = None
     if config.get("cache", True):   # mesmos pixels, sem decodificar 1024 px a cada época (macdeg.cache)
         frames = [f for f in (train, val, test, extra) if f is not None]
@@ -243,15 +351,18 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     accumulate = config["batch_size"] // micro
     print(f"lote efetivo {config['batch_size']} = {accumulate} x {micro} imagens"
           + (f" | GPU: {torch.cuda.get_device_name(device)}" if device.type == "cuda" else ""), flush=True)
-    train_loader = DataLoader(FundusDataset(train, root, transforms(config, True), cached), batch_size=micro,
+    train_loader = DataLoader(FundusDataset(train, root, train_transform, cached, aux_dr=aux_weight > 0), batch_size=micro,
                               shuffle=True, num_workers=workers, pin_memory=device.type == "cuda", drop_last=True,
                               persistent_workers=workers > 0)
-    val_loader = DataLoader(FundusDataset(val, root, transforms(config, False), cached), batch_size=micro,
+    val_loader = DataLoader(FundusDataset(val, root, eval_transform, cached), batch_size=micro,
                             num_workers=workers, pin_memory=device.type == "cuda", persistent_workers=workers > 0)
 
-    model = build_model(config["model"], config.get("pretrained", True),
+    model = build_model(config["model"], config.get("pretrained", True), outputs_for(config),
                         freeze_first_convs=config.get("freeze_first_convs", 0),
-                        head_init=config.get("head_init")).to(device).to(memory_format=torch.channels_last)
+                        head_init=config.get("head_init"),
+                        freeze_first_stages=config.get("freeze_first_stages", 0),
+                        stochastic_depth_prob=config.get("stochastic_depth_prob"),
+                        gradient_checkpointing=config.get("gradient_checkpointing", False)).to(device).to(memory_format=torch.channels_last)
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     frozen = sum(p.numel() for p in model.parameters() if not p.requires_grad)
     print(f"parâmetros treináveis: {trainable}; congelados: {frozen}", flush=True)
@@ -262,20 +373,24 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(pos_weight, device=device))
     optimizer = build_optimizer(model, config)
     epochs, steps_per_epoch = config["epochs"], len(train_loader) // accumulate
+    if steps_per_epoch < 1:
+        raise ValueError("O treino precisa de ao menos batch_size amostras para uma atualização completa.")
     warmup = steps_per_epoch * config.get("warmup_epochs", 1)
     total = steps_per_epoch * epochs
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda s: min(1.0, (s + 1) / warmup) * 0.5 *
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda s: (min(1.0, (s + 1) / warmup) if warmup else 1.0) * 0.5 *
                                                   (1 + math.cos(math.pi * min(1.0, s / total))))
     scaler = torch.amp.GradScaler(enabled=device.type == "cuda")
 
     start, best, stale, history = 0, -1.0, 0, []
     if (out / "last.pt").exists():
-        state = torch.load(out / "last.pt", map_location=device, weights_only=False)
+        # Não mantém uma segunda cópia inteira do checkpoint na VRAM ao retomar.
+        state = torch.load(out / "last.pt", map_location="cpu", weights_only=False)
         model.load_state_dict(state["model"])
         optimizer.load_state_dict(state["optimizer"])
         scheduler.load_state_dict(state["scheduler"])
         scaler.load_state_dict(state["scaler"])
         start, best, stale, history = state["epoch"] + 1, state["best"], state["stale"], state["history"]
+        del state
         print(f"retomando da época {start}")
 
     for epoch in range(start, epochs):
@@ -284,17 +399,24 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
         optimizer.zero_grad(set_to_none=True)
         step = 0
         asked = time.time()
-        for k, (images, labels) in enumerate(train_loader):
+        for k, (images, labels, *auxiliary) in enumerate(train_loader):
             waiting += time.time() - asked    # tempo parado esperando o DataLoader (gargalo de CPU/disco)
             images = images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
             labels = labels.to(device, non_blocking=True)
             with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
-                loss = criterion(model(images).squeeze(1).float(), labels)
+                logits = model(images).float()
+                loss = criterion(logits[:, 0], labels)
+                if aux_weight:
+                    targets = auxiliary[0].to(device, non_blocking=True)
+                    loss = loss + aux_weight * dr_loss(logits[:, 1], targets)
             scaler.scale(loss / accumulate).backward()
-            losses.append(loss.item())
+            losses.append(loss.detach())  # transfere as perdas juntas no fim da época
             asked = time.time()
             if (k + 1) % accumulate:
                 continue
+            if max_grad_norm is not None:
+                scaler.unscale_(optimizer)
+                nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
             scaler.step(optimizer)
             scaler.update()
             scheduler.step()
@@ -303,10 +425,12 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
             if config.get("max_steps") and step >= config["max_steps"]:
                 break
             asked = time.time()
+        train_loss = float(np.mean(torch.stack(losses).tolist()))
         train_seconds = time.time() - began
         probs = predict(model, val_loader, device)
         val_auroc = auroc(val["label"], probs)
-        row = {"epoch": epoch, "train_loss": float(np.mean(losses)), "val_auroc": val_auroc,
+        row = {"epoch": epoch, "train_loss": train_loss, "val_auroc": val_auroc,
+               "optimizer_steps": step,
                "seconds": round(time.time() - began, 1), "train_seconds": round(train_seconds, 1),
                "data_wait_seconds": round(waiting, 1), "lr": scheduler.get_last_lr()[0]}
         if config.get("head_lr") is not None:
@@ -330,22 +454,29 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
             break
 
     pd.DataFrame(history).to_csv(out / "history.csv", index=False)
-    model.load_state_dict(torch.load(out / "best.pt", map_location=device))
+    model.load_state_dict(torch.load(out / "best.pt", map_location="cpu", weights_only=True))
     predictions = val[PREDICTION_COLUMNS].assign(prob=predict(model, val_loader, device))
     predictions.to_csv(out / "val_predictions.csv", index=False)
     for name, frame in (("test", test), ("extra", extra)):
         if frame is not None and len(frame):
             loader = DataLoader(FundusDataset(frame.assign(label=frame["label"].clip(lower=0)), root,
-                                              transforms(config, False), cached),
+                                              eval_transform, cached),
                                 batch_size=micro, num_workers=workers, pin_memory=device.type == "cuda")
             frame[PREDICTION_COLUMNS].assign(prob=predict(model, loader, device)).to_csv(
                 out / f"{name}_predictions.csv", index=False)
     metrics = evaluate(predictions, train)
     metrics.update(trainable_parameters=trainable, frozen_parameters=frozen,
+                   gradient_checkpointing=config.get("gradient_checkpointing", False),
+                   effective_batch_size=config["batch_size"],
                    micro_batch=micro, gpu=torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
                    best_epoch=int(np.nanargmax([h["val_auroc"] or -1 for h in history])),
                    epochs_run=len(history), seconds_per_epoch=float(np.mean([h["seconds"] for h in history])),
-                   peak_gpu_gb=round(torch.cuda.max_memory_allocated() / 1e9, 2) if device.type == "cuda" else None)
+                   task_seconds=round(time.perf_counter() - task_started, 1),
+                   peak_gpu_gb=None, peak_reserved_gpu_gb=None, gpu_total_gb=None)
+    if device.type == "cuda":
+        metrics.update(peak_gpu_gb=round(torch.cuda.max_memory_allocated(device) / 1e9, 2),
+                       peak_reserved_gpu_gb=round(torch.cuda.max_memory_reserved(device) / 1e9, 2),
+                       gpu_total_gb=round(torch.cuda.get_device_properties(device).total_memory / 1e9, 2))
     (out / "metrics.json").write_text(json.dumps(metrics, indent=1), encoding="utf-8")
     # Pesos ocupam muito (~400 MB por tarefa na ResNet-50): last.pt só serve para retomar, e best.pt só
     # é preciso no treino final (vai para o Hugging Face). As previsões já estão salvas.

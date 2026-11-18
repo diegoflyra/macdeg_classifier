@@ -55,9 +55,11 @@ def upload_final(batch: Path | str, name: str, final: dict) -> str:
     """Envia os 5 modelos do treino final de `name`, com config e limiar, e atualiza o ranking."""
     from huggingface_hub import hf_hub_download
     from safetensors.torch import save_file
+    from macdeg.train import outputs_for
     batch = Path(batch)
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
     config = next(c for c in lote["configuracoes"] if c["nome"] == name)
+    outputs = outputs_for(config["config"])
     api = _api()
     repo = repo_id(api)
     api.create_repo(repo, private=True, exist_ok=True)
@@ -65,7 +67,9 @@ def upload_final(batch: Path | str, name: str, final: dict) -> str:
     card = {"configuracao": name, "lote_final": lote["nome"], "commit": lote["commit"],
             "assinatura_dados": lote["assinatura_dados"], "modelo": config["config"]["model"],
             "image_size": config["config"]["image_size"], "normalizacao": "ImageNet (média 0.485 0.456 0.406; dp 0.229 0.224 0.225)",
-            "entrada": "retina inteira num quadrado (bordas pretas completam), RGB", "saida": "1 logit; sigmoide = P(DMRI)",
+            "entrada": "retina inteira num quadrado (bordas pretas completam), RGB",
+            "saidas": outputs, "saida": ("Logit 0: DMRI. Logit 1: cabeça auxiliar de DR."
+                                          if outputs == 2 else "1 logit; sigmoide = P(DMRI)"),
             "ensemble": "média das probabilidades das 5 dobras", "limiar": final["limiar"],
             "mudancas": config["mudancas"], "metricas_validacao_aninhada": metrics,
             "publicado": time.strftime("%Y-%m-%d %H:%M")}
@@ -77,7 +81,7 @@ def upload_final(batch: Path | str, name: str, final: dict) -> str:
                 state = torch.load(task_dir(batch, task) / "best.pt", map_location="cpu")
                 save_file({k: v.half().contiguous() if v.is_floating_point() else v.contiguous() for k, v in state.items()},
                           folder / f"dobra{task['outer']}.safetensors")
-        (folder / "config.json").write_text(json.dumps(card, indent=1, ensure_ascii=False, default=float))
+        (folder / "config.json").write_text(json.dumps(card, indent=1, ensure_ascii=False, default=float), encoding="utf-8")
         try:
             ranking = json.loads(Path(hf_hub_download(repo, "ranking.json", token=secret("HF_TOKEN"))).read_text())
         except Exception:
@@ -124,7 +128,7 @@ class Ensemble:
         x = torch.from_numpy(cv2.cvtColor(square, cv2.COLOR_BGR2RGB)).permute(2, 0, 1).float() / 255
         x = ((x - torch.tensor(IMAGENET_MEAN)[:, None, None]) / torch.tensor(IMAGENET_STD)[:, None, None])[None]
         x = x.to(self.device)
-        return float(np.mean([torch.sigmoid(m(x)).item() for m in self.models]))
+        return float(np.mean([torch.sigmoid(m(x)[0, 0]).item() for m in self.models]))
 
 
 def load_ensemble(repo: str, name: str, device: str | None = None) -> Ensemble:
@@ -132,11 +136,11 @@ def load_ensemble(repo: str, name: str, device: str | None = None) -> Ensemble:
     from safetensors.torch import load_file
     from macdeg.train import build_model
     folder = Path(snapshot_download(repo, allow_patterns=[f"{name}/*"], token=secret("HF_TOKEN") or None)) / name
-    card = json.loads((folder / "config.json").read_text())
+    card = json.loads((folder / "config.json").read_text(encoding="utf-8"))
     device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     models = []
     for path in sorted(folder.glob("dobra*.safetensors")):
-        model = build_model(card["modelo"], pretrained=False)
+        model = build_model(card["modelo"], pretrained=False, outputs=card.get("saidas", 1))
         model.load_state_dict({k: v.float() if v.is_floating_point() else v for k, v in load_file(path).items()})
         models.append(model.to(device).eval())
     return Ensemble(models, card, device)

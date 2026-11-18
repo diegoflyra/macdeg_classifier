@@ -150,7 +150,12 @@ def test_pilot_is_one_real_training_and_analysis_handles_it(tiny_dataset, tmp_pa
     cluster.run_local(batch, str(tiny_dataset))
     result = analyze(batch, str(tiny_dataset), push=False)
     assert result["piloto"] and result["configuracoes"]["p-00"]["dobras_externas"] == [0]
-    assert "PILOTO" in (batch / "analise" / "RESUMO.md").read_text()
+    resources = result["recursos_piloto"]["p-00"]
+    assert resources["gpu"] == "cpu" and resources["epochs_run"] == 1
+    assert resources["task_seconds"] >= resources["seconds_per_epoch"] >= 0
+    assert resources["peak_reserved_gpu_gb"] is None and resources["gpu_total_gb"] is None
+    summary = (batch / "analise" / "RESUMO.md").read_text(encoding="utf-8")
+    assert "PILOTO" in summary and "Tempo e memória do piloto" in summary
 
 
 def test_image_cache_gives_the_same_pixels_as_reading_the_jpeg(tiny_dataset, tmp_path, monkeypatch):
@@ -227,4 +232,98 @@ def test_alexnet_finetuning_runs_the_existing_training_pipeline(tiny_dataset, tm
         assert list(predictions.columns) == PREDICTION_COLUMNS + ["prob"]
         assert predictions["prob"].between(0, 1).all()
     assert not (target / "last.pt").exists() and not (target / "best.pt").exists()
+
+
+@pytest.mark.parametrize("optimized, aux_dr", [(False, False), (True, False), (True, True)])
+def test_convnext_finetuning_runs_the_existing_training_pipeline(tiny_dataset, tmp_path, monkeypatch, optimized, aux_dr):
+    """Uma atualização da ConvNeXt e previsão nas três saídas, só com dados sintéticos."""
+    import macdeg.convnext as convnext
+    from macdeg.train import PREDICTION_COLUMNS, run
+    requested = []
+    clipped = []
+    heads = []
+
+    def offline_weights(model):
+        assert model.classifier[-1].out_features == 1000
+        requested.append(True)
+
+    monkeypatch.setattr(convnext, "load_convnext_tiny_imagenet_weights", offline_weights)
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    config = {"name": "convnext_smoke", "dataset": str(tiny_dataset), "model": "convnext_tiny",
+              "pretrained": True, "freeze_first_stages": 2, "head_init": "xavier",
+              "image_size": 64, "batch_size": 4, "epochs": 1, "max_steps": 1, "limit": 24,
+              "lr": 1e-5, "head_lr": 1e-4, "num_workers": 0, "balance": "pos_weight",
+              "device": "cpu", "augment": None}
+    if optimized:
+        from macdeg.cluster import PROJECT, expand
+        experiment_path = PROJECT / "configs/experimentos/012_convnext_aux_dr.yaml"
+        configs = expand(yaml.safe_load(experiment_path.read_text(encoding="utf-8")))
+        candidate = configs[int(aux_dr)]["config"]
+        config.update(micro_batch=2, gradient_checkpointing=True, max_grad_norm=1.0,
+                      exclude_norm_bias_from_weight_decay=True, warmup_epochs=0,
+                      augment=candidate["augment"], aux_dr=candidate["aux_dr"])
+        import torch
+        original_clip = torch.nn.utils.clip_grad_norm_
+
+        def record_clip(parameters, max_norm):
+            clipped.append(max_norm)
+            return original_clip(parameters, max_norm)
+
+        monkeypatch.setattr(torch.nn.utils, "clip_grad_norm_", record_clip)
+    if aux_dr:
+        manifest_path = tiny_dataset / "manifest.csv"
+        manifest = pd.read_csv(manifest_path)
+        manifest.loc[manifest["disease"] == "glaucoma", "disease"] = "retinopatia_diabetica"
+        manifest.to_csv(manifest_path, index=False)
+    target = tmp_path / "convnext"
+    metrics = run(config, outer=0, inner=0, seed=0, out=target,
+                  on_model=lambda model: heads.append(model.classifier[-1].out_features))
+    assert requested == [True] and metrics["epochs_run"] == 1
+    assert heads == [2 if aux_dr else 1]
+    assert metrics["gradient_checkpointing"] == optimized
+    assert metrics["effective_batch_size"] == 4
+    assert clipped == ([1.0] if optimized else [])
+    assert metrics["frozen_parameters"] == 1_235_040
+    history = pd.read_csv(target / "history.csv")
+    assert np.isfinite(history["train_loss"]).all()
+    assert history["optimizer_steps"].tolist() == [1]
+    assert np.allclose(history["head_lr"] / history["lr"], 10)
+    for split in ("val", "test", "extra"):
+        predictions = pd.read_csv(target / f"{split}_predictions.csv")
+        assert list(predictions.columns) == PREDICTION_COLUMNS + ["prob"]
+        assert predictions["prob"].between(0, 1).all()
+    assert not (target / "last.pt").exists() and not (target / "best.pt").exists()
+
+
+def test_convnext_augmentation_is_train_only_and_uses_bilinear_rotation():
+    import torch
+    from torchvision.transforms import v2
+    from macdeg.cluster import PROJECT, expand
+    from macdeg.train import transforms
+
+    experiment_path = PROJECT / "configs/experimentos/010_convnext_augmentation.yaml"
+    control, candidate = [entry["config"] for entry in expand(yaml.safe_load(experiment_path.read_text(encoding="utf-8")))]
+    expected_changes = {key for key in control if control[key] != candidate[key]}
+    assert expected_changes == {"name", "augment"}
+    control["image_size"] = candidate["image_size"] = 64
+    training = transforms(candidate, train=True)
+    assert isinstance(training.transforms[0], v2.RandomResizedCrop)
+    assert tuple(training.transforms[0].scale) == (0.85, 1.0)
+    assert isinstance(training.transforms[1], v2.RandomHorizontalFlip)
+    rotation = training.transforms[2]
+    assert tuple(rotation.degrees) == (-15.0, 15.0)
+    assert rotation.interpolation == v2.InterpolationMode.BILINEAR
+    assert isinstance(training.transforms[3], v2.ColorJitter)
+
+    image = (torch.arange(3 * 64 * 64).reshape(3, 64, 64) % 256).to(torch.uint8)
+    reference = transforms(control, train=False)(image)
+    torch.testing.assert_close(transforms(candidate, train=False)(image), reference, rtol=0, atol=0)
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(0)
+        augmented = training(image)
+    assert augmented.shape == (3, 64, 64) and torch.isfinite(augmented).all()
+    assert not torch.equal(augmented, reference)
+
+    candidate["augment"] = {k: v for k, v in candidate["augment"].items() if k != "rotate_interpolation"}
+    assert transforms(candidate, train=True).transforms[2].interpolation == v2.InterpolationMode.NEAREST
 

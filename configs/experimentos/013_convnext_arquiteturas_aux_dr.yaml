@@ -1,0 +1,11 @@
+# A mesma augmentation e a mesma perda auxiliar de DR entram nos quatro modelos.
+# A Tiny é o controle. O lote completo tem 80 tarefas.
+nome: convnext_arquiteturas_aux_dr
+base: configs/train/convnext_cluster.yaml
+grade:
+  model: [convnext_tiny, convnext_small, convnext_base, convnext_large]
+  augment:
+    - {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, rotate_interpolation: bilinear, color: 0.1}
+  aux_dr: [0.5]
+variacoes: []
+referencia: null

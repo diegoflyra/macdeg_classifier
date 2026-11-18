@@ -12,7 +12,6 @@ Imagens fora do cache (ou não quadradas) são lidas do JPEG, como antes.
 """
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 import os
@@ -23,7 +22,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 import torch
-from torchvision.transforms import v2
 
 
 # Um thread do OpenCV por processo: quem paraleliza são os processos do DataLoader. Sem isso, cada
@@ -40,6 +38,8 @@ def read_rgb(path: str) -> np.ndarray:
 
 def resize(image: np.ndarray, size: int) -> np.ndarray:
     """O mesmo redimensionamento do transform de avaliação (v2.Resize com antialias), em HWC uint8."""
+    from torchvision.transforms import v2
+
     tensor = torch.from_numpy(image).permute(2, 0, 1)
     return v2.functional.resize(tensor, size, antialias=True).permute(1, 2, 0).contiguous().numpy()
 
@@ -50,6 +50,8 @@ def folder_for(root: Path) -> Path:
 
 @contextmanager
 def _lock(path: Path):
+    import fcntl
+
     with open(path, "w") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX)     # dois processos (duas GPUs) não constroem o mesmo cache
         try:

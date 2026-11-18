@@ -8,6 +8,7 @@ import torch
 import yaml
 from torch import nn
 
+from macdeg import layers
 from macdeg.models import AlexNet, ALEXNET_IMAGENET_URL, load_alexnet_imagenet_weights
 from macdeg.train import build_model, build_optimizer
 
@@ -102,11 +103,20 @@ def test_alexnet_binary_output_at_smoke_and_research_resolutions(size):
 def test_alexnet_freezes_only_the_requested_convolutions(count):
     model = build_model("alexnet", pretrained=False, freeze_first_convs=count)
     model.train()  # chamar train() não pode desfazer o congelamento
-    convolutions = [layer for layer in model.features if isinstance(layer, nn.Conv2d)]
+    convolutions = [layer for layer in model.features if isinstance(layer, layers.Conv2d)]
     assert len(convolutions) == 5
     for index, layer in enumerate(convolutions):
         assert all(p.requires_grad == (index >= count) for p in layer.parameters())
     assert all(p.requires_grad for p in model.classifier.parameters())
+
+
+def test_alexnet_uses_explicit_parameter_layers_and_stepwise_forward():
+    model = build_model("alexnet", pretrained=False)
+    assert isinstance(model.features, nn.ModuleList)
+    assert isinstance(model.classifier, nn.ModuleList)
+    assert isinstance(model.features[0], layers.Conv2d)
+    assert isinstance(model.classifier[-1], layers.Linear)
+    assert not any(isinstance(layer, (nn.Sequential, nn.Conv2d, nn.Linear)) for layer in model.modules())
 
 
 @pytest.mark.parametrize("count", [-1, 6, 1.5, True, "3", None])

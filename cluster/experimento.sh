@@ -6,7 +6,7 @@
 #   sbatch cluster/experimento.sh                                        # a referência
 #   sbatch cluster/experimento.sh configs/experimentos/002_x.yaml        # outro experimento
 #   sbatch -p debug --qos=complex --time=00:30:00 cluster/experimento.sh --teste       # teste rápido
-#   sbatch --gres=gpu:1 --time=02:00:00 cluster/experimento.sh --piloto   # UM treino de verdade
+#   sbatch --gres=gpu:1 --time=02:00:00 cluster/experimento.sh --piloto   # uma tarefa por configuração
 #   sbatch cluster/experimento.sh --retomar ~/macdeg_runs/<lote>          # continua um lote interrompido
 #   sbatch cluster/experimento.sh --final ~/macdeg_runs/<lote> <configuração>   # modelo final -> HF
 # Os argumentos vão direto para o rodar.py. Saída em logs/macdeg_<job>.out, erros em logs/macdeg_<job>.err.

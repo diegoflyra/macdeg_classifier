@@ -4,7 +4,7 @@ Vamos usar a **AlexNet pré-treinada na ImageNet**, mantendo as convoluções
 superficiais congeladas e adaptando as camadas profundas às retinografias.
 O alvo é DMRI (1) × sem DMRI (0), com os dados e a avaliação já definidos no
 projeto. A arquitetura está escrita camada por camada na classe `AlexNet`, em
-`macdeg/models.py`, usando `nn.Conv2d`, `nn.ReLU`, pooling, `nn.Linear` e dropout.
+`macdeg/models.py`, com as camadas próprias definidas em `macdeg/layers.py`.
 O treino não chama o construtor `torchvision.models.alexnet`.
 
 Os pesos são carregados separadamente do checkpoint oficial equivalente a
@@ -12,6 +12,31 @@ Os pesos são carregados separadamente do checkpoint oficial equivalente a
 aleatórios são escolhas independentes; aqui mantemos o fine-tuning da ImageNet.
 Para encaixar esses pesos, preservamos canais, tamanhos das camadas, índices e
 o cálculo do forward da variante do torchvision.
+
+## Pesos explícitos e forward por etapas
+
+As convoluções e densas declaram seus próprios tensores com `nn.Parameter`.
+Em uma convolução, o peso tem formato `(filtros, canais de entrada, altura do
+kernel, largura do kernel)`; na densa, `(saídas, entradas)`. O viés também é um
+parâmetro explícito. Isso permite que o PyTorch registre os pesos, receba os
+valores ImageNet e calcule gradientes para os parâmetros liberados no treino.
+
+O `forward` das camadas usa `torch.nn.functional.conv2d`, `linear`, `relu`,
+`max_pool2d`, `adaptive_avg_pool2d` e `dropout`. O dropout recebe explicitamente
+`training=self.training`, então respeita as chamadas `train()` e `eval()`.
+Mantemos os kernels numéricos do PyTorch para GPU e autograd. Não implementamos
+a multiplicação interna da convolução por extração de janelas nesta versão.
+
+A AlexNet guarda as camadas em `nn.ModuleList`, que só registra os módulos e
+parâmetros. Não há `nn.Sequential` na arquitetura: seu `forward` chama cada etapa
+na ordem, incluindo convolução, ativação, pooling, flatten, dropout e densas.
+As classes próprias continuam sendo módulos, preservando também os hooks das
+camadas convolucionais para futuras análises de atribuição.
+
+Os nomes de parâmetros, como `features.0.weight` e `classifier.4.bias`, continuam
+iguais aos do checkpoint oficial. Os testes comparam as saídas da rede inteira
+e, separadamente, os valores e gradientes das camadas funcionais com referências
+do PyTorch, sem baixar imagens ou pesos de pacientes.
 
 Nesta primeira etapa, a entrada fica sem tratamentos de realce e sem augmentation
 (`augment: null`). CLAHE, equalização, remoção de ruído e alterações aleatórias
@@ -53,7 +78,7 @@ de 1000 classes é substituída por uma camada com um logit. O treino usa
 ## Como o congelamento funciona
 
 `freeze_first_convs: 3` conta as três primeiras convoluções, não os três primeiros
-módulos do Sequential. ReLU e pooling também aparecem nessa sequência, mas não
+módulos da lista. ReLU e pooling também aparecem nessa sequência, mas não
 têm pesos. Os parâmetros congelados usam `requires_grad=False` e ficam fora do
 otimizador. O otimizador recebe só parâmetros com `requires_grad=True`.
 

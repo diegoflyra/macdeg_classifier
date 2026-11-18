@@ -1,0 +1,8 @@
+# Compara o efeito da receita de augmentation da rodada2-01 na ConvNeXt Tiny.
+# A configuração 00 é o controle. A 01 muda somente augment.
+nome: convnext_augmentation
+base: configs/train/convnext_cluster.yaml
+grade: {}
+variacoes:
+  - augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, rotate_interpolation: bilinear, color: 0.1}
+referencia: null

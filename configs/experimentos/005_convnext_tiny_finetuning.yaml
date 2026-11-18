@@ -1,0 +1,6 @@
+# Uma configuração, com 20 treinos na validação aninhada completa.
+nome: convnext_tiny_finetuning
+base: configs/train/convnext_tiny_finetuning.yaml
+grade: {}
+variacoes: []
+referencia: null

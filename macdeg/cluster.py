@@ -84,8 +84,8 @@ def snapshot_code(destination: Path, commit: str) -> None:
 def prepare(experiment_path: Path, dataset: str | None = None, test: bool = False, final: list[str] | None = None,
             from_batch: Path | None = None, pilot: bool = False) -> Path:
     """Cria a pasta do lote e o lote.json. `final`: nomes de configurações para o treino final (5 dobras
-    externas, sem dobra interna), reaproveitando as configurações de `from_batch`. `pilot`: um treino de
-    verdade só (dobra externa 0, interna 0), para ver números reais em ~1-2 h."""
+    externas, sem dobra interna), reaproveitando as configurações de `from_batch`. `pilot`: uma tarefa
+    por configuração (dobra externa 0, interna 0), para medir custo antes do lote completo."""
     info = commit_info()
     if final:
         source = json.loads((from_batch / "lote.json").read_text(encoding="utf-8"))
