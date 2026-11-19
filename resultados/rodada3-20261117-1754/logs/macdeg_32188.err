@@ -1,0 +1,92 @@
+wandb: [wandb.login()] Loaded credentials for https://api.forge.coreweave.com from WANDB_API_KEY.
+wandb: Currently logged in as: dfal (models-universidade-federal-de-pernambuco) to https://api.forge.coreweave.com. Use `wandb login --relogin` to force relogin
+wandb: setting up run v4tegpp9
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/dfal/macdeg_runs/rodada3-20261117-1754/tarefas/rodada3-03/wandb/run-20261118_203236-v4tegpp9
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run rodada3-03-o0-i0
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/v4tegpp9
+/home/CIN/dfal/macdeg_classifier/macdeg/train.py:381: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  scheduler.step()
+wandb: updating run metadata
+wandb: uploading config.yaml; uploading output.log; uploading wandb-summary.json
+wandb: uploading wandb-summary.json
+wandb: uploading history steps 11-11, summary, console lines 19-27
+wandb: 
+wandb: Run history:
+wandb:                auroc_val ▁▃▆▄▅█▃▇▇▇▇
+wandb:                    epoca ▁▂▂▃▄▅▅▆▇▇█
+wandb:                       lr ██▇▇▆▆▅▄▃▂▁
+wandb:             perda_treino █▄▃▃▂▂▂▂▁▁▁
+wandb:           segundos_epoca █▂▂▃▂▃▁▁▂▂▁
+wandb: segundos_esperando_dados █▁▁▅▁▁▅▅▅▁▁
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.96999
+wandb:                    epoca 10
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 0.00013
+wandb:             melhor_epoca 5
+wandb:             perda_treino 0.16299
+wandb:       regua_origem_auroc 0.79226
+wandb:           segundos_epoca 143.1
+wandb: segundos_esperando_dados 0.5
+wandb: 
+wandb: 🚀 View run rodada3-03-o0-i0 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/v4tegpp9
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/dfal/macdeg_runs/rodada3-20261117-1754/tarefas/rodada3-03/wandb/run-20261118_203236-v4tegpp9/logs
+wandb: setting up run sfny2dag
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/dfal/macdeg_runs/rodada3-20261117-1754/tarefas/rodada3-02/wandb/run-20261118_210215-sfny2dag
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run rodada3-02-o4-i3
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/sfny2dag
+/home/CIN/dfal/macdeg_classifier/macdeg/train.py:381: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  scheduler.step()
+wandb: updating run metadata
+wandb: uploading config.yaml; uploading output.log
+wandb: uploading wandb-summary.json
+wandb: uploading history steps 11-11, summary, console lines 17-25
+wandb: 
+wandb: Run history:
+wandb:                auroc_val ▁▅▆▅▄█▄▃▅▇▆
+wandb:                    epoca ▁▂▂▃▄▅▅▆▇▇█
+wandb:                       lr ██▇▇▆▆▅▄▃▂▁
+wandb:             perda_treino █▂▂▂▂▂▁▁▃▁▁
+wandb:           segundos_epoca █▂▁▁▁▂▂▂▁▂▂
+wandb: segundos_esperando_dados █▄▁▂▂▂▂▃▂▂▃
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.96706
+wandb:                    epoca 10
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 0.00013
+wandb:             melhor_epoca 5
+wandb:             perda_treino 0.24385
+wandb:       regua_origem_auroc 0.79108
+wandb:           segundos_epoca 100.4
+wandb: segundos_esperando_dados 0.8
+wandb: 
+wandb: 🚀 View run rodada3-02-o4-i3 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/sfny2dag
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/dfal/macdeg_runs/rodada3-20261117-1754/tarefas/rodada3-02/wandb/run-20261118_210215-sfny2dag/logs
+wandb: setting up run dlhs5ibc
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/dfal/macdeg_classifier/wandb/run-20261118_212552-dlhs5ibc
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run rodada3-20261117-1754-analise
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/dlhs5ibc
+wandb: updating run metadata; uploading artifact run-dlhs5ibc-ranking
+wandb: uploading artifact run-dlhs5ibc-ranking
+wandb: uploading wandb-metadata.json; uploading requirements.txt; uploading media/table/ranking_0_6afec378ae41ee778ba5.table.json; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading requirements.txt; uploading media/table/ranking_0_6afec378ae41ee778ba5.table.json; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading history steps 0-0, summary
+wandb: 🚀 View run rodada3-20261117-1754-analise at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/dlhs5ibc
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 4 W&B file(s), 1 media file(s), 2 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20261118_212552-dlhs5ibc/logs
