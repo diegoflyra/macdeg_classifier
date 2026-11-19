@@ -1,0 +1,221 @@
+{
+ "nome": "rodada3-20261117-1754",
+ "experimento": {
+  "nome": "rodada3",
+  "base": "configs/train/baseline.yaml",
+  "base_mudancas": {
+   "augment": {
+    "crop_scale": [
+     0.85,
+     1.0
+    ],
+    "hflip": true,
+    "rotate_deg": 15,
+    "color": 0.1
+   },
+   "aux_dr": 0.5
+  },
+  "grade": {},
+  "variacoes": [
+   {
+    "model": "densenet121.tv_in1k"
+   },
+   {
+    "model": "tf_efficientnetv2_s.in21k_ft_in1k"
+   },
+   {
+    "model": "tf_efficientnet_b4.ns_jft_in1k"
+   },
+   {
+    "crop": 0.6
+   }
+  ],
+  "referencia": null
+ },
+ "teste": false,
+ "final": false,
+ "piloto": false,
+ "lote_de_origem": null,
+ "commit": "272148187ecec672863554fff1bf842770cdaa4d",
+ "codigo_alterado_sem_commit": false,
+ "criado": "2026-11-17 17:54",
+ "assinatura_dados": "72e45dfc1003894a",
+ "splits": "splits_nested_seed0.csv",
+ "configuracoes": [
+  {
+   "nome": "rodada3-00",
+   "mudancas": {},
+   "config": {
+    "name": "rodada3-00",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "resnet50",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  },
+  {
+   "nome": "rodada3-01",
+   "mudancas": {
+    "model": "densenet121.tv_in1k"
+   },
+   "config": {
+    "name": "rodada3-01",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "densenet121.tv_in1k",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  },
+  {
+   "nome": "rodada3-02",
+   "mudancas": {
+    "model": "tf_efficientnetv2_s.in21k_ft_in1k"
+   },
+   "config": {
+    "name": "rodada3-02",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "tf_efficientnetv2_s.in21k_ft_in1k",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  },
+  {
+   "nome": "rodada3-03",
+   "mudancas": {
+    "model": "tf_efficientnet_b4.ns_jft_in1k"
+   },
+   "config": {
+    "name": "rodada3-03",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "tf_efficientnet_b4.ns_jft_in1k",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  },
+  {
+   "nome": "rodada3-04",
+   "mudancas": {
+    "crop": 0.6
+   },
+   "config": {
+    "name": "rodada3-04",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "resnet50",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5,
+    "crop": 0.6
+   }
+  }
+ ],
+ "n_tarefas": 100
+}
