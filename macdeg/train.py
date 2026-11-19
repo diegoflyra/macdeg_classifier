@@ -38,6 +38,7 @@ from macdeg import cache as image_cache
 from macdeg.convnext import CONVNEXT_MODELS
 from macdeg.data.sources import resolve
 from macdeg.data.splits import kind
+from macdeg.hybrid import HYBRID_BACKBONES, HybridDMRI
 from macdeg.metrics import auroc, evaluate
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
@@ -108,13 +109,17 @@ def dr_loss(logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     return loss / known.sum().clamp_min(1)
 
 
-def aux_dr_weight(config: dict) -> float:
-    weight = config.get("aux_dr")
+def _auxiliary_weight(config: dict, key: str) -> float:
+    weight = config.get(key)
     if weight is None:
         return 0.0
     if type(weight) not in (int, float) or not math.isfinite(weight) or weight < 0:
-        raise ValueError("aux_dr deve ser null ou um peso finito e não negativo.")
+        raise ValueError(f"{key} deve ser null ou um peso finito e não negativo.")
     return float(weight)
+
+
+def aux_dr_weight(config: dict) -> float:
+    return _auxiliary_weight(config, "aux_dr")
 
 
 def outputs_for(config: dict) -> int:
@@ -151,18 +156,19 @@ def build_model(name: str, pretrained: bool, outputs: int = 1, *, freeze_first_c
     if type(outputs) is not int or outputs not in (1, 2):
         raise ValueError("outputs deve ser 1 ou 2.")
     is_convnext = name in CONVNEXT_MODELS
+    is_hybrid = name in HYBRID_BACKBONES
     if head_init not in (None, "xavier"):
         raise ValueError("head_init deve ser null ou xavier.")
-    if head_init is not None and name != "alexnet" and not is_convnext:
-        raise ValueError("head_init só é suportado para alexnet e convnext.")
+    if head_init is not None and name != "alexnet" and not (is_convnext or is_hybrid):
+        raise ValueError("head_init só é suportado para alexnet, convnext e as híbridas de DMRI.")
     if type(freeze_first_convs) is not int or not 0 <= freeze_first_convs <= 5:
         raise ValueError("freeze_first_convs deve ser um inteiro entre 0 e 5.")
     if freeze_first_convs and name != "alexnet":
         raise ValueError("freeze_first_convs só é suportado para model: alexnet.")
     if type(freeze_first_stages) is not int or not 0 <= freeze_first_stages <= 4:
         raise ValueError("freeze_first_stages deve ser um inteiro entre 0 e 4.")
-    if freeze_first_stages and not is_convnext:
-        raise ValueError("freeze_first_stages só é suportado para convnext.")
+    if freeze_first_stages and not (is_convnext or is_hybrid):
+        raise ValueError("freeze_first_stages só é suportado para convnext e as híbridas de DMRI.")
     if type(gradient_checkpointing) is not bool:
         raise ValueError("gradient_checkpointing deve ser true ou false.")
     if not is_convnext and (gradient_checkpointing or stochastic_depth_prob is not None):
@@ -194,6 +200,13 @@ def build_model(name: str, pretrained: bool, outputs: int = 1, *, freeze_first_c
             nn.init.zeros_(model.classifier[-1].bias)
         freeze_convnext_stages(model, freeze_first_stages)
         return model
+    if is_hybrid:
+        model = HybridDMRI(pretrained=pretrained, outputs=outputs, freeze_first_stages=freeze_first_stages,
+                           backbone_name=HYBRID_BACKBONES[name])
+        if head_init == "xavier":
+            nn.init.xavier_uniform_(model.classifier[-1].weight, gain=1.0)
+            nn.init.zeros_(model.classifier[-1].bias)
+        return model
     if name in ("resnet18", "resnet34", "resnet50"):
         import torchvision.models as tvm
         weights = {"resnet18": tvm.ResNet18_Weights.IMAGENET1K_V1, "resnet34": tvm.ResNet34_Weights.IMAGENET1K_V1,
@@ -206,22 +219,26 @@ def build_model(name: str, pretrained: bool, outputs: int = 1, *, freeze_first_c
 
 
 def build_optimizer(model: nn.Module, config: dict) -> torch.optim.Optimizer:
-    """Taxa opcional para a saída nova; demais parâmetros mantêm config['lr']."""
+    """Taxa opcional para a cabeça nova (todos os módulos novos na híbrida)."""
     parameters = [p for p in model.parameters() if p.requires_grad]
     head_lr = config.get("head_lr")
+    head_ids = set()
     if head_lr is not None:
         name = config.get("model")
-        if name != "alexnet" and name not in CONVNEXT_MODELS:
-            raise ValueError("head_lr só é suportado para alexnet e convnext.")
         if not math.isfinite(head_lr) or head_lr <= 0:
             raise ValueError("head_lr deve ser positivo e finito.")
-        head = [p for p in model.classifier[-1].parameters() if p.requires_grad]
+        if name in HYBRID_BACKBONES:
+            backbone_ids = {id(p) for p in model.backbone.parameters()}
+            head = [p for p in parameters if id(p) not in backbone_ids]
+        elif name == "alexnet" or name in CONVNEXT_MODELS:
+            head = [p for p in model.classifier[-1].parameters() if p.requires_grad]
+        else:
+            raise ValueError("head_lr só é suportado para alexnet, convnext e as híbridas de DMRI.")
         head_ids = {id(p) for p in head}
         parameters = [{"params": [p for p in parameters if id(p) not in head_ids], "lr": config["lr"]},
                       {"params": head, "lr": head_lr}]
     if config.get("exclude_norm_bias_from_weight_decay", False):
         # Escalas, vieses e LayerScale não recebem penalização nesta opção explícita.
-        head_ids = {id(p) for p in model.classifier[-1].parameters()} if head_lr is not None else set()
         groups = {}
         for name, parameter in model.named_parameters():
             if not parameter.requires_grad:
@@ -319,6 +336,9 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
         return None
     task_started = time.perf_counter()
     aux_weight = aux_dr_weight(config)
+    localization_weight = _auxiliary_weight(config, "aux_localization")
+    if localization_weight and config["model"] not in HYBRID_BACKBONES:
+        raise ValueError("aux_localization só é suportado para as híbridas de DMRI.")
     out.mkdir(parents=True, exist_ok=True)
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -404,8 +424,14 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
             images = images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
             labels = labels.to(device, non_blocking=True)
             with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
-                logits = model(images).float()
+                if localization_weight:
+                    logits, localization = model(images, return_localization=True)
+                else:
+                    logits = model(images)
+                logits = logits.float()
                 loss = criterion(logits[:, 0], labels)
+                if localization_weight:
+                    loss = loss + localization_weight * criterion(localization.float(), labels)
                 if aux_weight:
                     targets = auxiliary[0].to(device, non_blocking=True)
                     loss = loss + aux_weight * dr_loss(logits[:, 1], targets)

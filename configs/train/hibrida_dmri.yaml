@@ -1,0 +1,31 @@
+# O modelo reduz a vista global a 512 px e extrai os recortes da entrada de 1024 px.
+name: hibrida_dmri
+dataset: ~/macdeg_data/dataset_1024
+splits: splits_nested_seed0.csv
+sources: null
+other_diseases: true
+
+model: hibrida_dmri
+pretrained: true
+freeze_first_stages: 2
+head_init: xavier
+aux_localization: 0.25
+
+image_size: 1024
+batch_size: 16
+micro_batch: 2
+epochs: 20
+lr: 1.0e-5
+head_lr: 1.0e-4
+weight_decay: 1.0e-4
+exclude_norm_bias_from_weight_decay: true
+max_grad_norm: 1.0
+warmup_epochs: 1
+patience: 5
+balance: pos_weight
+num_workers: 4
+torch_num_threads: 2
+# Um cache de 1024 px ocuparia aproximadamente 66 GB por job para 20,9 mil imagens.
+cache: false
+augment: null
+shuffle_labels: false

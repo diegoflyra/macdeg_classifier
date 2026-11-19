@@ -75,6 +75,10 @@ receita de augmentation durante o treino (80 treinos).
 `012_convnext_aux_dr.yaml` compara a Tiny com e sem a cabeça auxiliar de retinopatia diabética.
 `013_convnext_arquiteturas_aux_dr.yaml` compara as quatro arquiteturas com augmentation e cabeça auxiliar.
 
+Rede híbrida para DMRI: [`docs/hibrida_dmri.md`](docs/hibrida_dmri.md) descreve a vista global,
+o bloco residual multiescala e os recortes guiados por atenção. O experimento
+`014_hibrida_dmri.yaml` compara dois pesos para a perda de localização.
+
 Avaliação:
 - métrica principal: **média do F2 dentro de cada base**, com o limiar sempre escolhido em outras dobras;
 - também: AUROC, AUPRC, sensibilidade, especificidade em normais, em outras doenças e por doença;

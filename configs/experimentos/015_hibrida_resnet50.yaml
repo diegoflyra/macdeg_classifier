@@ -1,0 +1,7 @@
+# Receita da híbrida com perda auxiliar de 0,25 e a ResNet-50 como backbone.
+nome: hibrida_dmri_resnet50
+base: configs/train/hibrida_dmri.yaml
+grade:
+  model: [hibrida_dmri_resnet50]
+variacoes: []
+referencia: null

@@ -1,0 +1,7 @@
+# Mesma arquitetura, com e sem supervisão direta do mapa. São 40 tarefas no lote completo.
+nome: hibrida_dmri
+base: configs/train/hibrida_dmri.yaml
+grade:
+  aux_localization: [0.0, 0.25]
+variacoes: []
+referencia: null

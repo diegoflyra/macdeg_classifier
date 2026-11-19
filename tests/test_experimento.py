@@ -98,6 +98,36 @@ def test_logs_are_not_pushed_for_test_batches(tmp_path):
     assert push_logs(batch) is False          # lote de teste: nada vai para o GitHub
 
 
+@pytest.mark.parametrize(("filename", "model_name", "loss_weights"), [
+    ("014_hibrida_dmri.yaml", "hibrida_dmri", [0.0, 0.25]),
+    ("015_hibrida_resnet50.yaml", "hibrida_dmri_resnet50", [0.25]),
+])
+def test_hybrid_pilot_trains_and_analyzes(tiny_dataset, tmp_path, monkeypatch, filename, model_name, loss_weights):
+    from macdeg import cluster
+    from macdeg.analysis import analyze
+
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    monkeypatch.setattr(cluster, "TEST_OVERRIDES", {
+        **cluster.TEST_OVERRIDES, "pretrained": False, "device": "cpu", "batch_size": 4,
+    })
+    experiment = cluster.PROJECT / "configs/experimentos" / filename
+    batch = cluster.prepare(experiment, str(tiny_dataset), test=True, pilot=True)
+    lote = json.loads((batch / "lote.json").read_text())
+    assert [c["config"]["aux_localization"] for c in lote["configuracoes"]] == loss_weights
+    assert {c["config"]["model"] for c in lote["configuracoes"]} == {model_name}
+    assert len(lote["tarefas"]) == len(loss_weights)
+
+    cluster.run_local(batch, str(tiny_dataset), gpus=[])
+
+    for task in lote["tarefas"]:
+        folder = cluster.task_dir(batch, task)
+        assert (folder / "metrics.json").is_file()
+        assert pd.read_csv(folder / "test_predictions.csv")["prob"].between(0, 1).all()
+    report = analyze(batch, str(tiny_dataset), push=False)
+    assert report["tarefas_faltando"] == []
+    assert report["referencia"] == f"{model_name}-00"
+
+
 def test_rodar_runs_a_whole_test_experiment(tiny_dataset, tmp_path, monkeypatch):
     """O rodar.py (o que o cluster/experimento.sh chama) roda tarefas e análise num processo só."""
     import sys
