@@ -234,3 +234,18 @@ def test_finetuning_comparisons_change_one_option(filename, key, values):
     assert [first[key], second[key]] == values
     assert first["lr"] == second["lr"] == 1e-5
     assert first["pretrained"] and second["pretrained"]
+
+
+def test_vit_receives_the_training_image_size_and_convnets_ignore_it():
+    """O ViT tem entrada fixa (384 px no pré-treino): sem image_size, recusa outro tamanho."""
+    import torch
+    vit = build_model("vit_base_patch16_384.augreg_in21k_ft_in1k", pretrained=False, outputs=2, image_size=64).eval()
+    with torch.no_grad():
+        assert vit(torch.zeros(1, 3, 64, 64)).shape == (1, 2)
+    fixed = build_model("vit_base_patch16_384.augreg_in21k_ft_in1k", pretrained=False, outputs=2).eval()
+    with pytest.raises(Exception):
+        with torch.no_grad():
+            fixed(torch.zeros(1, 3, 64, 64))
+    inception = build_model("inception_v3.tv_in1k", pretrained=False, outputs=2, image_size=96).eval()
+    with torch.no_grad():
+        assert inception(torch.zeros(1, 3, 96, 96)).shape == (1, 2)

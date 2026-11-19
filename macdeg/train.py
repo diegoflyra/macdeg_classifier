@@ -152,9 +152,11 @@ def transforms(config: dict, train: bool):
 
 
 def build_model(name: str, pretrained: bool, outputs: int = 1, *, freeze_first_convs: int = 0,
-                head_init: str | None = None) -> nn.Module:
+                head_init: str | None = None, image_size: int | None = None) -> nn.Module:
     """Saída 0 = logit de DMRI (a única usada em métricas e limiar). Com a cabeça auxiliar, saída 1 = DR.
-    `freeze_first_convs` e `head_init`: só AlexNet (estudo próprio dela; docs/alexnet.md)."""
+    `freeze_first_convs` e `head_init`: só AlexNet (estudo próprio dela; docs/alexnet.md).
+    `image_size`: só para redes de entrada fixa (ViT), que precisam saber o tamanho ao serem criadas; o timm
+    reamostra a posição pré-treinada (384 px) para o tamanho do treino. As convolucionais ignoram."""
     if head_init not in (None, "xavier"):
         raise ValueError("head_init deve ser null ou xavier.")
     if head_init is not None and name != "alexnet":
@@ -182,7 +184,9 @@ def build_model(name: str, pretrained: bool, outputs: int = 1, *, freeze_first_c
         model.fc = nn.Linear(model.fc.in_features, outputs)
         return model
     import timm               # qualquer outra: pelo nome do timm (ex.: densenet121, tf_efficientnetv2_s.in21k_ft_in1k)
-    return timm.create_model(name, pretrained=pretrained, num_classes=outputs)
+    cfg = timm.get_pretrained_cfg(name)
+    fixed = image_size is not None and cfg is not None and getattr(cfg, "fixed_input_size", False)
+    return timm.create_model(name, pretrained=pretrained, num_classes=outputs, **({"img_size": image_size} if fixed else {}))
 
 
 def outputs_for(config: dict) -> int:
@@ -248,7 +252,10 @@ def split_frames(config: dict, outer: int, inner: int | None, seed: int):
 GB_PER_IMAGE_512 = 0.3
 # Outras arquiteturas, em múltiplos da ResNet-50 (estimativas conservadoras; EfficientNets e DenseNet
 # guardam muitas ativações intermediárias).
-MEMORY_FACTOR = {"alexnet": 0.3, "densenet": 3.0, "efficientnetv2_s": 3.0, "efficientnet_b4": 5.0, "convnext_tiny": 2.0}
+MEMORY_FACTOR = {"alexnet": 0.3, "densenet": 3.0, "efficientnetv2_s": 3.0, "efficientnet_b4": 5.0, "convnext_tiny": 2.0,
+                 "inception_v3": 1.5, "vit_base": 3.0}
+# Medido (RTX 3050, 512 px, AMP, 19/11/2026), em múltiplos da ResNet-50: V2-S 1,9; Inception-v3 0,75;
+# ViT-B/16 1,6. Os fatores acima têm folga e, mesmo assim, dão micro-lote = lote inteiro (16) em 24 GB.
 # O micro-lote é calculado para a MENOR GPU do Apuana (RTX 3090, 24 GB), não para a sorteada: assim ele é
 # o mesmo em qualquer GPU, e o BatchNorm (que calcula médias dentro do micro-lote) também.
 SMALLEST_GPU_GB = 24.0
@@ -337,7 +344,7 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
 
     model = build_model(config["model"], config.get("pretrained", True), outputs_for(config),
                         freeze_first_convs=config.get("freeze_first_convs", 0),
-                        head_init=config.get("head_init")).to(device).to(memory_format=torch.channels_last)
+                        head_init=config.get("head_init"), image_size=config["image_size"]).to(device).to(memory_format=torch.channels_last)
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     frozen = sum(p.numel() for p in model.parameters() if not p.requires_grad)
     print(f"parâmetros treináveis: {trainable}; congelados: {frozen}", flush=True)

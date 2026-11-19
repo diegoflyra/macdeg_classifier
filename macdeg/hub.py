@@ -188,7 +188,8 @@ def load_ensemble(repo: str, name: str, device: str | None = None) -> Ensemble:
     device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     models = []
     for path in sorted(folder.glob("dobra*.safetensors")):
-        model = build_model(card["modelo"], pretrained=False, outputs=card.get("saidas", 1))
+        model = build_model(card["modelo"], pretrained=False, outputs=card.get("saidas", 1),
+                            image_size=card.get("image_size"))
         model.load_state_dict({k: v.float() if v.is_floating_point() else v for k, v in load_file(path).items()})
         models.append(model.to(device).eval())
     return Ensemble(models, card, device)

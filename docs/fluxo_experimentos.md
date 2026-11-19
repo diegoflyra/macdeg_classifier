@@ -15,13 +15,16 @@ código ou lançar jobs. Regras gerais do projeto: `CLAUDE.md`; motivos: `docs/d
 ## 2. Rodadas: uma mudança por vez sobre a base vigente
 
 1. Cada rodada tem uma **base** (`base: configs/train/baseline.yaml` + `base_mudancas`). Hoje a base vigente
-   é a da rodada 3 (`configs/experimentos/003_rodada3.yaml`):
+   é a da rodada 4 (`configs/experimentos/008_rodada4.yaml`): a da rodada 3 com a EfficientNetV2-S
+   (`rodada3-02`), por decisão dos donos (19/11/2026):
    ```yaml
    base: configs/train/baseline.yaml
    base_mudancas:
      augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}
      aux_dr: 0.5
+     model: tf_efficientnetv2_s.in21k_ft_in1k
    ```
+   O 004 do Gustavo (AlexNet, ConvNeXt) continua sobre a base da rodada 3 (ResNet-50), contra a `rodada3-00`.
 2. **Cada variação muda UMA coisa** sobre essa base. Duas mudanças na mesma variação não dizem qual ajudou.
 3. O veredito pareado (`ganhou` / `empatou` / `perdeu`) é sempre contra a base vigente. Para usar a base de
    outro lote, `referencia: resultados/<lote>/<configuração>` (sem retreinar a referência por conta própria).
@@ -64,6 +67,7 @@ referencia: resultados/rodada3-<AAAAMMDD-HHMM>/rodada3-00
 | `005_alexnet_congelamento.yaml` | Gustavo | apêndice AlexNet: congelar 3 convoluções | `gustavo-01` |
 | `006_alexnet_taxas.yaml` | Gustavo | apêndice AlexNet: lr separada da saída | (dentro do lote) |
 | `007_alexnet_inicializacao.yaml` | Gustavo | apêndice AlexNet: Xavier na saída | (dentro do lote) |
+| `008_rodada4.yaml` | donos | base V2-S; Inception-v3 e ViT-B/16 | `rodada4-00` |
 
 Ordem: 004 só depois que a rodada 3 estiver no GitHub; 005 depois do 004; 006 e 007 em sequência, cada
 um só se o anterior não perdeu. Os resultados da Parte 1 (004) entram na comparação de arquiteturas; os
