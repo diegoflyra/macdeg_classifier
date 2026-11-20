@@ -247,6 +247,13 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
         dist = score_distribution(outer[name], extra if len(extra) else None)
         dist.insert(0, "configuracao", name)
         result["configuracoes"][name]["distribuicao_notas"] = dist.drop(columns="configuracao").to_dict("records")
+        maps = [dict(np.load(f, allow_pickle=False)) for f in
+                sorted((batch / "tarefas" / name).glob("outer*_inner*/explain_maps.npz"))
+                if int(f.parent.name.split("_")[0][5:]) in complete]
+        if maps:
+            from macdeg.explain import summarize
+            details = manifest[["sample_id", "label_detail"]] if manifest is not None else None
+            result["configuracoes"][name]["explicabilidade"] = summarize(maps, outer[name], details)
         by_age = drusas_by_age(extra if len(extra) else None, drusas_ages, float(outer[name]["threshold"].median()))
         if by_age:
             result["configuracoes"][name]["drusas_por_idade"] = by_age

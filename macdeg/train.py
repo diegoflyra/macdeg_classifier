@@ -12,6 +12,7 @@ Saída em <out>/:
   history.csv            perda e AUROC de validação por época
   val_predictions.csv    nota de cada imagem de validação
   test_predictions.csv   nota de cada imagem do teste externo (só com --inner)
+  explain_maps.npz       mapas de explicabilidade do teste externo (macdeg.explain; explain: false desliga)
   extra_predictions.csv  nota das imagens com drusas sem diagnóstico (fora do treino; com aux_drusas, só as
                          da dobra externa de teste, e também a nota da saída de drusas, prob_drusas)
   metrics.json           AUROC geral e por base (o F2 precisa das outras dobras: macdeg.analysis)
@@ -145,6 +146,8 @@ def normalization(model: str) -> tuple[tuple, tuple]:
     algumas do timm (ex.: EfficientNetV2 do TensorFlow) usam 0,5. Faz parte da arquitetura."""
     if model in TORCHVISION:
         return IMAGENET_MEAN, IMAGENET_STD
+    from macdeg.hybrid import BACKBONE      # redes em duas resoluções: a normalização da V2-S
+    model = BACKBONE.get(model, model)
     import timm
     cfg = timm.get_pretrained_cfg(model)
     return (tuple(cfg.mean), tuple(cfg.std)) if cfg else (IMAGENET_MEAN, IMAGENET_STD)
@@ -201,6 +204,9 @@ def build_model(name: str, pretrained: bool, outputs: int = 1, *, freeze_first_c
         model = getattr(tvm, name)(weights=weights)
         model.fc = nn.Linear(model.fc.in_features, outputs)
         return model
+    from macdeg import hybrid
+    if name in hybrid.BACKBONE:     # redes em duas resoluções (entrada de 1024 px; macdeg/hybrid.py)
+        return hybrid.build(name, pretrained, outputs)
     import timm               # qualquer outra: pelo nome do timm (ex.: densenet121, tf_efficientnetv2_s.in21k_ft_in1k)
     cfg = timm.get_pretrained_cfg(name)
     fixed = image_size is not None and cfg is not None and getattr(cfg, "fixed_input_size", False)
@@ -296,9 +302,11 @@ GB_PER_IMAGE_512 = 0.3
 # Outras arquiteturas, em múltiplos da ResNet-50 (estimativas conservadoras; EfficientNets e DenseNet
 # guardam muitas ativações intermediárias).
 MEMORY_FACTOR = {"alexnet": 0.3, "densenet": 3.0, "efficientnetv2_s": 3.0, "efficientnet_b4": 5.0, "convnext_tiny": 2.0,
-                 "inception_v3": 1.5, "vit_base": 3.0}
+                 "inception_v3": 1.5, "vit_base": 3.0, "hibrida_v2s": 0.8, "v2s_macula": 0.9}
 # Medido (RTX 3050, 512 px, AMP, 19/11/2026), em múltiplos da ResNet-50: V2-S 1,9; Inception-v3 0,75;
 # ViT-B/16 1,6. Os fatores acima têm folga e, mesmo assim, dão micro-lote = lote inteiro (16) em 24 GB.
+# Redes em duas resoluções (entrada de 1024 px; a fórmula já multiplica por 4): medidas 0,51 GB/imagem
+# (hibrida_v2s) e 0,72 (v2s_macula), contra 0,40 da V2-S em 512 px (20/11/2026). Lote inteiro em 24 GB.
 # O micro-lote é calculado para a MENOR GPU do Apuana (RTX 3090, 24 GB), não para a sorteada: assim ele é
 # o mesmo em qualquer GPU, e o BatchNorm (que calcula médias dentro do micro-lote) também.
 SMALLEST_GPU_GB = 24.0
@@ -396,6 +404,10 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     print(f"parâmetros treináveis: {trainable}; congelados: {frozen}", flush=True)
     aux_weight = float(config.get("aux_dr") or 0)    # peso da perda auxiliar de DR (0 = sem cabeça auxiliar)
     drusas_weight, drusas_col = float(config.get("aux_drusas") or 0), drusas_output(config)
+    # Perda de localização da híbrida: a média dos 3 maiores escores da atenção recebe o rótulo do olho.
+    localization_weight = float(config.get("aux_localization") or 0)
+    if localization_weight and config["model"] != "hibrida_v2s":
+        raise ValueError("aux_localization só existe para model: hibrida_v2s.")
     if on_model is not None:
         on_model(model)
     positives = float(main_train["label"].sum())
@@ -430,12 +442,20 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
             images = images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
             labels = labels.to(device, non_blocking=True)
             with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
-                logits = model(images).float()
+                if localization_weight:
+                    logits, localization = model(images, return_localization=True)
+                else:
+                    logits = model(images)
+                logits = logits.float()
                 if drusas_weight:   # drusas (rótulo -1) ficam fora da perda de DMRI
                     main = labels >= 0
                     loss = criterion(logits[main, 0], labels[main]) if main.any() else logits.sum() * 0
                 else:
                     loss = criterion(logits[:, 0], labels)
+                if localization_weight:
+                    main = labels >= 0
+                    if main.any():
+                        loss = loss + localization_weight * criterion(localization.float()[main], labels[main])
                 aux = aux.to(device, non_blocking=True)
                 if aux_weight:      # só nos olhos em que se sabe se há DR (os "sem DMRI")
                     known = aux[:, 0] >= 0
@@ -503,6 +523,13 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
             if name == "extra" and drusas_weight:
                 scored["prob_drusas"] = predict(model, loader, device, drusas_col)
             scored.to_csv(out / f"{name}_predictions.csv", index=False)
+    if test is not None and len(test) and config.get("explain", True):
+        # Para onde a rede olha nas imagens do teste externo (macdeg.explain): só mapas pequenos e sample_id.
+        from macdeg.explain import FILE, explain
+        loader = DataLoader(dataset(test.assign(label=test["label"].clip(lower=0)), False),
+                            batch_size=micro, num_workers=workers, pin_memory=device.type == "cuda")
+        columns = {"dmri": 0, **({"drusas": drusas_col} if drusas_weight else {})}
+        np.savez_compressed(out / FILE, **explain(model, loader, device, list(test["sample_id"]), columns))
     metrics = evaluate(predictions, main_train)
     metrics.update(trainable_parameters=trainable, frozen_parameters=frozen,
                    micro_batch=micro, gpu=torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",

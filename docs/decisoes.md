@@ -151,6 +151,36 @@ nenhuma configuração (36 no ODIR).
     variação ganhar, o ganho vem de imagens a mais e de uma tarefa a mais, juntas; o texto diz assim.
   - Não interpreta o que as drusas significam para a idade (Ferris et al., 2013): não há rótulo para isso.
 
+## Fase 2: rodada 5 (20/11/2026)
+
+Resultado da rodada 4 (`rodada4-20261119-0229`): Inception-v3 empatou (−0,010 [−0,023; +0,004]); o ViT-B/16
+não aprendeu com a receita comum (perda de treino parada em ~1,3; F2 0,465): limitação da receita, não
+conclusão sobre a arquitetura. A V2-S retreinada empatou com a da rodada 3 (−0,005).
+
+- **Ruído entre treinos idênticos:** as duas V2-S (mesma configuração e semente; só o não determinismo da
+  GPU muda) diferem até +0,040 no F2 do BRSET e −0,029 no RFMiD, com IC95 sem cruzar o zero. O IC do
+  veredito só reamostra pacientes, não a variação do treino. Logo, "a rede X é melhor no aspecto Y" a
+  partir de um treino só não se sustenta; a média dos dois treinos ganhou de um só (+0,013 [+0,005; +0,022]).
+  Conclusão principal no texto: com dois treinos de cada lado.
+- **Arquitetura a partir do problema, não das diferenças entre redes:** a 512 px (~25 µm/px), uma drusa
+  média (63–125 µm, DMRI precoce pelo Ferris et al., 2013) tem 2,5–5 px; a 1024 px, 5–10 px. Na V2-S, o
+  estágio 2 (64 × 64, 8 px por posição) é o último em que ela tem endereço próprio.
+- **Rede híbrida do Gustavo** (branch `rede-hibrida`, inspirada em GMIC, attention MIL e Inception-ResNet)
+  portada para a V2-S (`hibrida_v2s`, `macdeg/hybrid.py`): ramo multiescala do estágio 2, atenção espacial,
+  3 recortes de 192 px em 1024 px e perda de localização (0,25). Mudança em relação ao original: os
+  recortes passam por uma cópia pré-treinada dos estágios 0–3 da V2-S (no original, uma CNN de 3 camadas
+  começava do zero com ~900 DMRI). Usa a receita da base (augmentation, cabeça de DR, lr 3e-4).
+- **Recorte da mácula em resolução nativa** (`v2s_macula`): vista global 512 px + centro de 448 px da imagem
+  em 1024 px (~6 mm, a grade do AREDS), cada um com a sua V2-S. Diferente do `crop: 0.6` da rodada 3, que
+  substituía a imagem e a reduzia.
+- **Explicabilidade em todas as tarefas** (`macdeg/explain.py`, `explain: true` por padrão): Grad-CAM da
+  saída de DMRI (e de drusas), atenção da híbrida e mapa do ramo da mácula, nas imagens do teste externo.
+  No GitHub só números (massa na mácula, fora da retina, área com metade do mapa, por grupo e por erro);
+  pranchas com imagens só no cluster/local (`python -m macdeg.explain pranchas`).
+- Entrada de 1024 px sem cache (os pixels são os mesmos; o cache teria ~65 GB). Memória medida: 0,51 GB
+  por imagem (híbrida) e 0,72 (mácula), contra 0,40 da V2-S em 512 px: o lote inteiro (16) cabe em 24 GB,
+  então o BatchNorm vê os mesmos 16 da base.
+
 ## Pré-processamento por ROI e auditoria (HYAMD, suspenso em 11/11/2026)
 
 Desenvolvido antes da mudança para o conjunto multibase. Fica disponível para voltar como experimento
