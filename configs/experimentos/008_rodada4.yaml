@@ -1,0 +1,23 @@
+# Experimento 008: rodada 4. Base nova = EfficientNetV2-S (rodada3-02), decisão dos donos (19/11/2026):
+# empatou com a ResNet (+0,008 [-0,005; +0,021]), mas teve as maiores AUROC/AUPRC, o melhor DMRI precoce x DR
+# e custo/estabilidade melhores que a B4. Augmentation e cabeça de DR continuam (ganharam na rodada 3).
+# Fecha a comparação de arquiteturas importadas: cada variação troca só a rede. Receita fixa (a da ResNet).
+#
+#   rodada4-00  a base nova (V2-S), retreinada
+#   rodada4-01  Inception-v3   (torchvision via timm, ImageNet-1k, pré-treino em 299 px)
+#   rodada4-02  ViT-B/16       (ImageNet-21k + 1k, pré-treino em 384 px; posição reamostrada para 512 px)
+#               Aviso: ViT costuma ser ajustado com lr 1e-5 a 5e-5; com a receita comum (3e-4) a leitura
+#               correta de uma derrota é "perdeu nesta receita", não "ViT é pior".
+#
+# 60 tarefas (3 x 5 externas x 4 internas).
+nome: rodada4
+base: configs/train/baseline.yaml
+base_mudancas:
+  augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}
+  aux_dr: 0.5
+  model: tf_efficientnetv2_s.in21k_ft_in1k
+grade: {}
+variacoes:
+  - {model: inception_v3.tv_in1k}
+  - {model: vit_base_patch16_384.augreg_in21k_ft_in1k}
+referencia: null

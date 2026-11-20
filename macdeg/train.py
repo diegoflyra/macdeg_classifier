@@ -12,7 +12,8 @@ Saída em <out>/:
   history.csv            perda e AUROC de validação por época
   val_predictions.csv    nota de cada imagem de validação
   test_predictions.csv   nota de cada imagem do teste externo (só com --inner)
-  extra_predictions.csv  nota das imagens com drusas sem diagnóstico (fora do treino)
+  extra_predictions.csv  nota das imagens com drusas sem diagnóstico (fora do treino; com aux_drusas, só as
+                         da dobra externa de teste, e também a nota da saída de drusas, prob_drusas)
   metrics.json           AUROC geral e por base (o F2 precisa das outras dobras: macdeg.analysis)
   last.pt / best.pt      pesos; last.pt permite retomar se a tarefa for interrompida e é apagado no fim;
                          best.pt fica só no treino final (ou com keep_weights: true)
@@ -58,12 +59,17 @@ def load_config(path: Path, overrides: list[str]) -> dict:
 
 
 class FundusDataset(Dataset):
-    """Lê do cache de imagens reduzidas (macdeg.cache) quando há; senão, do JPEG. Os pixels são os mesmos."""
+    """Lê do cache de imagens reduzidas (macdeg.cache) quando há; senão, do JPEG. Os pixels são os mesmos.
+    Cada item: (imagem, rótulo DMRI (-1 = drusas, fora da perda principal), alvos auxiliares [DR, drusas]:
+    1, 0 ou -1 = desconhecido)."""
 
-    def __init__(self, frame: pd.DataFrame, root: Path, transform, cache: tuple[Path, dict] | None = None):
+    def __init__(self, frame: pd.DataFrame, root: Path, transform, cache: tuple[Path, dict] | None = None,
+                 size: int | None = None, preprocess: str | None = None, crop: float | None = None):
         self.paths = [str(root / p) for p in frame["image"]]
         self.labels = frame["label"].to_numpy(np.float32)
+        self.aux = np.stack([dr_target(frame), drusas_target(frame)], axis=1)
         self.transform = transform
+        self.size, self.preprocess, self.crop = size, preprocess, crop
         self.cache_path, lines = cache or (None, {})
         self.rows = [lines.get(p, -1) for p in frame["image"]]
         self._data = None                       # aberto em cada processo do DataLoader (mmap)
@@ -79,8 +85,69 @@ class FundusDataset(Dataset):
             image = np.array(self._data[row])
         else:
             image = image_cache.read_rgb(self.paths[index])
+            if self.preprocess or self.crop:    # o mesmo que o cache faz: recorta, reduz, pré-processa
+                image = image_cache.prepare(image, self.size, self.preprocess, self.crop)
         tensor = torch.from_numpy(image).permute(2, 0, 1)
-        return self.transform(tensor), self.labels[index]
+        return self.transform(tensor), self.labels[index], self.aux[index]
+
+
+DR = "retinopatia_diabetica"
+
+
+def has_disease(frame: pd.DataFrame, name: str) -> np.ndarray:
+    """A imagem tem a doença `name` entre as suas categorias (coluna disease, separada por "|")?"""
+    if "disease" not in frame:
+        return np.zeros(len(frame), bool)
+    return frame["disease"].fillna("").astype(str).str.split("|").apply(lambda parts: name in parts).to_numpy()
+
+
+def dr_target(frame: pd.DataFrame) -> np.ndarray:
+    """Alvo da cabeça auxiliar: 1 = "sem DMRI" com retinopatia diabética, 0 = outro "sem DMRI" (normal ou
+    outra doença), -1 = desconhecido (olhos com DMRI: as bases não dizem se também têm DR; drusas)."""
+    target = np.full(len(frame), -1.0, np.float32)
+    negative = frame["label"].to_numpy() == 0
+    target[negative] = has_disease(frame, DR)[negative].astype(np.float32)
+    return target
+
+
+# Bases em que um olho "sem DMRI" com certeza não tem drusas: nelas, qualquer olho com drusas (sem DMRI) foi
+# separado como "drusas sem diagnóstico" (macdeg.data.sources). Na HYAMD e no ADAM não se sabe.
+NO_DRUSEN_SOURCES = ("brset", "odir", "rfmid", "rfmid2")
+
+
+def drusas_target(frame: pd.DataFrame) -> np.ndarray:
+    """Alvo da saída auxiliar de drusas: 1 = drusas sem diagnóstico de DMRI; 0 = "sem DMRI" de uma base em
+    que se sabe que não há drusas; -1 = desconhecido (DMRI, que costuma ter drusas; HYAMD e ADAM)."""
+    target = np.full(len(frame), -1.0, np.float32)
+    kinds = frame["kind"].to_numpy() if "kind" in frame else np.full(len(frame), "")
+    target[kinds == "drusas"] = 1.0
+    clean = (frame["label"].to_numpy() == 0) & frame["source"].isin(NO_DRUSEN_SOURCES).to_numpy()
+    target[clean] = 0.0
+    return target
+
+
+def sample_weights(frame: pd.DataFrame, oversample: dict | None) -> np.ndarray | None:
+    """Peso de sorteio de cada imagem de treino: `oversample` = {doença: fator}. Ex.: {retinopatia_diabetica: 3}
+    faz cada olho com DR aparecer, em média, 3 vezes mais por época. O conjunto não muda, só o sorteio."""
+    if not oversample:
+        return None
+    weights = np.ones(len(frame))
+    for name, factor in oversample.items():
+        weights[has_disease(frame, name)] *= float(factor)
+    return weights
+
+
+TORCHVISION = ("resnet18", "resnet34", "resnet50", "alexnet")
+
+
+def normalization(model: str) -> tuple[tuple, tuple]:
+    """Média e desvio da normalização com que a rede foi pré-treinada. Quase todas usam as da ImageNet;
+    algumas do timm (ex.: EfficientNetV2 do TensorFlow) usam 0,5. Faz parte da arquitetura."""
+    if model in TORCHVISION:
+        return IMAGENET_MEAN, IMAGENET_STD
+    import timm
+    cfg = timm.get_pretrained_cfg(model)
+    return (tuple(cfg.mean), tuple(cfg.std)) if cfg else (IMAGENET_MEAN, IMAGENET_STD)
 
 
 def transforms(config: dict, train: bool):
@@ -92,28 +159,98 @@ def transforms(config: dict, train: bool):
         if aug.get("hflip", True):
             steps.append(v2.RandomHorizontalFlip())
         if aug.get("rotate_deg", 0):
-            steps.append(v2.RandomRotation(aug["rotate_deg"]))
+            steps.append(v2.RandomRotation(aug["rotate_deg"], interpolation=v2.InterpolationMode.BILINEAR))
         if aug.get("color", 0):
             steps.append(v2.ColorJitter(brightness=aug["color"], contrast=aug["color"]))
     else:
         steps.append(v2.Resize(size, antialias=True))
-    steps += [v2.ToDtype(torch.float32, scale=True), v2.Normalize(IMAGENET_MEAN, IMAGENET_STD)]
+    mean, std = normalization(config.get("model", "resnet50"))
+    steps += [v2.ToDtype(torch.float32, scale=True), v2.Normalize(mean, std)]
     return v2.Compose(steps)
 
 
-def build_model(name: str, pretrained: bool) -> nn.Module:
-    import torchvision.models as tvm
-    if name in ("resnet18", "resnet34", "resnet50"):
+def build_model(name: str, pretrained: bool, outputs: int = 1, *, freeze_first_convs: int = 0,
+                head_init: str | None = None, image_size: int | None = None) -> nn.Module:
+    """Saída 0 = logit de DMRI (a única usada em métricas e limiar). Com a cabeça auxiliar, saída 1 = DR.
+    `freeze_first_convs` e `head_init`: só AlexNet (estudo próprio dela; docs/alexnet.md).
+    `image_size`: só para redes de entrada fixa (ViT), que precisam saber o tamanho ao serem criadas; o timm
+    reamostra a posição pré-treinada (384 px) para o tamanho do treino. As convolucionais ignoram."""
+    if head_init not in (None, "xavier"):
+        raise ValueError("head_init deve ser null ou xavier.")
+    if head_init is not None and name != "alexnet":
+        raise ValueError("head_init só é suportado para model: alexnet.")
+    if type(freeze_first_convs) is not int or not 0 <= freeze_first_convs <= 5:
+        raise ValueError("freeze_first_convs deve ser um inteiro entre 0 e 5.")
+    if freeze_first_convs and name != "alexnet":
+        raise ValueError("freeze_first_convs só é suportado para model: alexnet.")
+    if name == "alexnet":       # escrita camada por camada (macdeg/models.py); pesos ImageNet do torchvision
+        from macdeg.models import AlexNet, freeze_alexnet_features, load_alexnet_imagenet_weights
+        model = AlexNet()
+        if pretrained:
+            load_alexnet_imagenet_weights(model)
+        model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, outputs)
+        if head_init == "xavier":
+            nn.init.xavier_uniform_(model.classifier[-1].weight, gain=1.0)
+            nn.init.zeros_(model.classifier[-1].bias)
+        freeze_alexnet_features(model, freeze_first_convs)
+        return model
+    if name in ("resnet18", "resnet34", "resnet50"):  # TORCHVISION
+        import torchvision.models as tvm
         weights = {"resnet18": tvm.ResNet18_Weights.IMAGENET1K_V1, "resnet34": tvm.ResNet34_Weights.IMAGENET1K_V1,
                    "resnet50": tvm.ResNet50_Weights.IMAGENET1K_V2}[name] if pretrained else None
         model = getattr(tvm, name)(weights=weights)
-        model.fc = nn.Linear(model.fc.in_features, 1)
+        model.fc = nn.Linear(model.fc.in_features, outputs)
         return model
-    import timm
-    return timm.create_model(name, pretrained=pretrained, num_classes=1)
+    import timm               # qualquer outra: pelo nome do timm (ex.: densenet121, tf_efficientnetv2_s.in21k_ft_in1k)
+    cfg = timm.get_pretrained_cfg(name)
+    fixed = image_size is not None and cfg is not None and getattr(cfg, "fixed_input_size", False)
+    return timm.create_model(name, pretrained=pretrained, num_classes=outputs, **({"img_size": image_size} if fixed else {}))
+
+
+def outputs_for(config: dict) -> int:
+    """Saída 0 = DMRI; depois, se houver, a de DR (1) e a de drusas (1 ou 2)."""
+    return 1 + bool(config.get("aux_dr")) + bool(config.get("aux_drusas"))
+
+
+def drusas_output(config: dict) -> int:
+    return 1 + bool(config.get("aux_dr"))
+
+
+def build_optimizer(model: nn.Module, config: dict) -> torch.optim.Optimizer:
+    """Taxa opcional para a saída nova; demais parâmetros mantêm config['lr']."""
+    parameters = [p for p in model.parameters() if p.requires_grad]
+    head_lr = config.get("head_lr")
+    if head_lr is not None:
+        if config.get("model") != "alexnet":
+            raise ValueError("head_lr só é suportado para model: alexnet.")
+        if not math.isfinite(head_lr) or head_lr <= 0:
+            raise ValueError("head_lr deve ser positivo e finito.")
+        head = [p for p in model.classifier[-1].parameters() if p.requires_grad]
+        head_ids = {id(p) for p in head}
+        parameters = [{"params": [p for p in parameters if id(p) not in head_ids], "lr": config["lr"]},
+                      {"params": head, "lr": head_lr}]
+    return torch.optim.AdamW(parameters, lr=config["lr"], weight_decay=config.get("weight_decay", 1e-4))
 
 
 PREDICTION_COLUMNS = ["sample_id", "source", "group_id", "label", "kind", "disease_group"]
+
+
+def _with_drusas(root: Path, train: pd.DataFrame, outer: int, inner: int | None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Saída auxiliar de drusas: as drusas das dobras de treino entram no treino (rótulo -1: só a saída de
+    drusas aprende com elas); as da dobra externa de teste são só pontuadas. As da validação interna ficam
+    de fora (a época é escolhida pela AUROC de DMRI). Dobras por paciente: macdeg.data.drusas."""
+    from macdeg.data.drusas import FOLDS_FILE
+    path = root / FOLDS_FILE
+    if not path.exists():
+        raise SystemExit(f"aux_drusas precisa de {path}: rode `python -m macdeg.data.drusas` onde estão as "
+                         "bases originais e copie o arquivo para o conjunto.")
+    drusas = pd.read_csv(path, dtype={"uid": str}).assign(label=-1, kind="drusas", disease=None, disease_group=None)
+    drusas["image"] = "images/" + drusas["uid"] + ".jpg"
+    rest = drusas[drusas["outer"] != outer]
+    if inner is not None:
+        rest = rest[rest[f"inner_{outer}"] != inner]
+    train = pd.concat([train, rest[train.columns.intersection(rest.columns)]], ignore_index=True)
+    return train, drusas[drusas["outer"] == outer].copy()
 
 
 def split_frames(config: dict, outer: int, inner: int | None, seed: int):
@@ -139,7 +276,9 @@ def split_frames(config: dict, outer: int, inner: int | None, seed: int):
         if frame["label"].nunique() < 2:
             raise SystemExit(f"O conjunto de {name} só tem uma classe: faltam imagens com ou sem DMRI.")
     extra = None
-    if (root / "extras_drusas.csv").exists():
+    if config.get("aux_drusas"):
+        train, extra = _with_drusas(root, train, outer, inner)
+    elif (root / "extras_drusas.csv").exists():
         extra = pd.read_csv(root / "extras_drusas.csv").assign(label=-1, kind="drusas", disease_group=None)
         if config.get("sources"):
             extra = extra[extra["source"].isin(config["sources"])]
@@ -154,30 +293,53 @@ def split_frames(config: dict, outer: int, inner: int | None, seed: int):
 
 # Memória por imagem da ResNet-50 em 512 px com AMP, medida (4,2 GB com lote 16), com folga.
 GB_PER_IMAGE_512 = 0.3
+# Outras arquiteturas, em múltiplos da ResNet-50 (estimativas conservadoras; EfficientNets e DenseNet
+# guardam muitas ativações intermediárias).
+MEMORY_FACTOR = {"alexnet": 0.3, "densenet": 3.0, "efficientnetv2_s": 3.0, "efficientnet_b4": 5.0, "convnext_tiny": 2.0,
+                 "inception_v3": 1.5, "vit_base": 3.0}
+# Medido (RTX 3050, 512 px, AMP, 19/11/2026), em múltiplos da ResNet-50: V2-S 1,9; Inception-v3 0,75;
+# ViT-B/16 1,6. Os fatores acima têm folga e, mesmo assim, dão micro-lote = lote inteiro (16) em 24 GB.
+# O micro-lote é calculado para a MENOR GPU do Apuana (RTX 3090, 24 GB), não para a sorteada: assim ele é
+# o mesmo em qualquer GPU, e o BatchNorm (que calcula médias dentro do micro-lote) também.
+SMALLEST_GPU_GB = 24.0
 
 
 def micro_batch(config: dict, device: torch.device) -> int:
-    """Pedaço do lote que cabe na GPU. O lote efetivo (batch_size) não muda: os gradientes dos pedaços
-    se acumulam antes de cada passo, então o resultado não depende da GPU sorteada pela fila."""
+    """Pedaço do lote que cabe na menor GPU do cluster. O lote efetivo (batch_size) não muda: os gradientes
+    dos pedaços se acumulam antes de cada passo. Como o pedaço não depende da GPU sorteada pela fila, nem
+    o BatchNorm depende, e o resultado é o mesmo em qualquer GPU."""
     batch = config["batch_size"]
     if config.get("micro_batch"):
         return int(config["micro_batch"])
     if device.type != "cuda":
         return batch
-    free = torch.cuda.get_device_properties(device).total_memory / 1e9 * 0.75
-    per_image = GB_PER_IMAGE_512 * (config["image_size"] / 512) ** 2
-    fits = max(1, int(free // per_image))
+    memory = min(torch.cuda.get_device_properties(device).total_memory / 1e9, SMALLEST_GPU_GB)
+    factor = next((f for key, f in MEMORY_FACTOR.items() if key in config.get("model", "")), 1.0)
+    per_image = GB_PER_IMAGE_512 * factor * (config["image_size"] / 512) ** 2
+    fits = max(1, int(memory * 0.75 // per_image))
     return max(d for d in range(1, batch + 1) if batch % d == 0 and d <= fits)
 
 
+def nonfinite_report(model: nn.Module, probs: np.ndarray, losses: list[float], epoch: int, scaler) -> dict:
+    """Diagnóstico quando a validação dá notas NaN/infinitas (ex.: estouro do fp16). Diz se o problema está
+    nos pesos (o treino divergiu) ou só nas médias guardadas do BatchNorm (buffers), que o treino não usa
+    mas a validação usa. Só nomes de camadas e contagens."""
+    bad_params = [n for n, p in model.named_parameters() if not torch.isfinite(p).all()]
+    bad_buffers = [n for n, b in model.named_buffers() if b.is_floating_point() and not torch.isfinite(b).all()]
+    return {"epoca": epoch, "notas": int(len(probs)), "notas_nao_finitas": int((~np.isfinite(probs)).sum()),
+            "parametros_nao_finitos": bad_params, "buffers_nao_finitos": bad_buffers,
+            "perdas_treino_nao_finitas": int(sum(not math.isfinite(x) for x in losses)), "micro_lotes": len(losses),
+            "escala_gradscaler": float(scaler.get_scale()) if scaler.is_enabled() else None}
+
+
 @torch.no_grad()
-def predict(model, loader, device) -> np.ndarray:
+def predict(model, loader, device, column: int = 0) -> np.ndarray:
     model.eval()
     probs = []
-    for images, _ in loader:
+    for images, *_ in loader:
         with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
             logits = model(images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last))
-        probs.append(torch.sigmoid(logits.float()).squeeze(1).cpu().numpy())
+        probs.append(torch.sigmoid(logits[:, column].float()).cpu().numpy())
     return np.concatenate(probs)
 
 
@@ -194,32 +356,52 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     train, val, test, extra, root = split_frames(config, outer, inner, seed)
     (out / "config.json").write_text(json.dumps({**config, "outer": outer, "inner": inner, "seed": seed}, indent=1),
                                      encoding="utf-8")
-    print(f"treino: {len(train)} imagens ({int(train['label'].sum())} DMRI); "
+    main_train = train[train["label"] >= 0]     # sem as drusas (aux_drusas): contagens, pos_weight e réguas
+    print(f"treino: {len(main_train)} imagens ({int(main_train['label'].sum())} DMRI)"
+          + (f" + {len(train) - len(main_train)} drusas (só a saída de drusas)" if len(train) > len(main_train) else "")
+          + "; "
           f"validação: {len(val)} ({int(val['label'].sum())} DMRI); dispositivo: {device}", flush=True)
 
     workers = config.get("num_workers", 6)
     cached = None
     if config.get("cache", True):   # mesmos pixels, sem decodificar 1024 px a cada época (macdeg.cache)
         frames = [f for f in (train, val, test, extra) if f is not None]
-        cached = image_cache.build(root, [i for f in frames for i in f["image"]], config["image_size"])
+        cached = image_cache.build(root, [i for f in frames for i in f["image"]], config["image_size"],
+                                   preprocess=config.get("preprocess"), crop=config.get("crop"))
     torch.backends.cudnn.benchmark = True     # entrada de tamanho fixo: o cuDNN escolhe o algoritmo mais rápido
     micro = micro_batch(config, device)
     accumulate = config["batch_size"] // micro
     print(f"lote efetivo {config['batch_size']} = {accumulate} x {micro} imagens"
           + (f" | GPU: {torch.cuda.get_device_name(device)}" if device.type == "cuda" else ""), flush=True)
-    train_loader = DataLoader(FundusDataset(train, root, transforms(config, True), cached), batch_size=micro,
-                              shuffle=True, num_workers=workers, pin_memory=device.type == "cuda", drop_last=True,
+    dataset = lambda frame, train_mode: FundusDataset(frame, root, transforms(config, train_mode), cached,
+                                                      config["image_size"], config.get("preprocess"),
+                                                      config.get("crop"))
+    weights = sample_weights(train, config.get("oversample"))
+    sampler = None
+    if weights is not None:     # sorteio com reposição, mesmo número de imagens por época
+        sampler = torch.utils.data.WeightedRandomSampler(weights, num_samples=len(train), replacement=True,
+                                                         generator=torch.Generator().manual_seed(seed))
+        print(f"sorteio ponderado: {config['oversample']} ({int((weights > 1).sum())} imagens com peso > 1)")
+    train_loader = DataLoader(dataset(train, True), batch_size=micro, sampler=sampler,
+                              shuffle=sampler is None, num_workers=workers, pin_memory=device.type == "cuda", drop_last=True,
                               persistent_workers=workers > 0)
-    val_loader = DataLoader(FundusDataset(val, root, transforms(config, False), cached), batch_size=micro,
+    val_loader = DataLoader(dataset(val, False), batch_size=micro,
                             num_workers=workers, pin_memory=device.type == "cuda", persistent_workers=workers > 0)
 
-    model = build_model(config["model"], config.get("pretrained", True)).to(device).to(memory_format=torch.channels_last)
+    model = build_model(config["model"], config.get("pretrained", True), outputs_for(config),
+                        freeze_first_convs=config.get("freeze_first_convs", 0),
+                        head_init=config.get("head_init"), image_size=config["image_size"]).to(device).to(memory_format=torch.channels_last)
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    frozen = sum(p.numel() for p in model.parameters() if not p.requires_grad)
+    print(f"parâmetros treináveis: {trainable}; congelados: {frozen}", flush=True)
+    aux_weight = float(config.get("aux_dr") or 0)    # peso da perda auxiliar de DR (0 = sem cabeça auxiliar)
+    drusas_weight, drusas_col = float(config.get("aux_drusas") or 0), drusas_output(config)
     if on_model is not None:
         on_model(model)
-    positives = float(train["label"].sum())
-    pos_weight = (len(train) - positives) / positives if config.get("balance") == "pos_weight" else 1.0
+    positives = float(main_train["label"].sum())
+    pos_weight = (len(main_train) - positives) / positives if config.get("balance") == "pos_weight" else 1.0
     criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(pos_weight, device=device))
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"], weight_decay=config.get("weight_decay", 1e-4))
+    optimizer = build_optimizer(model, config)
     epochs, steps_per_epoch = config["epochs"], len(train_loader) // accumulate
     warmup = steps_per_epoch * config.get("warmup_epochs", 1)
     total = steps_per_epoch * epochs
@@ -243,12 +425,28 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
         optimizer.zero_grad(set_to_none=True)
         step = 0
         asked = time.time()
-        for k, (images, labels) in enumerate(train_loader):
+        for k, (images, labels, aux) in enumerate(train_loader):
             waiting += time.time() - asked    # tempo parado esperando o DataLoader (gargalo de CPU/disco)
             images = images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
             labels = labels.to(device, non_blocking=True)
             with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
-                loss = criterion(model(images).squeeze(1).float(), labels)
+                logits = model(images).float()
+                if drusas_weight:   # drusas (rótulo -1) ficam fora da perda de DMRI
+                    main = labels >= 0
+                    loss = criterion(logits[main, 0], labels[main]) if main.any() else logits.sum() * 0
+                else:
+                    loss = criterion(logits[:, 0], labels)
+                aux = aux.to(device, non_blocking=True)
+                if aux_weight:      # só nos olhos em que se sabe se há DR (os "sem DMRI")
+                    known = aux[:, 0] >= 0
+                    if known.any():
+                        loss = loss + aux_weight * nn.functional.binary_cross_entropy_with_logits(
+                            logits[known, 1], aux[known, 0])
+                if drusas_weight:   # só onde se sabe se há drusas (macdeg.train.drusas_target)
+                    known = aux[:, 1] >= 0
+                    if known.any():
+                        loss = loss + drusas_weight * nn.functional.binary_cross_entropy_with_logits(
+                            logits[known, drusas_col], aux[known, 1])
             scaler.scale(loss / accumulate).backward()
             losses.append(loss.item())
             asked = time.time()
@@ -264,15 +462,23 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
             asked = time.time()
         train_seconds = time.time() - began
         probs = predict(model, val_loader, device)
+        if not np.isfinite(probs).all():   # sem isto, o sklearn só diz "Input contains NaN"
+            report = nonfinite_report(model, probs, losses, epoch, scaler)
+            (out / "falha_nan.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
+            raise FloatingPointError(f"época {epoch}: {report['notas_nao_finitas']} de {report['notas']} notas de "
+                                     f"validação não finitas; diagnóstico em {out / 'falha_nan.json'}: {report}")
         val_auroc = auroc(val["label"], probs)
         row = {"epoch": epoch, "train_loss": float(np.mean(losses)), "val_auroc": val_auroc,
                "seconds": round(time.time() - began, 1), "train_seconds": round(train_seconds, 1),
                "data_wait_seconds": round(waiting, 1), "lr": scheduler.get_last_lr()[0]}
+        if config.get("head_lr") is not None:
+            row["head_lr"] = scheduler.get_last_lr()[-1]
         history.append(row)
         print(json.dumps(row), flush=True)
         if log is not None:
             log({"epoca": epoch, "perda_treino": row["train_loss"], "auroc_val": val_auroc, "lr": row["lr"],
-                 "segundos_epoca": row["seconds"], "segundos_esperando_dados": row["data_wait_seconds"]})
+                 "segundos_epoca": row["seconds"], "segundos_esperando_dados": row["data_wait_seconds"],
+                 **({"lr_saida": row["head_lr"]} if "head_lr" in row else {})})
         if val_auroc is not None and val_auroc > best:
             best, stale = val_auroc, 0
             torch.save(model.state_dict(), out / "best.pt")
@@ -291,13 +497,15 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     predictions.to_csv(out / "val_predictions.csv", index=False)
     for name, frame in (("test", test), ("extra", extra)):
         if frame is not None and len(frame):
-            loader = DataLoader(FundusDataset(frame.assign(label=frame["label"].clip(lower=0)), root,
-                                              transforms(config, False), cached),
+            loader = DataLoader(dataset(frame.assign(label=frame["label"].clip(lower=0)), False),
                                 batch_size=micro, num_workers=workers, pin_memory=device.type == "cuda")
-            frame[PREDICTION_COLUMNS].assign(prob=predict(model, loader, device)).to_csv(
-                out / f"{name}_predictions.csv", index=False)
-    metrics = evaluate(predictions, train)
-    metrics.update(micro_batch=micro, gpu=torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
+            scored = frame[PREDICTION_COLUMNS].assign(prob=predict(model, loader, device))
+            if name == "extra" and drusas_weight:
+                scored["prob_drusas"] = predict(model, loader, device, drusas_col)
+            scored.to_csv(out / f"{name}_predictions.csv", index=False)
+    metrics = evaluate(predictions, main_train)
+    metrics.update(trainable_parameters=trainable, frozen_parameters=frozen,
+                   micro_batch=micro, gpu=torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
                    best_epoch=int(np.nanargmax([h["val_auroc"] or -1 for h in history])),
                    epochs_run=len(history), seconds_per_epoch=float(np.mean([h["seconds"] for h in history])),
                    peak_gpu_gb=round(torch.cuda.max_memory_allocated() / 1e9, 2) if device.type == "cuda" else None)

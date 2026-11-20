@@ -1,0 +1,20 @@
+# Experimento 004 (Gustavo), PARTE 1: arquiteturas comparáveis com a rodada 3.
+# Mesma base nova da rodada 3 (base_mudancas idêntica) e mesma receita de treino; só a arquitetura muda.
+# O veredito é contra a rodada3-00 (a base nova), nas mesmas imagens.
+#
+#   gustavo-00  a base nova retreinada (o formato atual sempre treina a configuração 00)
+#   gustavo-01  AlexNet (torchvision, ImageNet), treino completo, receita comum
+#   gustavo-02  ConvNeXt-T (ImageNet-22k, ajustada em 384 px)
+#
+# ANTES DE LANÇAR: troque <AAAAMMDD-HHMM> pelo lote da rodada 3 no GitHub (branch resultados). O
+# lançamento recusa a referência com o marcador (macdeg.cluster.prepare).
+nome: gustavo
+base: configs/train/baseline.yaml
+base_mudancas:
+  augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}
+  aux_dr: 0.5
+grade: {}
+variacoes:
+  - {model: alexnet}
+  - {model: convnext_tiny.fb_in22k_ft_in1k_384}
+referencia: resultados/rodada3-<AAAAMMDD-HHMM>/rodada3-00

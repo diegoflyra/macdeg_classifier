@@ -1,0 +1,16 @@
+# Experimento 007 (Gustavo), PARTE 2 (apêndice AlexNet): inicialização padrão da saída x Xavier + viés
+# zero, com taxas separadas (1e-5 e 1e-4) e 3 convoluções congeladas. Só head_init muda.
+# Depende do 006 (taxas separadas precisam ter ganhado ou empatado).
+nome: alexnet_inicializacao
+base: configs/train/baseline.yaml
+base_mudancas:
+  augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}
+  aux_dr: 0.5
+  model: alexnet
+  freeze_first_convs: 3
+  lr: 1.0e-5
+  head_lr: 1.0e-4
+grade:
+  head_init: [null, xavier]
+variacoes: []
+referencia: null

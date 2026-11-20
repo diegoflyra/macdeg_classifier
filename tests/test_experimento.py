@@ -195,3 +195,472 @@ def test_tasks_are_split_between_two_gpus(tiny_dataset, tmp_path, monkeypatch):
     history = pd.read_csv(cluster.task_dir(batch, lote["tarefas"][0]) / "history.csv")
     assert {"train_seconds", "data_wait_seconds"} <= set(history.columns)
 
+
+def test_final_model_is_exported_locally_and_loads(tiny_dataset, tmp_path, monkeypatch):
+    """--final guarda o ensemble no lote (float16 + cartão com a origem) sem enviar nada ao HF."""
+    import macdeg.cluster as cluster
+    from macdeg.analysis import analyze
+    from macdeg.hub import load_ensemble
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": "f", "base": str(tmp_path / "base.yaml")}))
+    origin = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)
+    cluster.run_local(origin, str(tiny_dataset))
+    analyze(origin, str(tiny_dataset), push=False)
+
+    batch = cluster.prepare(None, str(tiny_dataset), test=True, final=["f-00"], from_batch=origin)
+    cluster.run_local(batch, str(tiny_dataset))
+    result = analyze(batch, str(tiny_dataset), push=False)
+    folder = batch / "modelo" / "f-00"
+    assert sorted(p.name for p in folder.glob("*.safetensors")) == [f"dobra{k}.safetensors" for k in cluster.TEST_OUTERS]
+    card = json.loads((folder / "config.json").read_text())
+    assert card["lote_de_origem"] == origin.name and card["metricas_validacao_aninhada"]["f2_media_bases"] is not None
+    assert not list((batch / "tarefas").rglob("best.pt"))                       # só ficam os float16
+    assert (batch / "analise" / "modelo_f-00.json").exists()                     # o cartão vai ao GitHub
+    assert not list((batch / "analise").rglob("*.safetensors"))                  # os pesos não
+    assert result["final"]["f-00"]["modelo"] == str(folder)
+    model = load_ensemble(str(batch), "f-00", device="cpu")
+    image = cv2.imread(str(tiny_dataset / pd.read_csv(tiny_dataset / "manifest.csv")["image"][0]))
+    assert 0.0 <= model.predict(image) <= 1.0 and model.threshold == card["limiar"]
+
+
+def test_round2_options_dr_target_oversampling_and_clahe(tiny_dataset):
+    """B, C e D: alvo de DR só nos "sem DMRI", sorteio ponderado e CLAHE com cache próprio."""
+    from macdeg import cache
+    from macdeg.train import dr_target, sample_weights
+    frame = pd.DataFrame({"label": [1, 0, 0, 0], "disease": [None, "retinopatia_diabetica|glaucoma", "glaucoma", None]})
+    assert dr_target(frame).tolist() == [-1, 1, 0, 0]          # DMRI: não se sabe se tem DR
+    assert sample_weights(frame, {"retinopatia_diabetica": 3}).tolist() == [1, 3, 1, 1]
+    assert sample_weights(frame, None) is None
+    manifest = pd.read_csv(tiny_dataset / "manifest.csv")
+    plain = cache.build(tiny_dataset, list(manifest["image"][:5]), 48)
+    equal = cache.build(tiny_dataset, list(manifest["image"][:5]), 48, preprocess="clahe")
+    assert plain[0] != equal[0]                                # caches separados
+    a, b = np.load(plain[0]), np.load(equal[0])
+    assert a.shape == b.shape and not np.array_equal(a, b)
+    with pytest.raises(ValueError):
+        cache.prepare(a[0], 48, "inexistente")
+
+
+def test_round2_variations_train_and_report_discordances(tiny_dataset, tmp_path, monkeypatch):
+    """As variações da rodada 2 treinam; a análise traz o veredito e as discordâncias por base/estágio/doença."""
+    import macdeg.cluster as cluster
+    from macdeg.analysis import analyze
+    from macdeg.hub import load_ensemble
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    manifest = pd.read_csv(tiny_dataset / "manifest.csv")
+    others = manifest["label_detail"] == "outra_doenca"
+    manifest.loc[others, "disease"] = np.where(np.arange(others.sum()) % 2, "retinopatia_diabetica", "glaucoma")
+    manifest.to_csv(tiny_dataset / "manifest.csv", index=False)
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    experiment = {"nome": "r2", "base": str(tmp_path / "base.yaml"), "grade": {}, "referencia": None, "variacoes": [
+        {"oversample": {"retinopatia_diabetica": 3}}, {"preprocess": "clahe"}, {"aux_dr": 0.5},
+        {"image_size": 96, "cache": False}]}
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump(experiment))
+    batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)
+    for c in json.loads((batch / "lote.json").read_text())["configuracoes"][1:]:
+        assert len(c["mudancas"]) >= 1                         # cada variação = a base + a sua mudança
+    cluster.run_local(batch, str(tiny_dataset))
+    result = analyze(batch, str(tiny_dataset), push=False)
+    assert result["tarefas_faltando"] == [] and result["referencia"] == "r2-00"
+    for name in ("r2-01", "r2-02", "r2-03", "r2-04"):
+        rows = result["configuracoes"][name]["discordancias"]
+        groups = {r["grupo"] for r in rows}
+        assert {"geral", "base", "doenca"} <= groups
+        geral = next(r for r in rows if r["grupo"] == "geral")
+        assert geral["dmri_so_referencia"] + geral["dmri_so_nova"] + geral["dmri_nenhuma"] <= geral["n_dmri"]
+    assert (batch / "analise" / "discordancias.csv").exists()
+    assert "Discordâncias com a referência" in (batch / "analise" / "RESUMO.md").read_text()
+
+    # o modelo com cabeça auxiliar vira um ensemble utilizável (só a saída de DMRI conta)
+    final = cluster.prepare(None, str(tiny_dataset), test=True, final=["r2-03"], from_batch=batch)
+    cluster.run_local(final, str(tiny_dataset))
+    analyze(final, str(tiny_dataset), push=False)
+    model = load_ensemble(str(final), "r2-03", device="cpu")
+    assert model.card["saidas"] == 2
+    image = cv2.imread(str(tiny_dataset / manifest["image"][0]))
+    assert 0.0 <= model.predict(image) <= 1.0
+
+
+def test_round2_experiment_file_changes_one_thing_per_variation():
+    from macdeg.ambiente import PROJECT
+    from macdeg.cluster import expand
+    experiment = yaml.safe_load((PROJECT / "configs/experimentos/002_rodada2.yaml").read_text())
+    configs = expand(experiment)
+    assert [c["nome"] for c in configs] == [f"rodada2-{i:02d}" for i in range(6)]
+    assert configs[0]["mudancas"] == {}                         # a referência retreinada
+    technical = {"cache"}                                      # não muda o conteúdo do treino
+    assert all(len(set(c["mudancas"]) - technical) == 1 for c in configs[1:])
+    assert configs[5]["config"]["image_size"] == 1024 and configs[3]["config"]["preprocess"] == "clahe"
+
+
+def test_cache_is_skipped_when_the_disk_is_full(tiny_dataset, tmp_path, monkeypatch):
+    """Disco sem espaço: o cache não é criado e o treino segue lendo os JPEGs (como no nó com /tmp cheio)."""
+    from collections import namedtuple
+    from macdeg import cache
+    from macdeg.train import run
+    Usage = namedtuple("Usage", "total used free")
+    monkeypatch.setattr(cache.shutil, "disk_usage", lambda path: Usage(10**9, 10**9, 10**6))
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    manifest = pd.read_csv(tiny_dataset / "manifest.csv")
+    assert cache.build(tiny_dataset, list(manifest["image"]), 64) is None
+    assert not list((tmp_path / "cache").glob("*.npy"))
+    config = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+              "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None, "limit": 24}
+    run(config, 0, 0, seed=0, out=tmp_path / "t")
+    assert (tmp_path / "t" / "metrics.json").exists()
+
+
+def test_job_script_avoids_the_mig_node_and_checks_disk_space():
+    from macdeg.ambiente import PROJECT
+    text = (PROJECT / "cluster" / "experimento.sh").read_text()
+    assert "--exclude=cluster-node6" in text and "df -Pk" in text and "menos de 5 GB livres" in text
+
+
+def test_two_jobs_share_a_batch_without_training_the_same_task(tiny_dataset, tmp_path, monkeypatch, capsys):
+    """Segundo job no mesmo lote (--retomar --do-fim): começa pela última tarefa, pula a que outro job marcou
+    como em andamento, retoma marca abandonada e deixa a análise para quem terminar por último."""
+    import os
+    import sys
+    import time
+    import macdeg.cluster as cluster
+    import rodar
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    monkeypatch.setattr(rodar, "RUNS", tmp_path / "runs")
+    monkeypatch.setattr(rodar, "load_dotenv", lambda *a, **k: None)
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": "d", "base": str(tmp_path / "base.yaml")}))
+    batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)
+    lote = json.loads((batch / "lote.json").read_text())
+    busy, abandoned = (cluster.task_dir(batch, t) for t in lote["tarefas"][:2])
+    for folder in (busy, abandoned):
+        folder.mkdir(parents=True)
+        (folder / "em_andamento").write_text("outro job")
+    old = time.time() - cluster.STALE_SECONDS - 60
+    os.utime(abandoned / "em_andamento", (old, old))
+
+    monkeypatch.setattr(sys, "argv", ["rodar.py", "--teste", "--retomar", str(batch), "--do-fim",
+                                      "--dados", str(tiny_dataset)])
+    rodar.main()
+    out = capsys.readouterr().out
+    order = [int(line.split()[1].split("/")[0]) for line in out.splitlines() if line.startswith("tarefa ") and "/" in line.split()[1]]
+    assert order == sorted(order, reverse=True)                       # do fim para o começo
+    assert not (busy / "metrics.json").exists() and (busy / "em_andamento").exists()   # não mexeu na do outro
+    assert (abandoned / "metrics.json").exists() and not (abandoned / "em_andamento").exists()
+    assert "a análise fica com ele" in out and not (batch / "analise").exists()
+
+    (busy / "em_andamento").unlink()                                  # o outro job termina a dele...
+    monkeypatch.setattr(sys, "argv", ["rodar.py", "--teste", "--retomar", str(batch), "--dados", str(tiny_dataset)])
+    rodar.main()                                                      # ...e, sendo o último, analisa
+    assert (batch / "analise" / "RESUMO.md").exists() and not (batch / "analise_em_andamento").exists()
+
+
+def test_round3_center_crop_alexnet_normalization_and_micro_batch(tiny_dataset, tmp_path, monkeypatch):
+    """Rodada 3: recorte central (cache próprio, mesmos pixels que o JPEG), AlexNet, normalização de cada
+    rede e micro-lote igual em qualquer GPU (o BatchNorm também)."""
+    import types
+    import torch
+    from macdeg import cache, train
+    image = np.arange(100 * 100 * 3, dtype=np.uint8).reshape(100, 100, 3)
+    assert cache.center_crop(image, 0.6).shape == (60, 60, 3)
+    assert np.array_equal(cache.center_crop(image, 0.6), image[20:80, 20:80])
+    with pytest.raises(ValueError):
+        cache.center_crop(image, 1.5)
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    manifest = pd.read_csv(tiny_dataset / "manifest.csv")
+    images = list(manifest["image"][:5])
+    plain = cache.build(tiny_dataset, images, 32)
+    cropped = cache.build(tiny_dataset, images, 32, crop=0.6)
+    assert plain[0] != cropped[0] and not np.array_equal(np.load(plain[0]), np.load(cropped[0]))
+    frame = manifest.head(5)
+    identity = lambda x: x
+    from_cache = train.FundusDataset(frame, tiny_dataset, identity, cropped, 32, None, 0.6)
+    from_jpeg = train.FundusDataset(frame, tiny_dataset, identity, None, 32, None, 0.6)
+    assert torch.equal(from_cache[2][0], from_jpeg[2][0])
+
+    alexnet = train.build_model("alexnet", pretrained=False, outputs=2)
+    assert alexnet(torch.zeros(1, 3, 64, 64)).shape == (1, 2)
+    assert train.normalization("resnet50") == (train.IMAGENET_MEAN, train.IMAGENET_STD)
+    assert train.normalization("tf_efficientnetv2_s.in21k_ft_in1k") == ((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+
+    cuda = types.SimpleNamespace(type="cuda")
+    micro = {}
+    for gb in (24, 80):
+        monkeypatch.setattr(train.torch.cuda, "get_device_properties", lambda d, g=gb: types.SimpleNamespace(total_memory=g * 1e9))
+        micro[gb] = [train.micro_batch({"batch_size": 16, "image_size": 512, "model": m}, cuda)
+                     for m in ("resnet50", "tf_efficientnet_b4.ns_jft_in1k")]
+    assert micro[24] == micro[80] == [16, 8]
+
+
+def test_stage_auroc_compares_each_stage_with_the_negatives_of_its_bases():
+    from macdeg.analysis import stage_auroc
+    preds = pd.DataFrame({"sample_id": list("abcdefg"), "source": ["h"] * 5 + ["o"] * 2,
+                          "label": [1, 1, 0, 0, 1, 1, 0], "prob": [0.9, 0.2, 0.3, 0.1, 0.8, 0.95, 0.99]})
+    manifest = pd.DataFrame({"sample_id": list("abcdefg"),
+                             "label_detail": ["precoce", "precoce", "dr", "dr", "tardia", "dmri", "normal"]})
+    out = stage_auroc(preds, manifest)
+    assert set(out) == {"precoce", "tardia"}                       # "dmri" sem estágio fica de fora
+    assert out["precoce"] == {"n": 2, "n_sem_dmri": 2, "bases": ["h"], "auroc": 0.75}
+    assert out["tardia"]["auroc"] == 1.0                          # o negativo da outra base não entra
+
+
+def test_round3_experiment_file_has_a_new_base_and_one_change_per_variation():
+    from macdeg.ambiente import PROJECT
+    from macdeg.cluster import expand
+    experiment = yaml.safe_load((PROJECT / "configs/experimentos/003_rodada3.yaml").read_text())
+    configs = expand(experiment)
+    assert [c["nome"] for c in configs] == [f"rodada3-{i:02d}" for i in range(5)]
+    assert configs[0]["mudancas"] == {}
+    assert all(len(c["mudancas"]) == 1 for c in configs[1:])
+    for c in configs:                                              # a base nova vale para todas
+        assert c["config"]["aux_dr"] == 0.5 and c["config"]["augment"]["rotate_deg"] == 15
+        assert c["config"]["image_size"] == 512
+    assert configs[4]["config"]["crop"] == 0.6 and configs[4]["config"]["model"] == "resnet50"
+
+
+def test_round3_base_changes_crop_and_alexnet_train_and_export(tiny_dataset, tmp_path, monkeypatch):
+    """base_mudancas vale para todas as configurações; recorte e AlexNet treinam; o ensemble final do
+    recorte guarda o recorte e a normalização no cartão e prevê com eles."""
+    import macdeg.cluster as cluster
+    from macdeg.analysis import analyze
+    from macdeg.hub import load_ensemble
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    experiment = {"nome": "r3", "base": str(tmp_path / "base.yaml"), "grade": {}, "referencia": None,
+                  "base_mudancas": {"aux_dr": 0.5, "augment": {"hflip": True}},
+                  "variacoes": [{"crop": 0.6}, {"model": "alexnet"}]}
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump(experiment))
+    batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)
+    configs = json.loads((batch / "lote.json").read_text())["configuracoes"]
+    assert all(c["config"]["aux_dr"] == 0.5 for c in configs) and configs[0]["mudancas"] == {}
+    cluster.run_local(batch, str(tiny_dataset))
+    result = analyze(batch, str(tiny_dataset), push=False)
+    assert result["tarefas_faltando"] == [] and set(result["configuracoes"]) == {"r3-00", "r3-01", "r3-02"}
+    assert "auroc_por_estagio" in result["configuracoes"]["r3-01"]
+
+    final = cluster.prepare(None, str(tiny_dataset), test=True, final=["r3-01"], from_batch=batch)
+    cluster.run_local(final, str(tiny_dataset))
+    analyze(final, str(tiny_dataset), push=False)
+    model = load_ensemble(str(final), "r3-01", device="cpu")
+    assert model.card["crop"] == 0.6 and model.card["normalizacao"]["media"] == [0.485, 0.456, 0.406]
+    image = cv2.imread(str(tiny_dataset / pd.read_csv(tiny_dataset / "manifest.csv")["image"][0]))
+    assert 0.0 <= model.predict(image) <= 1.0
+def test_alexnet_finetuning_runs_the_existing_training_pipeline(tiny_dataset, tmp_path, monkeypatch):
+    """Uma atualização real e inferência; seleção ImageNet com download substituído."""
+    import macdeg.models as models
+    from macdeg.train import PREDICTION_COLUMNS, run
+    weights_requested = []
+
+    def without_download(model):
+        assert model.classifier[-1].out_features == 1000
+        weights_requested.append(True)
+
+    monkeypatch.setattr(models, "load_alexnet_imagenet_weights", without_download)
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    config = {"name": "alexnet_finetuning_smoke", "dataset": str(tiny_dataset), "model": "alexnet",
+              "pretrained": True, "freeze_first_convs": 3,
+              "image_size": 128, "batch_size": 4, "epochs": 1, "max_steps": 1,
+              "limit": 24, "lr": 1e-5, "head_lr": 1e-4, "head_init": "xavier",
+              "num_workers": 0, "balance": "pos_weight", "device": "cpu",
+              "augment": None}
+    target = tmp_path / "alexnet"
+    metrics = run(config, outer=0, inner=0, seed=0, out=target)
+    assert weights_requested == [True]
+    assert metrics["epochs_run"] == 1
+    assert metrics["frozen_parameters"] > 0 and metrics["trainable_parameters"] > 0
+    history = pd.read_csv(target / "history.csv")
+    assert np.allclose(history["head_lr"] / history["lr"], 10)
+    assert np.isfinite(history["train_loss"]).all()
+    for split in ("val", "test", "extra"):
+        predictions = pd.read_csv(target / f"{split}_predictions.csv")
+        assert list(predictions.columns) == PREDICTION_COLUMNS + ["prob"]
+        assert predictions["prob"].between(0, 1).all()
+    assert not (target / "last.pt").exists() and not (target / "best.pt").exists()
+
+
+
+def test_experiment_files_have_unique_numbers_and_follow_the_flow():
+    """docs/fluxo_experimentos.md: número único por YAML; base sempre baseline.yaml (+ base_mudancas);
+    nenhuma base nova em configs/train."""
+    from macdeg.ambiente import PROJECT
+    from macdeg.cluster import expand
+    files = sorted((PROJECT / "configs/experimentos").glob("[0-9][0-9][0-9]_*.yaml"))
+    numbers = [f.name[:3] for f in files]
+    assert len(numbers) == len(set(numbers)), f"números repetidos: {numbers}"
+    assert [f.name for f in (PROJECT / "configs/train").glob("*.yaml")] == ["baseline.yaml"]
+    for f in files:
+        experiment = yaml.safe_load(f.read_text(encoding="utf-8"))
+        assert experiment["base"] == "configs/train/baseline.yaml", f.name
+        expand(experiment)                                         # todos expandem sem erro
+    gustavo = expand(yaml.safe_load((PROJECT / "configs/experimentos/004_gustavo_arquiteturas.yaml").read_text()))
+    rodada3 = expand(yaml.safe_load((PROJECT / "configs/experimentos/003_rodada3.yaml").read_text()))
+    strip = lambda c: {k: v for k, v in c["config"].items() if k != "name"}
+    assert strip(gustavo[0]) == strip(rodada3[0])                  # mesma base vigente
+    assert [c["mudancas"] for c in gustavo[1:]] == [{"model": "alexnet"}, {"model": "convnext_tiny.fb_in22k_ft_in1k_384"}]
+
+
+def test_placeholder_reference_is_refused_before_training(tiny_dataset, tmp_path, monkeypatch):
+    import macdeg.cluster as cluster
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": "m", "base": str(tmp_path / "base.yaml"),
+                                                       "referencia": "resultados/r-<AAAAMMDD-HHMM>/r-00"}))
+    with pytest.raises(SystemExit, match="marcador"):
+        cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset))
+    batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)   # --teste: vira a própria 00
+    assert json.loads((batch / "lote.json").read_text())["experimento"]["referencia"] is None
+
+
+def _tiny_experiment(tmp_path, tiny_dataset, nome: str) -> Path:
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": nome, "base": str(tmp_path / "base.yaml")}))
+    return tmp_path / "exp.yaml"
+
+
+def test_nan_scores_stop_the_task_with_a_diagnosis(tiny_dataset, tmp_path, monkeypatch):
+    """Notas NaN na validação (ex.: estouro do fp16 que contamina as médias do BatchNorm): a tarefa para com
+    um diagnóstico (pesos e médias guardadas finitos?) em vez do erro opaco do sklearn."""
+    from macdeg import train
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    original = train.predict
+
+    def corrupted(model, loader, device):        # simula o estouro: a média guardada do BatchNorm virou NaN
+        with train.torch.no_grad():
+            model.bn1.running_mean.fill_(float("nan"))
+        return original(model, loader, device)
+
+    monkeypatch.setattr(train, "predict", corrupted)
+    config = {
+        "name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+        "batch_size": 4, "epochs": 2, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None, "limit": 48}
+    out = tmp_path / "tarefa"
+    with pytest.raises(FloatingPointError, match="não finitas"):
+        train.run(config, outer=0, inner=0, seed=0, out=out)
+    diagnosis = json.loads((out / "falha_nan.json").read_text())
+    assert diagnosis["epoca"] == 0 and diagnosis["notas_nao_finitas"] == diagnosis["notas"] > 0
+    assert diagnosis["parametros_nao_finitos"] == []
+    assert "bn1.running_mean" in diagnosis["buffers_nao_finitos"]
+    assert not (out / "metrics.json").exists()
+
+
+def test_a_failing_task_does_not_stop_the_others(tiny_dataset, tmp_path, monkeypatch):
+    """Uma tarefa que falha fica registrada (falhou.txt) e o job segue com as outras; no fim, o job acusa a
+    falha (sem análise) e o --retomar repete só ela."""
+    import macdeg.cluster as cluster
+    from macdeg import train
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    batch = cluster.prepare(_tiny_experiment(tmp_path, tiny_dataset, "f"), str(tiny_dataset), test=True)
+    lote = json.loads((batch / "lote.json").read_text())
+    original = train.run
+
+    def flaky(config, outer, inner, *args, **kwargs):
+        if (outer, inner) == (0, 1):
+            raise FloatingPointError("notas não finitas")
+        return original(config, outer, inner, *args, **kwargs)
+
+    monkeypatch.setattr(train, "run", flaky)
+    with pytest.raises(SystemExit, match="tarefa"):
+        cluster.run_local(batch, str(tiny_dataset))
+    bad = next(t for t in lote["tarefas"] if (t["outer"], t["inner"]) == (0, 1))
+    folder = cluster.task_dir(batch, bad)
+    assert cluster.failed_tasks(batch, lote) == [bad["id"]]
+    assert "FloatingPointError" in (folder / "falhou.txt").read_text() and not (folder / "em_andamento").exists()
+    assert cluster.pending_tasks(batch, lote) == [bad["id"]]          # todas as outras terminaram
+
+    monkeypatch.setattr(train, "run", original)                         # --retomar: repete só a que falhou
+    cluster.run_local(batch, str(tiny_dataset))
+    assert cluster.pending_tasks(batch, lote) == [] and cluster.failed_tasks(batch, lote) == []
+    assert not (folder / "falhou.txt").exists()
+
+
+def test_drusas_folds_follow_the_patient():
+    """Drusas de um paciente do conjunto principal herdam o grupo e as dobras dele; as outras ganham grupo
+    novo (por paciente, ou por imagem sem paciente), com a dobra interna -1 na própria dobra externa."""
+    from macdeg.data.drusas import assign_folds
+    manifest = pd.DataFrame({"uid": ["m1", "m2", "m3"], "source": ["brset", "odir", "rfmid"],
+                             "patient_id": ["p1", "p2", None], "group_id": ["g1", "g2", "g3"]})
+    splits = pd.DataFrame({"uid": ["m1", "m2", "m3"], "outer": [3, 1, 0],
+                           **{f"inner_{k}": [-1 if k == o else (k + o) % 4 for o in (3, 1, 0)] for k in range(5)}})
+    extras = pd.DataFrame({"uid": ["d1", "d2", "d3", "d4", "d5"], "sample_id": [f"dru_{i}" for i in range(5)],
+                           "source": ["brset", "brset", "brset", "rfmid", "rfmid2"]})
+    links = pd.DataFrame({"uid": ["d1", "d2", "d3", "d4", "d5"], "patient_id": ["p1", "p9", "p9", None, None],
+                          "age": [70, 50, 50, None, None]})
+    folds = assign_folds(extras, links, manifest, splits).set_index("uid")
+    assert folds.loc["d1", "group_id"] == "g1"                                   # mesmo paciente: mesmo grupo
+    assert folds.loc["d1", ["outer", *[f"inner_{k}" for k in range(5)]]].tolist() == \
+        splits.set_index("uid").loc["m1", ["outer", *[f"inner_{k}" for k in range(5)]]].tolist()
+    assert folds.loc["d2", "group_id"] == folds.loc["d3", "group_id"] != "g1"    # paciente novo: um grupo só
+    assert (folds.loc["d2"] == folds.loc["d3"]).drop(["sample_id"]).all()
+    assert folds.loc["d4", "group_id"] != folds.loc["d5", "group_id"]           # sem paciente: grupo por imagem
+    for uid, row in folds.iterrows():
+        assert row[f"inner_{row['outer']}"] == -1
+        assert all(0 <= row[f"inner_{k}"] <= 3 for k in range(5) if k != row["outer"])
+    assert folds["age"].tolist()[:1] == [70]
+
+
+def test_drusas_target_only_where_drusen_status_is_known():
+    from macdeg.train import drusas_target
+    frame = pd.DataFrame({"label": [1, 0, 0, 0, -1], "source": ["brset", "brset", "hyamd", "rfmid2", "brset"],
+                          "kind": ["dmri", "normal", "normal", "outra", "drusas"]})
+    assert drusas_target(frame).tolist() == [-1, 0, -1, 0, 1]
+
+
+def test_aux_drusas_trains_on_drusas_only_through_the_auxiliary_output(tiny_dataset, tmp_path, monkeypatch):
+    """Com aux_drusas, as drusas das dobras de treino entram só na saída de drusas; as do teste externo são
+    pontuadas pelas duas saídas; a análise traz as notas das drusas por faixa etária."""
+    from macdeg import train
+    from macdeg.analysis import drusas_by_age
+    from macdeg.data.drusas import FOLDS_FILE, assign_folds
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    manifest = pd.read_csv(tiny_dataset / "manifest.csv", dtype={"uid": str})
+    splits = pd.read_csv(tiny_dataset / "splits_nested_seed0.csv", dtype={"uid": str})
+    extras = pd.read_csv(tiny_dataset / "extras_drusas.csv", dtype={"uid": str})
+    links = extras[["uid"]].assign(patient_id=[f"p{i}" for i in range(len(extras))], age=np.arange(len(extras)) * 6 + 45)
+    folds = assign_folds(extras, links, manifest, splits)
+    folds.to_csv(tiny_dataset / FOLDS_FILE, index=False)
+
+    config = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+              "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None,
+              "aux_dr": 0.5, "aux_drusas": 0.5}
+    tr, val, test, extra, _ = train.split_frames(config, 0, 1, 0)
+    in_train = folds[(folds["outer"] != 0) & (folds["inner_0"] != 1)]
+    assert (tr["label"] == -1).sum() == len(in_train) and (val["label"] >= 0).all()
+    assert sorted(extra["sample_id"]) == sorted(folds.loc[folds["outer"] == 0, "sample_id"])
+    assert train.outputs_for(config) == 3 and train.drusas_output(config) == 2
+
+    out = tmp_path / "tarefa"
+    metrics = train.run(config, 0, 1, 0, out)
+    assert metrics is not None
+    scored = pd.read_csv(out / "extra_predictions.csv")
+    assert set(scored["sample_id"]) == set(extra["sample_id"]) and scored["prob_drusas"].between(0, 1).all()
+
+    rows = drusas_by_age(scored, folds[["sample_id", "age"]], 0.5)
+    assert sum(r["n"] for r in rows) == len(scored) and all("mediana_nota_drusas" in r for r in rows)
+
+    plain = {k: v for k, v in config.items() if k != "aux_drusas"}
+    _, _, _, extra_plain, _ = train.split_frames(plain, 0, 1, 0)
+    assert len(extra_plain) == len(extras)                      # sem aux_drusas: como antes, todas pontuadas

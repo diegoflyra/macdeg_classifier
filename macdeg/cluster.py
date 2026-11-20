@@ -7,6 +7,8 @@ Um experimento (configs/experimentos/*.yaml) vira um LOTE em $MACDEG_RUNS/<nome>
   logs/           saída e erros do job do SLURM
   analise/        o que vai para o GitHub (macdeg.analysis)
 Cada tarefa = (configuração, dobra externa, dobra interna). Tarefa concluída nunca roda de novo.
+Vários jobs podem dividir um lote (--retomar, um deles --do-fim): cada tarefa em andamento tem um arquivo
+`em_andamento` na sua pasta, e os outros jobs a pulam. A análise roda no job que terminar por último.
 Quem lança: rodar.py (no cluster, dentro de cluster/experimento.sh).
 """
 from __future__ import annotations
@@ -20,6 +22,7 @@ import os
 import subprocess
 import tarfile
 import time
+import traceback
 from pathlib import Path
 
 import pandas as pd
@@ -34,6 +37,11 @@ RUNS = Path(os.environ.get("MACDEG_RUNS", "~/macdeg_runs")).expanduser()
 # Modo de teste: valida o encadeamento inteiro em minutos. Os números não servem como resultado.
 TEST_OVERRIDES = {"limit": 48, "epochs": 1, "max_steps": 2, "image_size": 128, "num_workers": 0, "patience": 1}
 TEST_OUTERS = [0, 1]
+# Uma tarefa "em andamento" cuja pasta não muda há tanto tempo foi largada (job morto) e pode ser retomada.
+# O last.pt é regravado a cada época (~2 min em 512 px, ~8 min em 1024 px).
+STALE_SECONDS = 45 * 60
+# Marca de tarefa que deu erro (com o fim do traceback). Some quando a tarefa é refeita com sucesso.
+FAILED = "falhou.txt"
 # Apuana (sinfo de 2026-11): short-simple = todos os nós e GPUs, até 2 dias, prioridade mais alta, sem
 # preempção. O QoS precisa acompanhar a partição (simple ou complex).
 def _set(config: dict, key: str, value) -> None:
@@ -45,8 +53,12 @@ def _set(config: dict, key: str, value) -> None:
 
 def expand(experiment: dict) -> list[dict]:
     """Configurações do experimento: a base, cada combinação da grade e cada variação avulsa.
-    Nomes: <nome>-00, <nome>-01, ... na ordem (a 00 é a base com a primeira combinação)."""
+    Nomes: <nome>-00, <nome>-01, ... na ordem (a 00 é a base com a primeira combinação).
+    `base_mudancas`: o que já foi incorporado à base (ex.: as melhorias da rodada anterior); vale para
+    todas as configurações e não conta como mudança da variação."""
     base = load_config(PROJECT / experiment["base"], [])
+    for key, value in (experiment.get("base_mudancas") or {}).items():
+        _set(base, key, value)
     grid = experiment.get("grade") or {}
     combos = [dict(zip(grid, values)) for values in itertools.product(*grid.values())] or [{}]
     combos += [dict(v) for v in experiment.get("variacoes") or []]
@@ -93,6 +105,11 @@ def prepare(experiment_path: Path, dataset: str | None = None, test: bool = Fals
         name, experiment = source["nome"] + "-final", source["experimento"]
     else:
         experiment = yaml.safe_load(Path(experiment_path).read_text(encoding="utf-8"))
+        if "<" in str(experiment.get("referencia") or ""):     # marcador ainda não preenchido no YAML
+            if not test:
+                raise SystemExit(f"A referência ainda tem o marcador: {experiment['referencia']}. Troque pelo lote "
+                                 "real (branch resultados do GitHub) antes de lançar.")
+            experiment = {**experiment, "referencia": None}    # --teste: compara com a própria 00
         configs, name = expand(experiment), experiment["nome"]
     if pilot:
         name = "piloto-" + name
@@ -124,12 +141,38 @@ def task_dir(batch: Path, task: dict) -> Path:
     return batch / "tarefas" / task["configuracao"] / f"outer{task['outer']}_{inner}"
 
 
+def _claim(out: Path) -> bool:
+    """Marca a tarefa como em andamento neste job. Falso se outro job está nela (marca recente)."""
+    out.mkdir(parents=True, exist_ok=True)
+    marker = out / "em_andamento"
+    who = f"job {os.environ.get('SLURM_JOB_ID', '-')} | {os.uname().nodename} | pid {os.getpid()}\n"
+    try:
+        fd = os.open(marker, os.O_CREAT | os.O_EXCL | os.O_WRONLY)   # atômico: só um job ganha
+    except FileExistsError:
+        last = max(p.stat().st_mtime for p in [marker, *out.glob("last.pt")] if p.exists())
+        if time.time() - last < STALE_SECONDS:
+            return False
+        print(f"{out.name}: marca de outro job parada há {(time.time() - last) / 60:.0f} min; retomando", flush=True)
+        marker.write_text(who)
+        return True
+    with os.fdopen(fd, "w") as f:
+        f.write(who)
+    return True
+
+
+def pending_tasks(batch: Path, lote: dict | None = None) -> list[int]:
+    """Tarefas sem metrics.json (inclui as que estão em andamento em outro job)."""
+    lote = lote or json.loads((Path(batch) / "lote.json").read_text(encoding="utf-8"))
+    return [t["id"] for t in lote["tarefas"] if not (task_dir(Path(batch), t) / "metrics.json").exists()]
+
+
 def run_task(batch: Path, task_id: int, dataset: str | None = None, wandb_mode: str | None = None) -> dict | None:
-    """Executa uma tarefa do lote. Confere a assinatura dos dados."""
-    from macdeg.train import run
+    """Executa uma tarefa do lote. Confere a assinatura dos dados. Pula se já concluída ou se outro job
+    está nela."""
     batch = Path(batch)
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
     task = lote["tarefas"][task_id]
+    out = task_dir(batch, task)
     config = copy.deepcopy(next(c for c in lote["configuracoes"] if c["nome"] == task["configuracao"])["config"])
     if dataset:
         config["dataset"] = str(dataset)
@@ -138,7 +181,45 @@ def run_task(batch: Path, task_id: int, dataset: str | None = None, wandb_mode: 
     if signature != lote["assinatura_dados"]:
         raise SystemExit(f"O conjunto mudou desde o lançamento ({signature} != {lote['assinatura_dados']}): "
                          "os resultados não seriam comparáveis. Relance o experimento.")
-    out = task_dir(batch, task)
+    if (out / "metrics.json").exists():
+        return None
+    if not _claim(out):
+        print(f"tarefa {task_id + 1}: em andamento em outro job, pulando", flush=True)
+        return None
+    try:
+        result = _run_claimed(lote, task, config, out, wandb_mode)
+        (out / FAILED).unlink(missing_ok=True)
+        return result
+    except Exception:
+        (out / FAILED).write_text(traceback.format_exc()[-5000:], encoding="utf-8")
+        raise
+    finally:
+        (out / "em_andamento").unlink(missing_ok=True)
+
+
+def failed_tasks(batch: Path, lote: dict | None = None) -> list[int]:
+    """Tarefas que falharam (falhou.txt) e ainda não foram refeitas nem estão em andamento."""
+    lote = lote or json.loads((Path(batch) / "lote.json").read_text(encoding="utf-8"))
+    return [t["id"] for t in lote["tarefas"]
+            if (task_dir(Path(batch), t) / FAILED).exists() and not (task_dir(Path(batch), t) / "metrics.json").exists()
+            and not (task_dir(Path(batch), t) / "em_andamento").exists()]
+
+
+def _run_guarded(batch: Path, task_id: int, total: int, dataset: str | None, wandb_mode: str | None) -> bool:
+    """Roda uma tarefa; se ela der erro, registra e devolve False em vez de derrubar o job (as outras
+    tarefas seguem). Erros que valem para o lote inteiro (SystemExit, ex.: assinatura dos dados) param tudo."""
+    try:
+        run_task(batch, task_id, dataset, wandb_mode)
+        return True
+    except Exception:
+        traceback.print_exc()
+        print(f"tarefa {task_id + 1}/{total} FALHOU (detalhes no .err e em falhou.txt); seguindo para a próxima",
+              flush=True)
+        return False
+
+
+def _run_claimed(lote: dict, task: dict, config: dict, out: Path, wandb_mode: str | None):
+    from macdeg.train import run
     log = on_model = finish = None
     if wandb_mode != "disabled":
         log, on_model, finish = _wandb(lote, task, config, out, wandb_mode)
@@ -187,20 +268,27 @@ def visible_gpus() -> list[str]:
 
 
 def run_local(batch: Path, dataset: str | None = None, wandb_mode: str | None = "disabled",
-              gpus: list[str] | None = None) -> None:
+              gpus: list[str] | None = None, from_end: bool = False) -> None:
     """Roda as tarefas do lote. Com uma GPU (ou nenhuma), uma por vez neste processo. Com várias, um
     processo por GPU, cada um pegando a próxima tarefa livre de uma fila comum. Tarefas já concluídas são
     puladas; uma tarefa interrompida continua do last.pt. O resultado de cada tarefa não depende da GPU
-    (lote efetivo fixo), então dividir as tarefas entre GPUs não muda os números."""
+    (lote efetivo fixo), então dividir as tarefas entre GPUs não muda os números. `from_end`: começa pela
+    última tarefa (um segundo job no mesmo lote, para os dois se encontrarem no meio)."""
     batch = Path(batch)
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
     total = len(lote["tarefas"])
-    pending = [t["id"] for t in lote["tarefas"] if not (task_dir(batch, t) / "metrics.json").exists()]
+    pending = pending_tasks(batch, lote)
+    if from_end:
+        pending.reverse()
     gpus = visible_gpus() if gpus is None else gpus
     if len(gpus) <= 1 or len(pending) <= 1:
-        for task in lote["tarefas"]:
-            print(f"tarefa {task['id'] + 1}/{total}: {task}", flush=True)
-            run_task(batch, task["id"], dataset, wandb_mode)
+        failed = []
+        for task_id in pending:
+            print(f"tarefa {task_id + 1}/{total}: {lote['tarefas'][task_id]}", flush=True)
+            if not _run_guarded(batch, task_id, total, dataset, wandb_mode):
+                failed.append(task_id + 1)
+        if failed:
+            raise SystemExit(f"tarefa(s) {failed} falharam; veja o .err e falhou.txt. Depois: --retomar {batch}")
         return
 
     import multiprocessing as mp
@@ -250,6 +338,9 @@ def _gpu_worker(batch: str, dataset: str | None, wandb_mode: str | None, gpu: st
     import torch
     torch.set_num_threads(threads)
     lote = json.loads((Path(batch) / "lote.json").read_text(encoding="utf-8"))
+    failed = False
     while (task_id := queue.get()) is not None:
         print(f"tarefa {task_id + 1}/{total}: {lote['tarefas'][task_id]}", flush=True)
-        run_task(Path(batch), task_id, dataset, wandb_mode)
+        failed |= not _run_guarded(Path(batch), task_id, total, dataset, wandb_mode)
+    if failed:   # o processo principal vê o código de saída e acusa a falha no fim
+        sys.exit(1)

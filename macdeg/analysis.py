@@ -97,6 +97,91 @@ def score_distribution(predictions: pd.DataFrame, extra: pd.DataFrame | None) ->
     return pd.DataFrame(rows)
 
 
+AGE_BANDS = [0, 55, 65, 75, 200]
+AGE_LABELS = ["ate_55", "56_65", "66_75", "acima_75"]
+
+
+def drusas_by_age(extra: pd.DataFrame | None, ages: pd.DataFrame | None, threshold: float) -> list[dict]:
+    """Notas das drusas sem diagnóstico por faixa etária (só agregados). A idade entra só aqui, na leitura,
+    nunca no treino. Com aux_drusas, também a nota da saída de drusas (prob_drusas)."""
+    if extra is None or not len(extra) or ages is None:
+        return []
+    columns = [c for c in ("prob", "prob_drusas") if c in extra]
+    table = extra.groupby("sample_id", as_index=False)[columns].mean().merge(ages, on="sample_id", how="left")
+    band = pd.cut(table["age"], AGE_BANDS, labels=AGE_LABELS).astype(object).where(table["age"].notna(), "sem_idade")
+    rows = []
+    for name in [*AGE_LABELS, "sem_idade"]:
+        part = table[band == name]
+        if not len(part):
+            continue
+        row = {"faixa": name, "n": len(part), "mediana_nota_dmri": round(float(part["prob"].median()), 4),
+               "acima_do_limiar_dmri": round(float((part["prob"] >= threshold).mean()), 4)}
+        if "prob_drusas" in part:
+            row["mediana_nota_drusas"] = round(float(part["prob_drusas"].median()), 4)
+        rows.append(row)
+    return rows
+
+
+def _load_drusas_ages(dataset: str | None, lote: dict) -> pd.DataFrame | None:
+    from macdeg.data.drusas import FOLDS_FILE
+    try:
+        root = resolve(dataset or lote["configuracoes"][0]["config"]["dataset"])
+        return pd.read_csv(root / FOLDS_FILE, usecols=["sample_id", "age"])
+    except (FileNotFoundError, ValueError):
+        return None
+
+
+def stage_auroc(predictions: pd.DataFrame, manifest: pd.DataFrame | None) -> dict:
+    """AUROC de cada estágio de DMRI contra os "sem DMRI" das mesmas bases (só os estágios informados;
+    hoje, só o HYAMD estadia, e os "sem DMRI" dele são todos olhos com DR: é a separação precoce x DR)."""
+    if manifest is None or "label_detail" not in manifest:
+        return {}
+    detail = manifest.drop_duplicates("sample_id").set_index("sample_id")["label_detail"]
+    table = predictions.assign(estagio=predictions["sample_id"].map(detail))
+    out = {}
+    for stage, positives in table[(table["label"] == 1) & (table["estagio"] != "dmri")].groupby("estagio"):
+        sources = sorted(positives["source"].unique())
+        negatives = table[(table["label"] == 0) & table["source"].isin(sources)]
+        both = pd.concat([positives, negatives])
+        out[stage] = {"n": len(positives), "n_sem_dmri": len(negatives), "bases": sources,
+                      "auroc": auroc(both["label"], both["prob"])}
+    return out
+
+
+def discordances(reference: pd.DataFrame, candidate: pd.DataFrame, manifest: pd.DataFrame | None) -> list[dict]:
+    """Onde a configuração e a referência discordam, imagem a imagem (mesmas imagens, cada uma com o seu
+    limiar escolhido fora da dobra). Responde "que diagnósticos se ganham ou se perdem com a mudança?":
+    - DMRI: detectada só pela referência (perdida com a mudança), só pela nova (ganha) ou por nenhuma;
+    - sem DMRI: falso positivo só da referência (corrigido) ou só da nova (criado).
+    Por base, por estágio da DMRI (quando a base informa, ex.: HYAMD precoce x intermediária/tardia) e,
+    nos "sem DMRI", por doença. Só contagens."""
+    joined = reference[["sample_id", "source", "label", "kind", "disease_group", "pred"]].merge(
+        candidate[["sample_id", "pred"]], on="sample_id", suffixes=("_ref", "_nova"), validate="one_to_one")
+    if manifest is not None and "label_detail" in manifest:
+        joined["estagio"] = joined["sample_id"].map(manifest.drop_duplicates("sample_id").set_index("sample_id")["label_detail"])
+    rows = []
+
+    def add(group: str, value: str, part: pd.DataFrame) -> None:
+        dmri, negative = part[part["label"] == 1], part[part["label"] == 0]
+        ref, new = dmri["pred_ref"] == 1, dmri["pred_nova"] == 1
+        fp_ref, fp_new = negative["pred_ref"] == 1, negative["pred_nova"] == 1
+        rows.append({"grupo": group, "valor": value, "n_dmri": len(dmri), "dmri_so_referencia": int((ref & ~new).sum()),
+                     "dmri_so_nova": int((~ref & new).sum()), "dmri_nenhuma": int((~ref & ~new).sum()),
+                     "n_sem_dmri": len(negative), "falso_positivo_so_referencia": int((fp_ref & ~fp_new).sum()),
+                     "falso_positivo_so_nova": int((~fp_ref & fp_new).sum())})
+
+    add("geral", "todas", joined)
+    for name, part in joined.groupby(family(joined["source"])):
+        add("base", name, part)
+    if "estagio" in joined:
+        for name, part in joined[joined["label"] == 1].groupby(joined["estagio"].fillna("?")):
+            add("estagio_dmri", name, part)
+    negatives = joined[joined["label"] == 0]
+    for name, part in negatives.groupby(negatives["disease_group"].fillna("normal")):
+        add("doenca", name, part)
+    return rows
+
+
 def _load_manifest(dataset: str | None, lote: dict) -> pd.DataFrame | None:
     try:
         root = resolve(dataset or lote["configuracoes"][0]["config"]["dataset"])
@@ -129,16 +214,18 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
     out.mkdir()
     runs, missing = collect(batch, lote)
     manifest = _load_manifest(dataset, lote)
+    drusas_ages = _load_drusas_ages(dataset, lote)
     result = {"lote": lote["nome"], "commit": lote["commit"], "assinatura_dados": lote["assinatura_dados"],
               "teste": lote["teste"], "piloto": lote.get("piloto", False), "tarefas_faltando": missing, "analisado": time.strftime("%Y-%m-%d %H:%M"),
               "configuracoes": {}}
     if lote["final"]:
         result["final"] = {name: final_threshold(r) for name, r in runs.items()}
+        from macdeg.hub import export_final    # pesos ficam no cluster; o HF é manual (python -m macdeg.hub)
+        for name in runs:
+            folder = export_final(batch, name, result["final"][name])
+            result["final"][name]["modelo"] = str(folder)
+            shutil.copy(folder / "config.json", out / f"modelo_{name}.json")   # cartão, sem pesos, vai ao GitHub
         _write(out, lote, result, None, None)
-        if secret("HF_TOKEN") and not lote["teste"]:
-            from macdeg.hub import upload_final
-            for name in runs:
-                result["final"][name]["hugging_face"] = upload_final(batch, name, result["final"][name])
         return _publish(batch, out, lote, result, push)
 
     outer, selection, histories = {}, {}, []
@@ -153,12 +240,16 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
         changes = next(c["mudancas"] for c in lote["configuracoes"] if c["nome"] == name)
         result["configuracoes"][name] = {"mudancas": changes, "dobras_externas": sorted(complete),
                                          **report(outer[name]), **rulers(outer[name], manifest),
+                                         "auroc_por_estagio": stage_auroc(outer[name], manifest),
                                          "nota_selecao_por_dobra": selection[name],
                                          "epocas_melhores": [r["metrics"]["best_epoch"] for r in usable.values()],
                                          "gpus": sorted({r["metrics"]["gpu"] for r in usable.values()})}
         dist = score_distribution(outer[name], extra if len(extra) else None)
         dist.insert(0, "configuracao", name)
         result["configuracoes"][name]["distribuicao_notas"] = dist.drop(columns="configuracao").to_dict("records")
+        by_age = drusas_by_age(extra if len(extra) else None, drusas_ages, float(outer[name]["threshold"].median()))
+        if by_age:
+            result["configuracoes"][name]["drusas_por_idade"] = by_age
         for (k, j), r in usable.items():
             if r["history"] is not None:
                 histories.append(r["history"].assign(configuracao=name, outer=k, inner=j))
@@ -170,6 +261,7 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
     for name, preds in outer.items():
         if reference is not None and name != reference_name:
             result["configuracoes"][name]["veredito"] = paired_verdict(reference, preds)
+            result["configuracoes"][name]["discordancias"] = discordances(reference, preds, manifest)
 
     if len(outer) > 1:  # resultado aninhado: em cada dobra externa, a melhor configuração pela validação interna
         folds = sorted(set.intersection(*[set(s) for s in selection.values()]))
@@ -209,6 +301,9 @@ def _write(out: Path, lote: dict, result: dict, outer: dict | None, histories: l
         for name, preds in outer.items():
             preds.to_csv(out / f"previsoes_externas_{name}.csv", index=False)
         ranking(result).to_csv(out / "ranking.csv", index=False)
+        rows = [{"configuracao": n, **d} for n, r in result["configuracoes"].items() for d in r.get("discordancias", [])]
+        if rows:
+            pd.DataFrame(rows).to_csv(out / "discordancias.csv", index=False)
     if histories:
         pd.concat(histories, ignore_index=True).to_csv(out / "historico.csv", index=False)
     (out / "RESUMO.md").write_text(summary_markdown(result), encoding="utf-8")
@@ -231,7 +326,8 @@ def summary_markdown(result: dict) -> str:
         lines += ["", "## Treino final", ""]
         for name, f in result["final"].items():
             lines.append(f"- {name}: limiar {f['limiar']:.4f}, F2 médio por base fora da dobra "
-                         f"{_fmt(f['f2_media_bases_fora_da_dobra'])}")
+                         f"{_fmt(f['f2_media_bases_fora_da_dobra'])}; pesos em `{f.get('modelo', '—')}` "
+                         f"(cartão: `modelo_{name}.json`; publicar: `python -m macdeg.hub publicar <lote> {name}`)")
         return "\n".join(lines) + "\n"
     lines += ["", f"Referência: `{result.get('referencia')}`", "",
               "| configuração | mudanças | F2 médio por base [IC95] | AUROC | sens. | esp. normais | esp. outras | régua origem | veredito |",
@@ -254,6 +350,19 @@ def summary_markdown(result: dict) -> str:
                   "| tipo | n | p10 | p50 | p90 | acima do limiar |", "|---|---|---|---|---|---|"]
         for d in r["distribuicao_notas"]:
             lines.append(f"| {d['tipo']} | {d['n']} | {d['p10']} | {d['p50']} | {d['p90']} | {d['acima_do_limiar']} |")
+        if r.get("discordancias"):
+            lines += ["", "Discordâncias com a referência (mesmas imagens). DMRI: só a referência detectou (perdida) / "
+                      "só esta detectou (ganha); sem DMRI: falso positivo só da referência (corrigido) / só desta (criado):",
+                      "", "| grupo | valor | DMRI | perdidas | ganhas | nenhuma detectou | sem DMRI | FP corrigidos | FP criados |",
+                      "|---|---|---|---|---|---|---|---|---|"]
+            for d in r["discordancias"]:
+                lines.append(f"| {d['grupo']} | {d['valor']} | {d['n_dmri']} | {d['dmri_so_referencia']} | {d['dmri_so_nova']} "
+                             f"| {d['dmri_nenhuma']} | {d['n_sem_dmri']} | {d['falso_positivo_so_referencia']} "
+                             f"| {d['falso_positivo_so_nova']} |")
+        if r.get("auroc_por_estagio"):
+            lines += ["", "AUROC por estágio de DMRI, contra os sem DMRI das mesmas bases: " + ", ".join(
+                f"{s} {v['auroc']:.3f} (n={v['n']} x {v['n_sem_dmri']}, {'/'.join(v['bases'])})"
+                for s, v in r["auroc_por_estagio"].items() if v["auroc"] is not None)]
         if r.get("especificidade_por_doenca"):
             lines += ["", "Especificidade por doença: " + ", ".join(
                 f"{g} {v['especificidade']:.2f} (n={v['n']})" for g, v in r["especificidade_por_doenca"].items())]

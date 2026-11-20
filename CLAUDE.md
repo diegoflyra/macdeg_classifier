@@ -25,8 +25,11 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 - Tarefa binária: **DMRI (1) × sem DMRI (0)**. "Sem DMRI" = olhos normais + outras doenças (no máximo 1/3,
   cotas iguais por doença; HYAMD e ADAM com ao menos tantos "sem DMRI" quanto DMRI). Regras em
   `configs/sources.yaml` (`selection`) e `macdeg/data/select.py`.
-- Ficam fora: qualidade insuficiente e drusas sem diagnóstico de DMRI. Estas últimas só são pontuadas
-  (`extras_drusas.csv`) para a análise da distribuição das notas.
+- Ficam fora: qualidade insuficiente e drusas sem diagnóstico de DMRI. Estas últimas são pontuadas
+  (`extras_drusas.csv`) para a análise da distribuição das notas e, com `aux_drusas` (decisão dos donos,
+  19/11/2026), treinam **só** a saída auxiliar de drusas, nunca a tarefa principal nem a avaliação
+  (dobras por paciente em `drusas_dobras.csv`, `macdeg/data/drusas.py`).
+- **Idade nunca entra na rede** (atalho "velho = DMRI"; `docs/decisoes.md`). Só nas réguas e nas análises.
 - Bases: HYAMD, BRSET, ODIR, RFMiD, RFMiD 2.0, ADAM. O ADAM precisa continuar **desligável** (`sources`
   na configuração). Publicação científica com ele exige aprovação dos organizadores.
 - Cópias: exatas por SHA1; quase cópias por dhash + correlação de detalhes ≥ 0,95 (`macdeg/data/build.py`).
@@ -53,10 +56,14 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 
 ## 4. Como fazer um experimento
 
-**Obrigatório: `docs/fluxo_experimentos.md`** (experimentos só na `experimentos-002` ou em branches que saem dela). Ambiente de quem entra: `docs/novo_membro.md`.
+**Obrigatório: `docs/fluxo_experimentos.md`** (branches, base vigente, uma mudança por vez, numeração
+dos YAMLs). Tarefa que não caiba nele: pare e pergunte aos donos.
 
 - **Mude uma coisa por vez** em relação à referência. Crie um YAML novo em `configs/experimentos/`
   (`base`, `grade`, `variacoes`, `referencia: resultados/<lote>/<configuração>`). Veja `exemplo_grade.yaml`.
+- **Fluxo por rodadas:** o que ganhou numa rodada entra na base da seguinte (`base_mudancas` no YAML, que
+  vale para todas as configurações); cada variação muda uma coisa sobre essa base. Hiperparâmetros fixos
+  até o fim; o ajuste fino é a última rodada.
 - **Não edite** `configs/train/baseline.yaml` nem um YAML de experimento já lançado: crie outro. A
   referência atual é `001_referencia.yaml` (ResNet-50 ImageNet, 512 px, sem aumento de dados).
 - Opções novas de treino entram como **chave de configuração com padrão que mantém o comportamento
@@ -77,8 +84,9 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
     disease_group, prob. **Nunca** uid, path ou nome de arquivo.
   - Lote: `lote.json`, `tarefas/<configuração>/outer<k>_inner<j>|final/`, `logs/`,
     `analise/`. `macdeg.train.run(config, outer, inner, seed, out, log, on_model)`.
-- Lote efetivo fixo (`batch_size`), com acumulação de gradientes conforme a GPU (`micro_batch`): o
-  resultado não pode depender da GPU sorteada.
+- Lote efetivo fixo (`batch_size`), com acumulação de gradientes (`micro_batch`). O micro-lote é calculado
+  para a menor GPU do cluster (24 GB) e a arquitetura, nunca para a GPU sorteada: assim o BatchNorm (médias
+  dentro do micro-lote) e o resultado não dependem da GPU.
 - Pesos: `last.pt` é apagado ao fim da tarefa; `best.pt` só fica no treino final (cota do `$HOME`).
 
 ## 6. Cluster, serviços e Git
@@ -91,7 +99,8 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 - **GitHub:** a branch órfã `resultados` é escrita **só pelo pipeline** (`macdeg.ambiente.push_results`).
   Não faça commits manuais nela. Trabalho de código em branches próprias, com PR para `main`.
 - **Hugging Face:** repositório **privado** `macdeg_classifier` (tipo model), só modelos finais de poucas
-  configurações (`macdeg/hub.py`, `docs/huggingface.md`). Torná-lo público é decisão dos donos.
+  configurações, enviados à mão (`python -m macdeg.hub publicar`); o `--final` só exporta para o lote
+  (`macdeg/hub.py`, `docs/huggingface.md`). Torná-lo público é decisão dos donos.
 - Notebooks entram na `main` sem saídas (filtro `scripts/nb_clean`). Na branch `resultados` vão os logs
   (texto) de cada lote, nunca imagens.
 - Não faça commit, push ou PR a menos que a pessoa responsável peça.

@@ -50,6 +50,13 @@ Treino no cluster Apuana: ver [`docs/cluster.md`](docs/cluster.md). Cada experim
 `configs/experimentos/` (configuração base + grade de variações) e roda como job array; a análise
 envia `resultados/<lote>/` para a branch `resultados`. No cluster: `sbatch cluster/experimento.sh`.
 
+AlexNet para DMRI: [`docs/alexnet.md`](docs/alexnet.md) explica o fine-tuning com pesos ImageNet,
+as três primeiras convoluções congeladas e as camadas profundas treináveis. A arquitetura está escrita
+camada por camada em `macdeg/models.py`; só os pesos pré-treinados são carregados do checkpoint oficial.
+Comparação com as outras arquiteturas: `004_gustavo_arquiteturas.yaml`; estudo próprio (congelamento,
+taxas, inicialização): `005`–`007_alexnet_*.yaml`. Como montar experimentos:
+[`docs/fluxo_experimentos.md`](docs/fluxo_experimentos.md).
+
 Avaliação:
 - métrica principal: **média do F2 dentro de cada base**, com o limiar sempre escolhido em outras dobras;
 - também: AUROC, AUPRC, sensibilidade, especificidade em normais, em outras doenças e por doença;
@@ -58,6 +65,8 @@ Avaliação:
 - distribuição das notas de normais, outras doenças, drusas sem diagnóstico e DMRI.
 
 Proposta atualizada: [`docs/proposta.md`](docs/proposta.md). Decisões e motivos: [`docs/decisoes.md`](docs/decisoes.md).
+Tudo o que foi treinado (lote, commit do código, configuração, resultados, custo):
+[`docs/experimentos.md`](docs/experimentos.md), gerado por `python -m macdeg.catalogo`.
 
 Modelos finais (ensemble das 5 dobras) vão, privados, para o Hugging Face: ver [`docs/huggingface.md`](docs/huggingface.md).
 Nada de imagens ou dados de paciente sai do computador ou do cluster: W&B só recebe números, o GitHub
@@ -95,8 +104,11 @@ configs/train/             Configuração de treino da referência
 configs/experimentos/      Experimentos (configuração base + grade de variações)
 configs/variants.yaml      Variantes do pré-processamento por ROI (suspenso)
 macdeg/
-  data/                    Leitores das bases, sorteio, cópias, divisões aninhadas, empacotamento
-  train.py                 Treino de uma dobra (ResNet e afins)
+  data/                    Leitores das bases, sorteio, cópias, divisões aninhadas, empacotamento,
+                           dobras das drusas (drusas.py)
+  train.py                 Treino de uma dobra (torchvision, timm e a AlexNet de models.py; saídas auxiliares)
+  models.py                AlexNet escrita camada por camada
+  catalogo.py              Gera docs/experimentos.md a partir da branch resultados
   metrics.py               F2 por base, limiar em outras dobras, IC por paciente, veredito pareado
   cluster.py               Lança experimentos no SLURM (Apuana) ou localmente
   analysis.py              Junta as dobras, réguas, ranking, resumo; envia ao GitHub e ao W&B

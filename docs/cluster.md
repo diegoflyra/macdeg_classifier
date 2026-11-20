@@ -86,6 +86,11 @@ começa com `[gpu0]` ou `[gpu1]`. Com `--gres=gpu:1` antes do script, roda uma t
 
 - **Se o job estourar o tempo** (2 dias na `short-simple`) ou cair: `sbatch cluster/experimento.sh --retomar
   ~/macdeg_runs/<lote>`. Tarefas prontas são puladas e a interrompida continua do `last.pt`.
+- **Dois jobs de 1 GPU no mesmo lote** (quando o de 2 GPUs fica na fila): o segundo com
+  `sbatch --gres=gpu:1 cluster/experimento.sh --retomar ~/macdeg_runs/<lote> --do-fim`. Ele começa pela última
+  tarefa; cada tarefa em andamento tem um arquivo `em_andamento` e o outro job a pula (marca parada há mais
+  de 45 min = job morto, e a tarefa é retomada). A análise roda no job que terminar por último. Só jobs
+  lançados a partir deste código respeitam a marca: um job antigo no mesmo lote não a vê.
 - **Outra fila:** as opções do `sbatch` vêm antes do script, ex.: `sbatch -p long-simple cluster/experimento.sh`.
 - **Sem cluster:** `python rodar.py --teste` roda o mesmo no computador.
 
@@ -107,12 +112,16 @@ começa com `[gpu0]` ou `[gpu1]`. Com `--gres=gpu:1` antes do script, roda uma t
 - **Dados no disco do nó:** o zip é descompactado no `/tmp` do nó (NVMe) e apagado no fim, mesmo se o job
   falhar ou for cancelado.
 - **Assinatura dos dados e commit** ficam no `lote.json`; o código do commit é copiado para `codigo/`.
-- **Lote efetivo fixo (16):** em GPU com pouca memória (fatia MIG), o treino acumula gradientes; o
-  resultado não depende da GPU.
+- **Lote efetivo fixo (16):** o treino acumula gradientes em micro-lotes calculados para a menor GPU do
+  cluster (24 GB) e a arquitetura; o micro-lote, o BatchNorm e o resultado não dependem da GPU sorteada.
+- **Pesos pré-treinados do timm** (DenseNet, EfficientNet): baixados do Hugging Face na primeira tarefa e
+  guardados em `~/.cache/huggingface` (compartilhado entre os nós).
 - **Espaço:** lotes em `~/macdeg_runs` (cota de 100 GB). Treinos internos não guardam pesos; o treino final
   guarda ~0,5 GB por configuração.
 
 ## Publicar o modelo final de uma configuração
 
 `sbatch cluster/experimento.sh --final ~/macdeg_runs/<lote analisado> <configuração>` treina as 5 dobras
-externas dessa configuração e a análise envia o ensemble, privado, ao Hugging Face (ver `docs/huggingface.md`).
+externas dessa configuração e guarda o ensemble em `<lote final>/modelo/<configuração>/` (o cartão vai ao
+GitHub). Publicar no Hugging Face é um passo separado: `python -m macdeg.hub publicar <lote final> <configuração>`
+(ver `docs/huggingface.md`).
