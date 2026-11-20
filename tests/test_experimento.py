@@ -595,3 +595,72 @@ def test_a_failing_task_does_not_stop_the_others(tiny_dataset, tmp_path, monkeyp
     cluster.run_local(batch, str(tiny_dataset))
     assert cluster.pending_tasks(batch, lote) == [] and cluster.failed_tasks(batch, lote) == []
     assert not (folder / "falhou.txt").exists()
+
+
+def test_drusas_folds_follow_the_patient():
+    """Drusas de um paciente do conjunto principal herdam o grupo e as dobras dele; as outras ganham grupo
+    novo (por paciente, ou por imagem sem paciente), com a dobra interna -1 na própria dobra externa."""
+    from macdeg.data.drusas import assign_folds
+    manifest = pd.DataFrame({"uid": ["m1", "m2", "m3"], "source": ["brset", "odir", "rfmid"],
+                             "patient_id": ["p1", "p2", None], "group_id": ["g1", "g2", "g3"]})
+    splits = pd.DataFrame({"uid": ["m1", "m2", "m3"], "outer": [3, 1, 0],
+                           **{f"inner_{k}": [-1 if k == o else (k + o) % 4 for o in (3, 1, 0)] for k in range(5)}})
+    extras = pd.DataFrame({"uid": ["d1", "d2", "d3", "d4", "d5"], "sample_id": [f"dru_{i}" for i in range(5)],
+                           "source": ["brset", "brset", "brset", "rfmid", "rfmid2"]})
+    links = pd.DataFrame({"uid": ["d1", "d2", "d3", "d4", "d5"], "patient_id": ["p1", "p9", "p9", None, None],
+                          "age": [70, 50, 50, None, None]})
+    folds = assign_folds(extras, links, manifest, splits).set_index("uid")
+    assert folds.loc["d1", "group_id"] == "g1"                                   # mesmo paciente: mesmo grupo
+    assert folds.loc["d1", ["outer", *[f"inner_{k}" for k in range(5)]]].tolist() == \
+        splits.set_index("uid").loc["m1", ["outer", *[f"inner_{k}" for k in range(5)]]].tolist()
+    assert folds.loc["d2", "group_id"] == folds.loc["d3", "group_id"] != "g1"    # paciente novo: um grupo só
+    assert (folds.loc["d2"] == folds.loc["d3"]).drop(["sample_id"]).all()
+    assert folds.loc["d4", "group_id"] != folds.loc["d5", "group_id"]           # sem paciente: grupo por imagem
+    for uid, row in folds.iterrows():
+        assert row[f"inner_{row['outer']}"] == -1
+        assert all(0 <= row[f"inner_{k}"] <= 3 for k in range(5) if k != row["outer"])
+    assert folds["age"].tolist()[:1] == [70]
+
+
+def test_drusas_target_only_where_drusen_status_is_known():
+    from macdeg.train import drusas_target
+    frame = pd.DataFrame({"label": [1, 0, 0, 0, -1], "source": ["brset", "brset", "hyamd", "rfmid2", "brset"],
+                          "kind": ["dmri", "normal", "normal", "outra", "drusas"]})
+    assert drusas_target(frame).tolist() == [-1, 0, -1, 0, 1]
+
+
+def test_aux_drusas_trains_on_drusas_only_through_the_auxiliary_output(tiny_dataset, tmp_path, monkeypatch):
+    """Com aux_drusas, as drusas das dobras de treino entram só na saída de drusas; as do teste externo são
+    pontuadas pelas duas saídas; a análise traz as notas das drusas por faixa etária."""
+    from macdeg import train
+    from macdeg.analysis import drusas_by_age
+    from macdeg.data.drusas import FOLDS_FILE, assign_folds
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    manifest = pd.read_csv(tiny_dataset / "manifest.csv", dtype={"uid": str})
+    splits = pd.read_csv(tiny_dataset / "splits_nested_seed0.csv", dtype={"uid": str})
+    extras = pd.read_csv(tiny_dataset / "extras_drusas.csv", dtype={"uid": str})
+    links = extras[["uid"]].assign(patient_id=[f"p{i}" for i in range(len(extras))], age=np.arange(len(extras)) * 6 + 45)
+    folds = assign_folds(extras, links, manifest, splits)
+    folds.to_csv(tiny_dataset / FOLDS_FILE, index=False)
+
+    config = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+              "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None,
+              "aux_dr": 0.5, "aux_drusas": 0.5}
+    tr, val, test, extra, _ = train.split_frames(config, 0, 1, 0)
+    in_train = folds[(folds["outer"] != 0) & (folds["inner_0"] != 1)]
+    assert (tr["label"] == -1).sum() == len(in_train) and (val["label"] >= 0).all()
+    assert sorted(extra["sample_id"]) == sorted(folds.loc[folds["outer"] == 0, "sample_id"])
+    assert train.outputs_for(config) == 3 and train.drusas_output(config) == 2
+
+    out = tmp_path / "tarefa"
+    metrics = train.run(config, 0, 1, 0, out)
+    assert metrics is not None
+    scored = pd.read_csv(out / "extra_predictions.csv")
+    assert set(scored["sample_id"]) == set(extra["sample_id"]) and scored["prob_drusas"].between(0, 1).all()
+
+    rows = drusas_by_age(scored, folds[["sample_id", "age"]], 0.5)
+    assert sum(r["n"] for r in rows) == len(scored) and all("mediana_nota_drusas" in r for r in rows)
+
+    plain = {k: v for k, v in config.items() if k != "aux_drusas"}
+    _, _, _, extra_plain, _ = train.split_frames(plain, 0, 1, 0)
+    assert len(extra_plain) == len(extras)                      # sem aux_drusas: como antes, todas pontuadas

@@ -6,11 +6,14 @@ código ou lançar jobs. Regras gerais do projeto: `CLAUDE.md`; motivos: `docs/d
 
 ## 1. Branches
 
-- `main`: só melhorias de desempenho (velocidade, infraestrutura). Nada de experimento.
-- `experimentos-002`: **todo** o trabalho de experimentos (rodadas, novas opções de treino, YAMLs).
-  Branches pessoais saem dela e voltam para ela (merge ou PR), nunca da `main`.
-- `resultados`: escrita só pelo pipeline. Nunca à mão.
-- Branch nova de fase (ex.: explicabilidade) só com decisão dos donos.
+- `main`: código estável. A fase 1 (rodadas 1–4: comparação de arquiteturas importadas) entrou nela
+  por PR da `experimentos-002` (19/11/2026).
+- `experimentos-003`: **todo** o trabalho da fase 2 (rede permutada, drusas, explicabilidade, Optuna).
+  Branches pessoais saem dela e voltam para ela (merge ou PR). Ao fim da fase, PR para a `main`.
+- `experimentos-002`: encerrada (fase 1). Não acrescente commits.
+- `resultados`: escrita só pelo pipeline. Nunca à mão. O que foi treinado, com o commit de cada lote, está
+  no catálogo `docs/experimentos.md` (`python -m macdeg.catalogo` depois de `git fetch origin resultados`).
+- Branch nova de fase só com decisão dos donos.
 
 ## 2. Rodadas: uma mudança por vez sobre a base vigente
 
@@ -58,16 +61,18 @@ variacoes:                # cada item = UMA mudança
 referencia: resultados/rodada3-<AAAAMMDD-HHMM>/rodada3-00
 ```
 
-## 4. Experimentos em andamento
+## 4. Experimentos
+
+Concluídos (resultados em `docs/experimentos.md`): `001_referencia`, `002_rodada2`, `003_rodada3` e
+`008_rodada4` (V2-S vira a base; Inception empatou; ViT não aprendeu com a receita comum).
 
 | YAML | quem | o que | referência |
 |---|---|---|---|
-| `003_rodada3.yaml` | donos | DenseNet-121, EfficientNetV2-S, EfficientNet-B4, recorte da mácula | `rodada3-00` |
-| `004_gustavo_arquiteturas.yaml` | Gustavo | AlexNet e ConvNeXt-T na base vigente | `rodada3-00` |
+| `004_gustavo_arquiteturas.yaml` | Gustavo | AlexNet e ConvNeXt-T na base da rodada 3 (em andamento) | `rodada3-00` |
 | `005_alexnet_congelamento.yaml` | Gustavo | apêndice AlexNet: congelar 3 convoluções | `gustavo-01` |
 | `006_alexnet_taxas.yaml` | Gustavo | apêndice AlexNet: lr separada da saída | (dentro do lote) |
 | `007_alexnet_inicializacao.yaml` | Gustavo | apêndice AlexNet: Xavier na saída | (dentro do lote) |
-| `008_rodada4.yaml` | donos | base V2-S; Inception-v3 e ViT-B/16 | `rodada4-00` |
+| `009_rodada5.yaml` | donos | saída auxiliar de drusas (fase 2; precisa do `drusas_dobras.csv`) | `rodada5-00` |
 
 Ordem: 004 só depois que a rodada 3 estiver no GitHub; 005 depois do 004; 006 e 007 em sequência, cada
 um só se o anterior não perdeu. Os resultados da Parte 1 (004) entram na comparação de arquiteturas; os

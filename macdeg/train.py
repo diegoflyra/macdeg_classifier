@@ -12,7 +12,8 @@ Saída em <out>/:
   history.csv            perda e AUROC de validação por época
   val_predictions.csv    nota de cada imagem de validação
   test_predictions.csv   nota de cada imagem do teste externo (só com --inner)
-  extra_predictions.csv  nota das imagens com drusas sem diagnóstico (fora do treino)
+  extra_predictions.csv  nota das imagens com drusas sem diagnóstico (fora do treino; com aux_drusas, só as
+                         da dobra externa de teste, e também a nota da saída de drusas, prob_drusas)
   metrics.json           AUROC geral e por base (o F2 precisa das outras dobras: macdeg.analysis)
   last.pt / best.pt      pesos; last.pt permite retomar se a tarefa for interrompida e é apagado no fim;
                          best.pt fica só no treino final (ou com keep_weights: true)
@@ -59,13 +60,14 @@ def load_config(path: Path, overrides: list[str]) -> dict:
 
 class FundusDataset(Dataset):
     """Lê do cache de imagens reduzidas (macdeg.cache) quando há; senão, do JPEG. Os pixels são os mesmos.
-    Cada item: (imagem, rótulo DMRI, alvo auxiliar de DR: 1, 0 ou -1 = desconhecido)."""
+    Cada item: (imagem, rótulo DMRI (-1 = drusas, fora da perda principal), alvos auxiliares [DR, drusas]:
+    1, 0 ou -1 = desconhecido)."""
 
     def __init__(self, frame: pd.DataFrame, root: Path, transform, cache: tuple[Path, dict] | None = None,
                  size: int | None = None, preprocess: str | None = None, crop: float | None = None):
         self.paths = [str(root / p) for p in frame["image"]]
         self.labels = frame["label"].to_numpy(np.float32)
-        self.aux = dr_target(frame)
+        self.aux = np.stack([dr_target(frame), drusas_target(frame)], axis=1)
         self.transform = transform
         self.size, self.preprocess, self.crop = size, preprocess, crop
         self.cache_path, lines = cache or (None, {})
@@ -105,6 +107,22 @@ def dr_target(frame: pd.DataFrame) -> np.ndarray:
     target = np.full(len(frame), -1.0, np.float32)
     negative = frame["label"].to_numpy() == 0
     target[negative] = has_disease(frame, DR)[negative].astype(np.float32)
+    return target
+
+
+# Bases em que um olho "sem DMRI" com certeza não tem drusas: nelas, qualquer olho com drusas (sem DMRI) foi
+# separado como "drusas sem diagnóstico" (macdeg.data.sources). Na HYAMD e no ADAM não se sabe.
+NO_DRUSEN_SOURCES = ("brset", "odir", "rfmid", "rfmid2")
+
+
+def drusas_target(frame: pd.DataFrame) -> np.ndarray:
+    """Alvo da saída auxiliar de drusas: 1 = drusas sem diagnóstico de DMRI; 0 = "sem DMRI" de uma base em
+    que se sabe que não há drusas; -1 = desconhecido (DMRI, que costuma ter drusas; HYAMD e ADAM)."""
+    target = np.full(len(frame), -1.0, np.float32)
+    kinds = frame["kind"].to_numpy() if "kind" in frame else np.full(len(frame), "")
+    target[kinds == "drusas"] = 1.0
+    clean = (frame["label"].to_numpy() == 0) & frame["source"].isin(NO_DRUSEN_SOURCES).to_numpy()
+    target[clean] = 0.0
     return target
 
 
@@ -190,7 +208,12 @@ def build_model(name: str, pretrained: bool, outputs: int = 1, *, freeze_first_c
 
 
 def outputs_for(config: dict) -> int:
-    return 2 if config.get("aux_dr") else 1
+    """Saída 0 = DMRI; depois, se houver, a de DR (1) e a de drusas (1 ou 2)."""
+    return 1 + bool(config.get("aux_dr")) + bool(config.get("aux_drusas"))
+
+
+def drusas_output(config: dict) -> int:
+    return 1 + bool(config.get("aux_dr"))
 
 
 def build_optimizer(model: nn.Module, config: dict) -> torch.optim.Optimizer:
@@ -210,6 +233,24 @@ def build_optimizer(model: nn.Module, config: dict) -> torch.optim.Optimizer:
 
 
 PREDICTION_COLUMNS = ["sample_id", "source", "group_id", "label", "kind", "disease_group"]
+
+
+def _with_drusas(root: Path, train: pd.DataFrame, outer: int, inner: int | None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Saída auxiliar de drusas: as drusas das dobras de treino entram no treino (rótulo -1: só a saída de
+    drusas aprende com elas); as da dobra externa de teste são só pontuadas. As da validação interna ficam
+    de fora (a época é escolhida pela AUROC de DMRI). Dobras por paciente: macdeg.data.drusas."""
+    from macdeg.data.drusas import FOLDS_FILE
+    path = root / FOLDS_FILE
+    if not path.exists():
+        raise SystemExit(f"aux_drusas precisa de {path}: rode `python -m macdeg.data.drusas` onde estão as "
+                         "bases originais e copie o arquivo para o conjunto.")
+    drusas = pd.read_csv(path, dtype={"uid": str}).assign(label=-1, kind="drusas", disease=None, disease_group=None)
+    drusas["image"] = "images/" + drusas["uid"] + ".jpg"
+    rest = drusas[drusas["outer"] != outer]
+    if inner is not None:
+        rest = rest[rest[f"inner_{outer}"] != inner]
+    train = pd.concat([train, rest[train.columns.intersection(rest.columns)]], ignore_index=True)
+    return train, drusas[drusas["outer"] == outer].copy()
 
 
 def split_frames(config: dict, outer: int, inner: int | None, seed: int):
@@ -235,7 +276,9 @@ def split_frames(config: dict, outer: int, inner: int | None, seed: int):
         if frame["label"].nunique() < 2:
             raise SystemExit(f"O conjunto de {name} só tem uma classe: faltam imagens com ou sem DMRI.")
     extra = None
-    if (root / "extras_drusas.csv").exists():
+    if config.get("aux_drusas"):
+        train, extra = _with_drusas(root, train, outer, inner)
+    elif (root / "extras_drusas.csv").exists():
         extra = pd.read_csv(root / "extras_drusas.csv").assign(label=-1, kind="drusas", disease_group=None)
         if config.get("sources"):
             extra = extra[extra["source"].isin(config["sources"])]
@@ -290,13 +333,13 @@ def nonfinite_report(model: nn.Module, probs: np.ndarray, losses: list[float], e
 
 
 @torch.no_grad()
-def predict(model, loader, device) -> np.ndarray:
+def predict(model, loader, device, column: int = 0) -> np.ndarray:
     model.eval()
     probs = []
     for images, *_ in loader:
         with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
             logits = model(images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last))
-        probs.append(torch.sigmoid(logits[:, 0].float()).cpu().numpy())
+        probs.append(torch.sigmoid(logits[:, column].float()).cpu().numpy())
     return np.concatenate(probs)
 
 
@@ -313,7 +356,10 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     train, val, test, extra, root = split_frames(config, outer, inner, seed)
     (out / "config.json").write_text(json.dumps({**config, "outer": outer, "inner": inner, "seed": seed}, indent=1),
                                      encoding="utf-8")
-    print(f"treino: {len(train)} imagens ({int(train['label'].sum())} DMRI); "
+    main_train = train[train["label"] >= 0]     # sem as drusas (aux_drusas): contagens, pos_weight e réguas
+    print(f"treino: {len(main_train)} imagens ({int(main_train['label'].sum())} DMRI)"
+          + (f" + {len(train) - len(main_train)} drusas (só a saída de drusas)" if len(train) > len(main_train) else "")
+          + "; "
           f"validação: {len(val)} ({int(val['label'].sum())} DMRI); dispositivo: {device}", flush=True)
 
     workers = config.get("num_workers", 6)
@@ -349,10 +395,11 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
     frozen = sum(p.numel() for p in model.parameters() if not p.requires_grad)
     print(f"parâmetros treináveis: {trainable}; congelados: {frozen}", flush=True)
     aux_weight = float(config.get("aux_dr") or 0)    # peso da perda auxiliar de DR (0 = sem cabeça auxiliar)
+    drusas_weight, drusas_col = float(config.get("aux_drusas") or 0), drusas_output(config)
     if on_model is not None:
         on_model(model)
-    positives = float(train["label"].sum())
-    pos_weight = (len(train) - positives) / positives if config.get("balance") == "pos_weight" else 1.0
+    positives = float(main_train["label"].sum())
+    pos_weight = (len(main_train) - positives) / positives if config.get("balance") == "pos_weight" else 1.0
     criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(pos_weight, device=device))
     optimizer = build_optimizer(model, config)
     epochs, steps_per_epoch = config["epochs"], len(train_loader) // accumulate
@@ -384,13 +431,22 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
             labels = labels.to(device, non_blocking=True)
             with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
                 logits = model(images).float()
-                loss = criterion(logits[:, 0], labels)
+                if drusas_weight:   # drusas (rótulo -1) ficam fora da perda de DMRI
+                    main = labels >= 0
+                    loss = criterion(logits[main, 0], labels[main]) if main.any() else logits.sum() * 0
+                else:
+                    loss = criterion(logits[:, 0], labels)
+                aux = aux.to(device, non_blocking=True)
                 if aux_weight:      # só nos olhos em que se sabe se há DR (os "sem DMRI")
-                    aux = aux.to(device, non_blocking=True)
-                    known = aux >= 0
+                    known = aux[:, 0] >= 0
                     if known.any():
                         loss = loss + aux_weight * nn.functional.binary_cross_entropy_with_logits(
-                            logits[known, 1], aux[known])
+                            logits[known, 1], aux[known, 0])
+                if drusas_weight:   # só onde se sabe se há drusas (macdeg.train.drusas_target)
+                    known = aux[:, 1] >= 0
+                    if known.any():
+                        loss = loss + drusas_weight * nn.functional.binary_cross_entropy_with_logits(
+                            logits[known, drusas_col], aux[known, 1])
             scaler.scale(loss / accumulate).backward()
             losses.append(loss.item())
             asked = time.time()
@@ -443,9 +499,11 @@ def run(config: dict, outer: int, inner: int | None, seed: int, out: Path, log=N
         if frame is not None and len(frame):
             loader = DataLoader(dataset(frame.assign(label=frame["label"].clip(lower=0)), False),
                                 batch_size=micro, num_workers=workers, pin_memory=device.type == "cuda")
-            frame[PREDICTION_COLUMNS].assign(prob=predict(model, loader, device)).to_csv(
-                out / f"{name}_predictions.csv", index=False)
-    metrics = evaluate(predictions, train)
+            scored = frame[PREDICTION_COLUMNS].assign(prob=predict(model, loader, device))
+            if name == "extra" and drusas_weight:
+                scored["prob_drusas"] = predict(model, loader, device, drusas_col)
+            scored.to_csv(out / f"{name}_predictions.csv", index=False)
+    metrics = evaluate(predictions, main_train)
     metrics.update(trainable_parameters=trainable, frozen_parameters=frozen,
                    micro_batch=micro, gpu=torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
                    best_epoch=int(np.nanargmax([h["val_auroc"] or -1 for h in history])),

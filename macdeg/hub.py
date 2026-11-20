@@ -36,7 +36,7 @@ import torch
 
 from macdeg.ambiente import secret
 from macdeg.cluster import task_dir
-from macdeg.train import normalization
+from macdeg.train import normalization, outputs_for
 
 REPO_NAME = os.environ.get("HF_REPO", "macdeg_classifier")  # repositório do tipo "model"
 
@@ -74,8 +74,8 @@ def export_final(batch: Path | str, name: str, final: dict) -> Path:
     card = {"configuracao": name, "lote_final": lote["nome"], "commit": lote["commit"],
             "assinatura_dados": lote["assinatura_dados"], "modelo": config["config"]["model"],
             "image_size": config["config"]["image_size"], "normalizacao": dict(zip(("media", "dp"), normalization(config["config"]["model"]))),
-            "entrada": "retina inteira num quadrado (bordas pretas completam), RGB", "saida": "logit 0; sigmoide = P(DMRI) (logit 1, se houver, é a cabeça auxiliar de DR)",
-            "saidas": 2 if config["config"].get("aux_dr") else 1, "preprocess": config["config"].get("preprocess"),
+            "entrada": "retina inteira num quadrado (bordas pretas completam), RGB", "saida": "logit 0; sigmoide = P(DMRI) (os seguintes, se houver, são as saídas auxiliares: DR, depois drusas)",
+            "saidas": outputs_for(config["config"]), "preprocess": config["config"].get("preprocess"),
             "crop": config["config"].get("crop"),
             "ensemble": "média das probabilidades das 5 dobras", "limiar": final["limiar"],
             "mudancas": config["mudancas"], "lote_de_origem": Path(lote["lote_de_origem"] or "").name,

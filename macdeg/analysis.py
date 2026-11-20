@@ -97,6 +97,40 @@ def score_distribution(predictions: pd.DataFrame, extra: pd.DataFrame | None) ->
     return pd.DataFrame(rows)
 
 
+AGE_BANDS = [0, 55, 65, 75, 200]
+AGE_LABELS = ["ate_55", "56_65", "66_75", "acima_75"]
+
+
+def drusas_by_age(extra: pd.DataFrame | None, ages: pd.DataFrame | None, threshold: float) -> list[dict]:
+    """Notas das drusas sem diagnóstico por faixa etária (só agregados). A idade entra só aqui, na leitura,
+    nunca no treino. Com aux_drusas, também a nota da saída de drusas (prob_drusas)."""
+    if extra is None or not len(extra) or ages is None:
+        return []
+    columns = [c for c in ("prob", "prob_drusas") if c in extra]
+    table = extra.groupby("sample_id", as_index=False)[columns].mean().merge(ages, on="sample_id", how="left")
+    band = pd.cut(table["age"], AGE_BANDS, labels=AGE_LABELS).astype(object).where(table["age"].notna(), "sem_idade")
+    rows = []
+    for name in [*AGE_LABELS, "sem_idade"]:
+        part = table[band == name]
+        if not len(part):
+            continue
+        row = {"faixa": name, "n": len(part), "mediana_nota_dmri": round(float(part["prob"].median()), 4),
+               "acima_do_limiar_dmri": round(float((part["prob"] >= threshold).mean()), 4)}
+        if "prob_drusas" in part:
+            row["mediana_nota_drusas"] = round(float(part["prob_drusas"].median()), 4)
+        rows.append(row)
+    return rows
+
+
+def _load_drusas_ages(dataset: str | None, lote: dict) -> pd.DataFrame | None:
+    from macdeg.data.drusas import FOLDS_FILE
+    try:
+        root = resolve(dataset or lote["configuracoes"][0]["config"]["dataset"])
+        return pd.read_csv(root / FOLDS_FILE, usecols=["sample_id", "age"])
+    except (FileNotFoundError, ValueError):
+        return None
+
+
 def stage_auroc(predictions: pd.DataFrame, manifest: pd.DataFrame | None) -> dict:
     """AUROC de cada estágio de DMRI contra os "sem DMRI" das mesmas bases (só os estágios informados;
     hoje, só o HYAMD estadia, e os "sem DMRI" dele são todos olhos com DR: é a separação precoce x DR)."""
@@ -180,6 +214,7 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
     out.mkdir()
     runs, missing = collect(batch, lote)
     manifest = _load_manifest(dataset, lote)
+    drusas_ages = _load_drusas_ages(dataset, lote)
     result = {"lote": lote["nome"], "commit": lote["commit"], "assinatura_dados": lote["assinatura_dados"],
               "teste": lote["teste"], "piloto": lote.get("piloto", False), "tarefas_faltando": missing, "analisado": time.strftime("%Y-%m-%d %H:%M"),
               "configuracoes": {}}
@@ -212,6 +247,9 @@ def analyze(batch: Path | str, dataset: str | None = None, push: bool = True) ->
         dist = score_distribution(outer[name], extra if len(extra) else None)
         dist.insert(0, "configuracao", name)
         result["configuracoes"][name]["distribuicao_notas"] = dist.drop(columns="configuracao").to_dict("records")
+        by_age = drusas_by_age(extra if len(extra) else None, drusas_ages, float(outer[name]["threshold"].median()))
+        if by_age:
+            result["configuracoes"][name]["drusas_por_idade"] = by_age
         for (k, j), r in usable.items():
             if r["history"] is not None:
                 histories.append(r["history"].assign(configuracao=name, outer=k, inner=j))

@@ -1,0 +1,20 @@
+# Experimento 009: rodada 5 (dados). Saída auxiliar de drusas sobre a base da rodada 4 (V2-S).
+# NÃO LANCE antes do fim da rodada 4: se Inception ou ViT ganharem, a base muda (crie outro YAML).
+# Antes de lançar: o conjunto no cluster precisa ter drusas_dobras.csv (python -m macdeg.data.drusas, no
+# computador com as bases originais; copie o arquivo para o dataset_1024 do cluster). Sem ele, a tarefa para.
+#
+#   rodada5-00  a base (V2-S + augmentation + cabeça de DR), retreinada
+#   rodada5-01  + saída de drusas (peso 0,5): as 2832 drusas sem diagnóstico entram SÓ nessa saída;
+#               a tarefa principal, a validação e a métrica não mudam (docs/decisoes.md, rodadas 4 e 5).
+#
+# 40 tarefas (2 x 5 externas x 4 internas).
+nome: rodada5
+base: configs/train/baseline.yaml
+base_mudancas:
+  augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}
+  aux_dr: 0.5
+  model: tf_efficientnetv2_s.in21k_ft_in1k
+grade: {}
+variacoes:
+  - {aux_drusas: 0.5}
+referencia: null

@@ -25,8 +25,11 @@ antes de mudar. Detalhes e motivos: `docs/decisoes.md` e `docs/proposta.md`. Res
 - Tarefa binária: **DMRI (1) × sem DMRI (0)**. "Sem DMRI" = olhos normais + outras doenças (no máximo 1/3,
   cotas iguais por doença; HYAMD e ADAM com ao menos tantos "sem DMRI" quanto DMRI). Regras em
   `configs/sources.yaml` (`selection`) e `macdeg/data/select.py`.
-- Ficam fora: qualidade insuficiente e drusas sem diagnóstico de DMRI. Estas últimas só são pontuadas
-  (`extras_drusas.csv`) para a análise da distribuição das notas.
+- Ficam fora: qualidade insuficiente e drusas sem diagnóstico de DMRI. Estas últimas são pontuadas
+  (`extras_drusas.csv`) para a análise da distribuição das notas e, com `aux_drusas` (decisão dos donos,
+  19/11/2026), treinam **só** a saída auxiliar de drusas, nunca a tarefa principal nem a avaliação
+  (dobras por paciente em `drusas_dobras.csv`, `macdeg/data/drusas.py`).
+- **Idade nunca entra na rede** (atalho "velho = DMRI"; `docs/decisoes.md`). Só nas réguas e nas análises.
 - Bases: HYAMD, BRSET, ODIR, RFMiD, RFMiD 2.0, ADAM. O ADAM precisa continuar **desligável** (`sources`
   na configuração). Publicação científica com ele exige aprovação dos organizadores.
 - Cópias: exatas por SHA1; quase cópias por dhash + correlação de detalhes ≥ 0,95 (`macdeg/data/build.py`).

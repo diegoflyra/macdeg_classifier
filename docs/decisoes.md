@@ -109,6 +109,48 @@ treinos idênticos (cuDNN não determinístico): diferenças de ~0,01 estão den
   atualização, mas não o BatchNorm (médias dentro do micro-lote). Agora o micro-lote é o mesmo em qualquer
   GPU. Em 512 px, a ResNet-50 continua com 16 (como em todas as tarefas de 512 px da rodada 2).
 
+## Rodadas 4 e 5 (19/11/2026)
+
+Resultado da rodada 3 (`rodada3-20261117-1754`, contra a `rodada3-00`): a base nova (augmentation + cabeça
+de DR) ganhou da `rodada2-00` (+0,038 [+0,023; +0,053], comparação pareada entre lotes, mesma assinatura).
+Arquiteturas empataram com a ResNet-50: EfficientNetV2-S +0,008 [−0,005; +0,021] (maiores AUROC 0,977 e
+AUPRC 0,816; melhor DMRI precoce × DR, 0,699), EfficientNet-B4 +0,009 [−0,006; +0,024] (melhor
+especificidade em DR, pior DMRI precoce; instabilidade de NaN numa tarefa), DenseNet-121 −0,008. O recorte
+da mácula perdeu (−0,040 [−0,054; −0,026]; ODIR caiu de 0,670 para 0,595). 75 DMRI não são detectadas por
+nenhuma configuração (36 no ODIR).
+
+- **Base da rodada 4 = EfficientNetV2-S** (decisão dos donos), embora só tenha empatado: à frente em quase
+  todas as métricas, mais barata e estável que a B4. O 004 do Gustavo continua sobre a ResNet-50.
+- **Rodada 4 (`008_rodada4.yaml`):** fecha as arquiteturas importadas com Inception-v3 e ViT-B/16.
+  O ViT tem entrada fixa: `build_model` passa `image_size` e o timm reamostra a posição pré-treinada
+  (384 → 512 px). Limitação: a receita comum (lr 3e-4) é alta para ViT; derrota = "nesta receita".
+  Memória medida em 512 px (múltiplos da ResNet-50): V2-S 1,9; Inception-v3 0,75; ViT-B/16 1,6.
+- **Todas as redes recebem 512 px.** A vantagem das EfficientNets não vem da resolução de entrada; hipóteses:
+  escala do pré-treino (380 px contra 224 px da ResNet, e a ResNet em 1024 px perdeu) e dados do pré-treino
+  (ImageNet-21k, JFT contra ImageNet-1k). A ConvNeXt (22k, 384 px) ajuda a separar.
+- **Idade: nunca como entrada da rede.** Exploratório (decidido depois de ver os dados, não vale como
+  resultado): nota da V2-S + idade numa regressão logística ajustada nas outras dobras deu +0,013
+  [+0,008; +0,020], mas a sensibilidade abaixo de 55 anos caiu (0,68 → 0,64) e os falsos positivos acima
+  de 75 subiram (15% → 18%): a idade empurra para "velho = DMRI". Se entrar no modelo final, será combinada
+  depois da rede, declarada antes, e sempre com o desempenho por faixa etária.
+- **Rodada 5 (`009_rodada5.yaml`): saída auxiliar de drusas (`aux_drusas`).** Muda a regra "drusas sem
+  diagnóstico ficam fora": agora ficam fora da tarefa principal e da avaliação, mas entram no treino da
+  saída de drusas. O que não muda: manifest, divisões, assinatura (`72e45dfc1003894a`) e métrica binária.
+  - Alvo: 1 = drusas sem diagnóstico (2832: BRSET 2442, RFMiD 230, ODIR 160); 0 = "sem DMRI" de BRSET,
+    ODIR e RFMiD (nelas, todo olho com drusas sem DMRI foi separado, então os outros não têm drusas);
+    desconhecido (fora da perda) nos olhos com DMRI e nos "sem DMRI" de HYAMD e ADAM. As drusas ficam fora
+    da perda de DMRI.
+  - Dobras por paciente (`python -m macdeg.data.drusas` → `drusas_dobras.csv`, gerado onde estão as bases
+    originais e copiado para o conjunto): 489 drusas são de pacientes do conjunto principal (BRSET 444,
+    ODIR 45) e herdam o grupo e as dobras deles; nenhum grupo atravessa dobras. Pacientes só com drusas
+    ganham grupo próprio sorteado (semente 0). RFMiD sem paciente: grupo por imagem, como no principal
+    (cópias entre RFMiD e RFMiD 2.0 não foram conferidas para as drusas).
+  - Treino: drusas das dobras de treino; teste: só as da dobra externa, pontuadas pelas duas saídas;
+    validação interna: sem drusas (a época continua pela AUROC de DMRI).
+  - Leitura: a idade só entra na análise (`drusas_por_idade`: notas das drusas por faixa etária). Se a
+    variação ganhar, o ganho vem de imagens a mais e de uma tarefa a mais, juntas; o texto diz assim.
+  - Não interpreta o que as drusas significam para a idade (Ferris et al., 2013): não há rótulo para isso.
+
 ## Pré-processamento por ROI e auditoria (HYAMD, suspenso em 11/11/2026)
 
 Desenvolvido antes da mudança para o conjunto multibase. Fica disponível para voltar como experimento

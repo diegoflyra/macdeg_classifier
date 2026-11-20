@@ -24,7 +24,7 @@ Os dados não são necessários aqui: os testes usam imagens sintéticas.
 git clone https://github.com/diegoflyra/macdeg_classifier.git
 cd macdeg_classifier
 git checkout <sua-branch>
-git merge --ff-only origin/experimentos-002     # sua branch parte da base atual do projeto
+git merge --ff-only origin/experimentos-003     # sua branch parte da base atual do projeto
 
 python3 -m venv .venv                           # Python 3.10 ou mais novo
 .venv/bin/pip install --upgrade pip
@@ -40,7 +40,7 @@ ssh <login>@slurm-client1.cin.ufpe.br           # com a VPN do CIn ligada
 git clone https://github.com/diegoflyra/macdeg_classifier.git ~/macdeg_classifier   # senha = token do GitHub
 cd ~/macdeg_classifier
 git checkout <sua-branch>
-git merge --ff-only origin/experimentos-002
+git merge --ff-only origin/experimentos-003
 mkdir -p logs ~/macdeg_data ~/macdeg_runs
 chmod 700 ~/macdeg_data ~/macdeg_runs           # dados e resultados só para você
 echo 'export MACDEG_RUNS=$HOME/macdeg_runs' >> ~/.bashrc && source ~/.bashrc
@@ -136,7 +136,7 @@ O `--teste` roda em minutos, com números sem valor, e não envia nada ao GitHub
 
 ## 7. O dia a dia (igual ao dos donos)
 
-1. **Computador:** atualizar a base (`git fetch && git merge origin/experimentos-002`), editar, criar o YAML
+1. **Computador:** atualizar a base (`git fetch && git merge origin/experimentos-003`), editar, criar o YAML
    seguindo `docs/fluxo_experimentos.md`, rodar `.venv/bin/python -m pytest -q tests/`, commit e push na
    `<sua-branch>`.
 2. **Cluster:** `cd ~/macdeg_classifier && git pull`, `--teste` primeiro, depois o lote real:
@@ -145,7 +145,7 @@ O `--teste` roda em minutos, com números sem valor, e não envia nada ao GitHub
 3. **Acompanhar:** `squeue -u $USER`; `grep '"epoch"' $(ls -t logs/*.out | head -1) | tail -2`; curvas no W&B.
 4. **Resultado:** no fim, `resultados/<lote>/` chega à branch `resultados` do GitHub (RESUMO.md, relatório,
    previsões por `sample_id`). Job que estourou o tempo: `--retomar <lote>`.
-5. **Voltar o trabalho para o projeto:** PR da `<sua-branch>` para a `experimentos-002`, revisado pelos donos.
+5. **Voltar o trabalho para o projeto:** PR da `<sua-branch>` para a `experimentos-003`, revisado pelos donos.
 
 Nunca: imagens, IDs ou planilhas das bases fora do computador/cluster; commit na `main` ou na `resultados`;
 editar um YAML já lançado; abrir permissões de `~/macdeg_data`.
