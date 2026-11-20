@@ -1,0 +1,145 @@
+{
+ "nome": "rodada4-20261119-0229",
+ "experimento": {
+  "nome": "rodada4",
+  "base": "configs/train/baseline.yaml",
+  "base_mudancas": {
+   "augment": {
+    "crop_scale": [
+     0.85,
+     1.0
+    ],
+    "hflip": true,
+    "rotate_deg": 15,
+    "color": 0.1
+   },
+   "aux_dr": 0.5,
+   "model": "tf_efficientnetv2_s.in21k_ft_in1k"
+  },
+  "grade": {},
+  "variacoes": [
+   {
+    "model": "inception_v3.tv_in1k"
+   },
+   {
+    "model": "vit_base_patch16_384.augreg_in21k_ft_in1k"
+   }
+  ],
+  "referencia": null
+ },
+ "teste": false,
+ "final": false,
+ "piloto": false,
+ "lote_de_origem": null,
+ "commit": "c756e834da3262b584ff2a73e405295a5103ed0d",
+ "codigo_alterado_sem_commit": false,
+ "criado": "2026-11-19 02:29",
+ "assinatura_dados": "72e45dfc1003894a",
+ "splits": "splits_nested_seed0.csv",
+ "configuracoes": [
+  {
+   "nome": "rodada4-00",
+   "mudancas": {},
+   "config": {
+    "name": "rodada4-00",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "tf_efficientnetv2_s.in21k_ft_in1k",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  },
+  {
+   "nome": "rodada4-01",
+   "mudancas": {
+    "model": "inception_v3.tv_in1k"
+   },
+   "config": {
+    "name": "rodada4-01",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "inception_v3.tv_in1k",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  },
+  {
+   "nome": "rodada4-02",
+   "mudancas": {
+    "model": "vit_base_patch16_384.augreg_in21k_ft_in1k"
+   },
+   "config": {
+    "name": "rodada4-02",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "vit_base_patch16_384.augreg_in21k_ft_in1k",
+    "pretrained": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  }
+ ],
+ "n_tarefas": 60
+}
