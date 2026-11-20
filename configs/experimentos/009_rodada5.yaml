@@ -2,7 +2,8 @@
 # Cada variação muda UMA coisa sobre ela; explicabilidade em todas (explain_maps.npz por tarefa; números
 # no relatório; pranchas só no cluster: python -m macdeg.explain pranchas ~/macdeg_runs/<lote>).
 #
-#   rodada5-00  a base (V2-S), retreinada: também o 3º treino da V2-S para o ensemble
+#   rodada5-00  NÃO é treinada (treinar_base: false): a base já tem dois treinos (rodada3-02 e rodada4-00,
+#               configuração idêntica). Referência = rodada4-00.
 #   rodada5-01  + saída auxiliar de drusas (peso 0,5): as 2832 drusas sem diagnóstico treinam SÓ essa saída
 #               (precisa do drusas_dobras.csv no conjunto do cluster)
 #   rodada5-02  + recorte da mácula em resolução nativa: vista global 512 px + centro de 448 px da imagem
@@ -14,17 +15,18 @@
 #               aleatório 70-100%, rotação ±30°, brilho/contraste ±25% (diferença entre câmeras). Sem
 #               espelhamento vertical (inverteria a anatomia). As faixas finas ficam para o Optuna.
 #
-# 100 tarefas. As de 1024 px leem JPEG a cada época: rode o --teste e o --piloto antes.
+# 80 tarefas. As de 1024 px leem JPEG a cada época: rode o --teste e o --piloto antes.
 nome: rodada5
 base: configs/train/baseline.yaml
 base_mudancas:
   augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}
   aux_dr: 0.5
   model: tf_efficientnetv2_s.in21k_ft_in1k
+treinar_base: false
 grade: {}
 variacoes:
   - {aux_drusas: 0.5}
   - {model: v2s_macula, image_size: 1024, cache: false}
   - {model: hibrida_v2s, image_size: 1024, cache: false, aux_localization: 0.25}
   - {augment: {crop_scale: [0.7, 1.0], hflip: true, rotate_deg: 30, color: 0.25}}
-referencia: null
+referencia: resultados/rodada4-20261119-0229/rodada4-00

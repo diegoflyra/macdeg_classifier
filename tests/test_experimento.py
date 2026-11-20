@@ -633,3 +633,18 @@ def test_aux_drusas_trains_on_drusas_only_through_the_auxiliary_output(tiny_data
     plain = {k: v for k, v in config.items() if k != "aux_drusas"}
     _, _, _, extra_plain, _ = train.split_frames(plain, 0, 1, 0)
     assert len(extra_plain) == len(extras)                      # sem aux_drusas: como antes, todas pontuadas
+
+
+def test_skipping_the_base_keeps_variation_names_and_requires_a_reference(tmp_path):
+    """treinar_base: false não treina a 00 (já existe noutro lote); as variações mantêm 01, 02, ..."""
+    from macdeg.cluster import expand
+    base = {"name": "x", "model": "resnet18", "image_size": 64, "batch_size": 4, "lr": 1e-3}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    experiment = {"nome": "r", "base": str(tmp_path / "base.yaml"), "grade": {}, "treinar_base": False,
+                  "variacoes": [{"lr": 1e-2}, {"model": "resnet34"}], "referencia": "resultados/lote/r-00"}
+    configs = expand(experiment)
+    assert [c["nome"] for c in configs] == ["r-01", "r-02"]
+    assert configs[0]["config"]["lr"] == 1e-2
+    with pytest.raises(SystemExit, match="referencia"):
+        expand({**experiment, "referencia": None})
+    assert [c["nome"] for c in expand({**experiment, "treinar_base": True})] == ["r-00", "r-01", "r-02"]

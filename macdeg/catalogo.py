@@ -124,14 +124,20 @@ def render(batches: list[dict]) -> str:
             lines += ["", f"Seleção aninhada (a melhor configuração escolhida só com a validação interna): F2 "
                           f"{_fmt(nested['f2_media_bases'])} {_ic(nested.get('f2_media_bases_ic95'))}; escolhas: "
                           + ", ".join(f"`{k}` × {v}" for k, v in chosen.items()) + "."]
-        if previous is not None and previous["lote"]["assinatura_dados"] == lote["assinatura_dados"]:
+        trained_base = experiment.get("treinar_base", True) is not False
+        if not trained_base:
+            lines += ["", "Este lote não treinou a base (`treinar_base: false`): as variações foram comparadas "
+                          f"com `{experiment.get('referencia')}`."]
+        if (trained_base and previous is not None
+                and previous["lote"]["assinatura_dados"] == lote["assinatura_dados"]):
             prev_first = next(iter(previous["relatorio"]["configuracoes"]))
             a, c = _predictions(previous, prev_first), _predictions(b, first)
             if a is not None and c is not None:
                 v = paired_verdict(a, c)
                 lines += ["", f"Base deste lote (`{first}`) contra a base do lote anterior (`{prev_first}`): "
                               f"{_fmt(v['delta_f2_media_bases'])} {_ic(v['ic95'])}, **{v['veredito']}**."]
-        previous = b
+        if trained_base:
+            previous = b
     return "\n".join(lines) + "\n"
 
 

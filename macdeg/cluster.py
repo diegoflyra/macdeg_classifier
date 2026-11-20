@@ -55,7 +55,9 @@ def expand(experiment: dict) -> list[dict]:
     """Configurações do experimento: a base, cada combinação da grade e cada variação avulsa.
     Nomes: <nome>-00, <nome>-01, ... na ordem (a 00 é a base com a primeira combinação).
     `base_mudancas`: o que já foi incorporado à base (ex.: as melhorias da rodada anterior); vale para
-    todas as configurações e não conta como mudança da variação."""
+    todas as configurações e não conta como mudança da variação.
+    `treinar_base: false`: a 00 não é treinada (já existe em outro lote); as variações mantêm os nomes
+    01, 02, ... e são comparadas com a `referencia`, que passa a ser obrigatória."""
     base = load_config(PROJECT / experiment["base"], [])
     for key, value in (experiment.get("base_mudancas") or {}).items():
         _set(base, key, value)
@@ -70,6 +72,13 @@ def expand(experiment: dict) -> list[dict]:
         name = f"{experiment['nome']}-{i:02d}"
         config["name"] = name
         configs.append({"nome": name, "mudancas": changes, "config": config})
+    if experiment.get("treinar_base", True) is False:
+        if not experiment.get("referencia"):
+            raise SystemExit("treinar_base: false precisa de `referencia: resultados/<lote>/<configuração>` "
+                             "(a base já treinada, com a mesma assinatura dos dados).")
+        if len(configs) < 2:
+            raise SystemExit("treinar_base: false sem variações: não sobra nada para treinar.")
+        configs = configs[1:]
     return configs
 
 
@@ -110,6 +119,8 @@ def prepare(experiment_path: Path, dataset: str | None = None, test: bool = Fals
                 raise SystemExit(f"A referência ainda tem o marcador: {experiment['referencia']}. Troque pelo lote "
                                  "real (branch resultados do GitHub) antes de lançar.")
             experiment = {**experiment, "referencia": None}    # --teste: compara com a própria 00
+        if test:     # o teste treina e compara com a própria 00 (números de teste não se comparam a um lote real)
+            experiment = {**experiment, "referencia": None, "treinar_base": True}
         configs, name = expand(experiment), experiment["nome"]
     if pilot:
         name = "piloto-" + name
