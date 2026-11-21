@@ -648,3 +648,25 @@ def test_skipping_the_base_keeps_variation_names_and_requires_a_reference(tmp_pa
     with pytest.raises(SystemExit, match="referencia"):
         expand({**experiment, "referencia": None})
     assert [c["nome"] for c in expand({**experiment, "treinar_base": True})] == ["r-00", "r-01", "r-02"]
+
+
+def test_task_range_runs_only_those_tasks(tiny_dataset, tmp_path, monkeypatch):
+    """--tarefas: cada conta roda uma faixa; o resto fica pendente para a outra (e para a junção)."""
+    import macdeg.cluster as cluster
+    for key in ("GITHUB_TOKEN", "WANDB_API_KEY", "HF_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(cluster, "RUNS", tmp_path / "runs")
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    assert cluster.parse_tasks("1-3, 7") == {0, 1, 2, 6}
+    with pytest.raises(ValueError):
+        cluster.parse_tasks("0-2")
+    base = {"name": "x", "dataset": str(tiny_dataset), "model": "resnet18", "pretrained": False, "image_size": 64,
+            "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu", "augment": None}
+    (tmp_path / "base.yaml").write_text(yaml.safe_dump(base))
+    (tmp_path / "exp.yaml").write_text(yaml.safe_dump({"nome": "g", "base": str(tmp_path / "base.yaml")}))
+    batch = cluster.prepare(tmp_path / "exp.yaml", str(tiny_dataset), test=True)
+    cluster.run_local(batch, str(tiny_dataset), only={1, 2})
+    lote = json.loads((batch / "lote.json").read_text())
+    done = {t["id"] for t in lote["tarefas"] if (cluster.task_dir(batch, t) / "metrics.json").exists()}
+    assert done == {1, 2}
+    assert set(cluster.pending_tasks(batch, lote)) == {t["id"] for t in lote["tarefas"]} - {1, 2}
