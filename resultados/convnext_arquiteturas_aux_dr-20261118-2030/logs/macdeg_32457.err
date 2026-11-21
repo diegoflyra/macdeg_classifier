@@ -1,0 +1,466 @@
+wandb: [wandb.login()] Loaded credentials for https://api.forge.coreweave.com from WANDB_API_KEY.
+wandb: Currently logged in as: dfal (models-universidade-federal-de-pernambuco) to https://api.forge.coreweave.com. Use `wandb login --relogin` to force relogin
+wandb: setting up run icgys44c
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_010057-icgys44c
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run convnext_arquiteturas_aux_dr-02-o3-i1
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/icgys44c
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+wandb: updating run metadata
+wandb: updating run metadata; uploading history steps 3-3, summary, console lines 24-32
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading output.log; uploading wandb-summary.json
+wandb: uploading wandb-summary.json
+wandb: uploading data
+wandb: 
+wandb: Run history:
+wandb:                auroc_val █▁▄
+wandb:                    epoca ▁▅█
+wandb:                       lr █▄▁
+wandb:                 lr_saida █▄▁
+wandb:             perda_treino █▅▁
+wandb:           segundos_epoca ▇▁█
+wandb: segundos_esperando_dados █▃▁
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.97952
+wandb:                    epoca 12
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 0.0
+wandb:                 lr_saida 3e-05
+wandb:             melhor_epoca 7
+wandb:             perda_treino 0.1119
+wandb:       regua_origem_auroc 0.79221
+wandb:           segundos_epoca 528.2
+wandb: segundos_esperando_dados 1.5
+wandb: 
+wandb: 🚀 View run convnext_arquiteturas_aux_dr-02-o3-i1 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/icgys44c
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_010057-icgys44c/logs
+wandb: setting up run djsvbnqh
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_013232-djsvbnqh
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run convnext_arquiteturas_aux_dr-02-o3-i0
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/djsvbnqh
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/macdeg/train.py:422: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  scheduler.step()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+wandb: updating run metadata
+wandb: uploading wandb-summary.json; uploading config.yaml; uploading output.log
+wandb: uploading wandb-summary.json; uploading config.yaml
+wandb: uploading wandb-summary.json
+wandb: uploading history steps 9-9, summary, console lines 27-35
+wandb: 
+wandb: Run history:
+wandb:                auroc_val ▁▇███▇▇▆▇
+wandb:                    epoca ▁▂▃▄▅▅▆▇█
+wandb:                       lr ██▇▆▆▅▄▂▁
+wandb:                 lr_saida ██▇▆▆▅▄▂▁
+wandb:             perda_treino █▆▄▄▃▃▂▂▁
+wandb:           segundos_epoca █▄▁▃▄▂▁▄▃
+wandb: segundos_esperando_dados █▂▂▁▂▂▁▂▂
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.96683
+wandb:                    epoca 8
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 1e-05
+wandb:                 lr_saida 6e-05
+wandb:             melhor_epoca 3
+wandb:             perda_treino 0.27028
+wandb:       regua_origem_auroc 0.79316
+wandb:           segundos_epoca 526.4
+wandb: segundos_esperando_dados 1.6
+wandb: 
+wandb: 🚀 View run convnext_arquiteturas_aux_dr-02-o3-i0 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/djsvbnqh
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_013232-djsvbnqh/logs
+wandb: setting up run 6z6scb3v
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_025611-6z6scb3v
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run convnext_arquiteturas_aux_dr-02-o2-i3
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/6z6scb3v
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+wandb: uploading console lines 26-34; updating run metadata
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading history steps 10-10, summary
+wandb: 
+wandb: Run history:
+wandb:                auroc_val ▁▆███▇▇▇▇▇
+wandb:                    epoca ▁▂▃▃▄▅▆▆▇█
+wandb:                       lr ██▇▇▆▅▄▃▂▁
+wandb:                 lr_saida ██▇▇▆▅▄▃▂▁
+wandb:             perda_treino █▆▅▄▄▃▂▂▁▁
+wandb:           segundos_epoca ▁▁▂▁▁▂▁▁▆█
+wandb: segundos_esperando_dados █▃▃▃▁▃▁▃▆▆
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.9675
+wandb:                    epoca 9
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 1e-05
+wandb:                 lr_saida 5e-05
+wandb:             melhor_epoca 4
+wandb:             perda_treino 0.23371
+wandb:       regua_origem_auroc 0.79263
+wandb:           segundos_epoca 584.4
+wandb: segundos_esperando_dados 1.7
+wandb: 
+wandb: 🚀 View run convnext_arquiteturas_aux_dr-02-o2-i3 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/6z6scb3v
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_025611-6z6scb3v/logs
+wandb: setting up run i19edmcg
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_043032-i19edmcg
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run convnext_arquiteturas_aux_dr-02-o2-i2
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/i19edmcg
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+wandb: updating run metadata
+wandb: uploading config.yaml; uploading output.log; uploading wandb-summary.json
+wandb: uploading wandb-summary.json
+wandb: uploading history steps 11-11, summary, console lines 27-35
+wandb: 
+wandb: Run history:
+wandb:                auroc_val ▁▆████▇█▇▇▇
+wandb:                    epoca ▁▂▂▃▄▅▅▆▇▇█
+wandb:                       lr ██▇▇▆▆▅▄▃▂▁
+wandb:                 lr_saida ██▇▇▆▆▅▄▃▂▁
+wandb:             perda_treino █▆▅▄▄▃▂▂▂▁▁
+wandb:           segundos_epoca ▁▇▆▅▆▆▅▅██▆
+wandb: segundos_esperando_dados █▄▂▂▂▄▁▂▂▄▂
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.96741
+wandb:                    epoca 10
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 0.0
+wandb:                 lr_saida 4e-05
+wandb:             melhor_epoca 5
+wandb:             perda_treino 0.17855
+wandb:       regua_origem_auroc 0.79273
+wandb:           segundos_epoca 558.8
+wandb: segundos_esperando_dados 1.6
+wandb: 
+wandb: 🚀 View run convnext_arquiteturas_aux_dr-02-o2-i2 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/i19edmcg
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_043032-i19edmcg/logs
+wandb: setting up run i2pz2vdv
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_061747-i2pz2vdv
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run convnext_arquiteturas_aux_dr-02-o2-i1
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/i2pz2vdv
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading wandb-summary.json
+wandb: uploading history steps 10-10, summary, console lines 26-34
+wandb: 
+wandb: Run history:
+wandb:                auroc_val ▁▇█▇█▇▇█▇▇
+wandb:                    epoca ▁▂▃▃▄▅▆▆▇█
+wandb:                       lr ██▇▇▆▅▄▃▂▁
+wandb:                 lr_saida ██▇▇▆▅▄▃▂▁
+wandb:             perda_treino █▅▅▄▄▃▃▂▂▁
+wandb:           segundos_epoca ▆█▅▄▆▁▁▂▆▄
+wandb: segundos_esperando_dados █▅▅▃▃▃▁▅▅▅
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.97143
+wandb:                    epoca 9
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 1e-05
+wandb:                 lr_saida 5e-05
+wandb:             melhor_epoca 4
+wandb:             perda_treino 0.20154
+wandb:       regua_origem_auroc 0.79128
+wandb:           segundos_epoca 562.7
+wandb: segundos_esperando_dados 1.7
+wandb: 
+wandb: 🚀 View run convnext_arquiteturas_aux_dr-02-o2-i1 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/i2pz2vdv
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_061747-i2pz2vdv/logs
+wandb: setting up run jbtzk4rh
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_075624-jbtzk4rh
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run convnext_arquiteturas_aux_dr-02-o2-i0
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/jbtzk4rh
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/macdeg/train.py:422: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  scheduler.step()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading wandb-summary.json
+wandb: uploading history steps 9-9, summary, console lines 27-35
+wandb: 
+wandb: Run history:
+wandb:                auroc_val ▁▇████▇█▇
+wandb:                    epoca ▁▂▃▄▅▅▆▇█
+wandb:                       lr ██▇▆▆▅▄▂▁
+wandb:                 lr_saida ██▇▆▆▅▄▂▁
+wandb:             perda_treino █▆▅▄▃▂▂▁▁
+wandb:           segundos_epoca ▁▄▄▄▄█▃▃▅
+wandb: segundos_esperando_dados █▃▁▅▅▅▅▅▅
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.97758
+wandb:                    epoca 8
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 1e-05
+wandb:                 lr_saida 6e-05
+wandb:             melhor_epoca 3
+wandb:             perda_treino 0.34002
+wandb:       regua_origem_auroc 0.79251
+wandb:           segundos_epoca 565.8
+wandb: segundos_esperando_dados 1.7
+wandb: 
+wandb: 🚀 View run convnext_arquiteturas_aux_dr-02-o2-i0 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/jbtzk4rh
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_075624-jbtzk4rh/logs
+wandb: setting up run dxrual3n
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_092521-dxrual3n
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run convnext_arquiteturas_aux_dr-02-o1-i3
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/dxrual3n
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading wandb-summary.json
+wandb: uploading history steps 8-8, summary, console lines 24-32
+wandb: 
+wandb: Run history:
+wandb:                auroc_val ▁▆███▇▆▆
+wandb:                    epoca ▁▂▃▄▅▆▇█
+wandb:                       lr ██▇▆▅▄▂▁
+wandb:                 lr_saida ██▇▆▅▄▂▁
+wandb:             perda_treino █▅▅▃▃▂▂▁
+wandb:           segundos_epoca ▅▄▂█▄▃▁▃
+wandb: segundos_esperando_dados █▄▂▂▂▂▁▁
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.96429
+wandb:                    epoca 7
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 1e-05
+wandb:                 lr_saida 7e-05
+wandb:             melhor_epoca 2
+wandb:             perda_treino 0.33289
+wandb:       regua_origem_auroc 0.79343
+wandb:           segundos_epoca 563.7
+wandb: segundos_esperando_dados 1.6
+wandb: 
+wandb: 🚀 View run convnext_arquiteturas_aux_dr-02-o1-i3 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/dxrual3n
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_092521-dxrual3n/logs
+wandb: setting up run ahnlzyon
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_104529-ahnlzyon
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run convnext_arquiteturas_aux_dr-02-o1-i2
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/ahnlzyon
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/macdeg/train.py:422: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  scheduler.step()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading output.log; uploading wandb-summary.json
+wandb: uploading wandb-summary.json
+wandb: uploading history steps 10-10, summary, console lines 28-36
+wandb: 
+wandb: Run history:
+wandb:                auroc_val ▁▇▇▇█▇▇▇▇▇
+wandb:                    epoca ▁▂▃▃▄▅▆▆▇█
+wandb:                       lr ██▇▇▆▅▄▃▂▁
+wandb:                 lr_saida ██▇▇▆▅▄▃▂▁
+wandb:             perda_treino █▅▄▄▃▃▂▂▁▁
+wandb:           segundos_epoca ▄▁▄▃█▆▃▁▄▆
+wandb: segundos_esperando_dados █▁▁▃▃▅▃▃▃▃
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.97461
+wandb:                    epoca 9
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 1e-05
+wandb:                 lr_saida 5e-05
+wandb:             melhor_epoca 4
+wandb:             perda_treino 0.27246
+wandb:       regua_origem_auroc 0.79272
+wandb:           segundos_epoca 572.5
+wandb: segundos_esperando_dados 1.6
+wandb: 
+wandb: 🚀 View run convnext_arquiteturas_aux_dr-02-o1-i2 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/ahnlzyon
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_104529-ahnlzyon/logs
+wandb: setting up run akvf13wo
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_122425-akvf13wo
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run convnext_arquiteturas_aux_dr-02-o1-i1
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/akvf13wo
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:431: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:437: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  self.check_worker_number_rationality()
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading wandb-summary.json
+wandb: uploading summary, console lines 19-19
+wandb: 
+wandb: Run history:
+wandb:                auroc_val ▁▇▇▅██▆▆▃▃▃
+wandb:                    epoca ▁▂▂▃▄▅▅▆▇▇█
+wandb:                       lr ██▇▇▆▅▄▄▃▂▁
+wandb:                 lr_saida ██▇▇▆▅▄▄▃▂▁
+wandb:             perda_treino █▇▆▆▅▄▃▃▂▂▁
+wandb:           segundos_epoca ▆▇▄▂▅▄▂▃▁▃█
+wandb: segundos_esperando_dados █▁▁▃▁▃▃▅▃▅▅
+wandb: 
+wandb: Run summary:
+wandb:                auroc_val 0.97039
+wandb:                    epoca 11
+wandb:                      gpu NVIDIA GeForce RTX 3...
+wandb:                       lr 0.0
+wandb:                 lr_saida 3e-05
+wandb:             melhor_epoca 5
+wandb:             perda_treino 0.15959
+wandb:       regua_origem_auroc 0.7923
+wandb:           segundos_epoca 571.8
+wandb: segundos_esperando_dados 1.7
+wandb: 
+wandb: 🚀 View run convnext_arquiteturas_aux_dr-02-o1-i1 at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/akvf13wo
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/wandb/run-20261121_122425-akvf13wo/logs
+Traceback (most recent call last):
+  File "/home/CIN/gsn2/macdeg_classifier/rodar.py", line 105, in <module>
+    main()
+  File "/home/CIN/gsn2/macdeg_classifier/rodar.py", line 87, in main
+    run_local(batch, args.dados, wandb_mode, from_end=args.do_fim)
+  File "/home/CIN/gsn2/macdeg_classifier/macdeg/cluster.py", line 239, in run_local
+    run_task(batch, task_id, dataset, wandb_mode)
+  File "/home/CIN/gsn2/macdeg_classifier/macdeg/cluster.py", line 180, in run_task
+    return run(config, task["outer"], task["inner"], seed=0, out=out, log=log, on_model=on_model)
+  File "/home/CIN/gsn2/macdeg_classifier/macdeg/train.py", line 457, in run
+    model.load_state_dict(torch.load(out / "best.pt", map_location="cpu", weights_only=True))
+  File "/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/serialization.py", line 1565, in load
+    with _open_file_like(f, "rb") as opened_file:
+  File "/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/serialization.py", line 795, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+  File "/home/CIN/gsn2/macdeg_classifier/.venv/lib/python3.10/site-packages/torch/serialization.py", line 776, in __init__
+    super().__init__(open(name, mode))  # noqa: SIM115
+FileNotFoundError: [Errno 2] No such file or directory: '/home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030/tarefas/convnext_arquiteturas_aux_dr-02/outer1_inner1/best.pt'
