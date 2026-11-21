@@ -1,0 +1,345 @@
+==========================================
+job 32456 | nó cluster-node3 | 2026-11-21 00:58:16
+argumentos: --retomar /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030
+==========================================
+python: /home/CIN/gsn2/macdeg_classifier/.venv/bin/python
+GPU 0: NVIDIA GeForce RTX 3090 (UUID: GPU-55f4566d-c588-8d91-bbf4-8ec781c4d46c)
+GPU 1: NVIDIA GeForce RTX 3090 (UUID: GPU-807c8f1e-6bd3-4442-4076-9152a0993679)
+torch 2.14.1+cu130 | GPUs: NVIDIA GeForce RTX 3090
+copiando o conjunto para /tmp/gsn2-macdeg-32456 ...
+conjunto pronto: 20871 imagens
+segredos: {'GITHUB_TOKEN': True, 'WANDB_API_KEY': True, 'HF_TOKEN': True, 'WANDB_ENTITY': False}
+commit: c424c0107c | mudanças sem commit: False
+assinatura dos dados: 72e45dfc1003894a
+GitHub: envio testado e funcionando
+lote /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030: 4 configuração(ões), 80 tarefas
+tarefa 38/80: {'id': 37, 'configuracao': 'convnext_arquiteturas_aux_dr-01', 'outer': 4, 'inner': 1}
+treino: 10824 imagens (910 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+cache: reduzindo 20871 imagens para 512 px com 2 processos...
+cache: pronto (20871 imagens, 16.4 GB)
+lote efetivo 16 = 8 x 2 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 48221186; congelados: 1235040
+retomando da época 4
+{"epoch": 4, "train_loss": 0.5690493103849155, "val_auroc": 0.9741186221496583, "optimizer_steps": 676, "seconds": 499.2, "train_seconds": 461.0, "data_wait_seconds": 2.0, "lr": 8.535533905932739e-06, "head_lr": 8.535533905932738e-05}
+{"epoch": 5, "train_loss": 0.44723876406007235, "val_auroc": 0.9689494365472855, "optimizer_steps": 676, "seconds": 480.6, "train_seconds": 442.8, "data_wait_seconds": 1.8, "lr": 7.938926261462366e-06, "head_lr": 7.938926261462366e-05}
+{"epoch": 6, "train_loss": 0.38682796386417884, "val_auroc": 0.9712726492013801, "optimizer_steps": 676, "seconds": 480.9, "train_seconds": 443.0, "data_wait_seconds": 1.7, "lr": 7.269952498697734e-06, "head_lr": 7.269952498697734e-05}
+{"epoch": 7, "train_loss": 0.30305870880974617, "val_auroc": 0.9682384426037157, "optimizer_steps": 676, "seconds": 483.2, "train_seconds": 445.1, "data_wait_seconds": 1.8, "lr": 6.545084971874738e-06, "head_lr": 6.545084971874738e-05}
+{"epoch": 8, "train_loss": 0.3520654064483965, "val_auroc": 0.9674735249621785, "optimizer_steps": 676, "seconds": 482.1, "train_seconds": 444.1, "data_wait_seconds": 1.7, "lr": 5.782172325201155e-06, "head_lr": 5.782172325201155e-05}
+{"epoch": 9, "train_loss": 0.321862692661796, "val_auroc": 0.9594758416840172, "optimizer_steps": 676, "seconds": 481.4, "train_seconds": 443.5, "data_wait_seconds": 1.8, "lr": 5e-06, "head_lr": 5e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9741186221496583,
+ "auroc_ic95": [
+  0.9646,
+  0.9831
+ ],
+ "auprc": 0.8333587046413634,
+ "regua_origem_auroc": 0.792956965893261
+}
+tarefa 39/80: {'id': 38, 'configuracao': 'convnext_arquiteturas_aux_dr-01', 'outer': 4, 'inner': 2}
+treino: 10824 imagens (910 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 8 x 2 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 48221186; congelados: 1235040
+{"epoch": 0, "train_loss": 1.1502456009306745, "val_auroc": 0.9328215574961429, "optimizer_steps": 676, "seconds": 481.1, "train_seconds": 443.0, "data_wait_seconds": 1.8, "lr": 9.938441702975689e-06, "head_lr": 9.938441702975689e-05}
+{"epoch": 1, "train_loss": 0.9007889824870015, "val_auroc": 0.9534249037611779, "optimizer_steps": 676, "seconds": 482.4, "train_seconds": 444.4, "data_wait_seconds": 1.6, "lr": 9.755282581475769e-06, "head_lr": 9.755282581475769e-05}
+{"epoch": 2, "train_loss": 0.6993214339821718, "val_auroc": 0.9602881922080256, "optimizer_steps": 676, "seconds": 481.4, "train_seconds": 443.5, "data_wait_seconds": 1.7, "lr": 9.45503262094184e-06, "head_lr": 9.45503262094184e-05}
+{"epoch": 3, "train_loss": 0.6586117752299291, "val_auroc": 0.9624740991497032, "optimizer_steps": 676, "seconds": 479.7, "train_seconds": 441.9, "data_wait_seconds": 1.7, "lr": 9.045084971874738e-06, "head_lr": 9.045084971874738e-05}
+{"epoch": 4, "train_loss": 0.6136154229462165, "val_auroc": 0.9659841324525795, "optimizer_steps": 676, "seconds": 479.6, "train_seconds": 441.9, "data_wait_seconds": 1.7, "lr": 8.535533905932739e-06, "head_lr": 8.535533905932738e-05}
+{"epoch": 5, "train_loss": 0.45235036375004867, "val_auroc": 0.964381899612049, "optimizer_steps": 676, "seconds": 481.9, "train_seconds": 443.8, "data_wait_seconds": 1.7, "lr": 7.938926261462366e-06, "head_lr": 7.938926261462366e-05}
+{"epoch": 6, "train_loss": 0.41463516930234895, "val_auroc": 0.9602407593255544, "optimizer_steps": 676, "seconds": 482.2, "train_seconds": 444.3, "data_wait_seconds": 1.8, "lr": 7.269952498697734e-06, "head_lr": 7.269952498697734e-05}
+{"epoch": 7, "train_loss": 0.3824370228410984, "val_auroc": 0.9509414178936805, "optimizer_steps": 676, "seconds": 481.1, "train_seconds": 443.2, "data_wait_seconds": 1.6, "lr": 6.545084971874738e-06, "head_lr": 6.545084971874738e-05}
+{"epoch": 8, "train_loss": 0.2794477371935063, "val_auroc": 0.9530089922759297, "optimizer_steps": 676, "seconds": 480.4, "train_seconds": 442.5, "data_wait_seconds": 1.7, "lr": 5.782172325201155e-06, "head_lr": 5.782172325201155e-05}
+{"epoch": 9, "train_loss": 0.2507297815642545, "val_auroc": 0.9568989879320761, "optimizer_steps": 676, "seconds": 481.8, "train_seconds": 443.7, "data_wait_seconds": 1.7, "lr": 5e-06, "head_lr": 5e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9659841324525795,
+ "auroc_ic95": [
+  0.9551,
+  0.9748
+ ],
+ "auprc": 0.7978619063933001,
+ "regua_origem_auroc": 0.7926553926194435
+}
+tarefa 40/80: {'id': 39, 'configuracao': 'convnext_arquiteturas_aux_dr-01', 'outer': 4, 'inner': 3}
+treino: 10825 imagens (909 DMRI); validação: 3607 (304 DMRI); dispositivo: cuda
+lote efetivo 16 = 8 x 2 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 48221186; congelados: 1235040
+{"epoch": 0, "train_loss": 1.1205410518534125, "val_auroc": 0.9309100976783466, "optimizer_steps": 676, "seconds": 482.6, "train_seconds": 444.6, "data_wait_seconds": 1.9, "lr": 9.938441702975689e-06, "head_lr": 9.938441702975689e-05}
+{"epoch": 1, "train_loss": 1.0055971030313322, "val_auroc": 0.9540300285227146, "optimizer_steps": 676, "seconds": 480.6, "train_seconds": 442.8, "data_wait_seconds": 1.7, "lr": 9.755282581475769e-06, "head_lr": 9.755282581475769e-05}
+{"epoch": 2, "train_loss": 0.7382967813787652, "val_auroc": 0.9657587998151601, "optimizer_steps": 676, "seconds": 479.7, "train_seconds": 441.9, "data_wait_seconds": 1.7, "lr": 9.45503262094184e-06, "head_lr": 9.45503262094184e-05}
+{"epoch": 3, "train_loss": 0.6407426508913978, "val_auroc": 0.9663274614784008, "optimizer_steps": 676, "seconds": 482.1, "train_seconds": 444.3, "data_wait_seconds": 1.7, "lr": 9.045084971874738e-06, "head_lr": 9.045084971874738e-05}
+{"epoch": 4, "train_loss": 0.5914082278593927, "val_auroc": 0.9690691875009958, "optimizer_steps": 676, "seconds": 480.8, "train_seconds": 443.0, "data_wait_seconds": 1.7, "lr": 8.535533905932739e-06, "head_lr": 8.535533905932738e-05}
+{"epoch": 5, "train_loss": 0.5222786262718496, "val_auroc": 0.9639323103398824, "optimizer_steps": 676, "seconds": 480.4, "train_seconds": 442.5, "data_wait_seconds": 1.6, "lr": 7.938926261462366e-06, "head_lr": 7.938926261462366e-05}
+{"epoch": 6, "train_loss": 0.4802410521851831, "val_auroc": 0.9672013679748872, "optimizer_steps": 676, "seconds": 480.6, "train_seconds": 442.7, "data_wait_seconds": 1.7, "lr": 7.269952498697734e-06, "head_lr": 7.269952498697734e-05}
+{"epoch": 7, "train_loss": 0.3860896033942789, "val_auroc": 0.9610496637825263, "optimizer_steps": 676, "seconds": 482.4, "train_seconds": 444.5, "data_wait_seconds": 1.7, "lr": 6.545084971874738e-06, "head_lr": 6.545084971874738e-05}
+{"epoch": 8, "train_loss": 0.31178862017820175, "val_auroc": 0.9603814116353555, "optimizer_steps": 676, "seconds": 481.5, "train_seconds": 443.5, "data_wait_seconds": 1.5, "lr": 5.782172325201155e-06, "head_lr": 5.782172325201155e-05}
+{"epoch": 9, "train_loss": 0.26928687704290255, "val_auroc": 0.9559058152875377, "optimizer_steps": 676, "seconds": 481.3, "train_seconds": 443.4, "data_wait_seconds": 1.7, "lr": 5e-06, "head_lr": 5e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9690691875009958,
+ "auroc_ic95": [
+  0.958,
+  0.9787
+ ],
+ "auprc": 0.8188647962421158,
+ "regua_origem_auroc": 0.791080576668738
+}
+tarefa 41/80: {'id': 40, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 0, 'inner': 0}
+treino: 10823 imagens (909 DMRI); validação: 3608 (302 DMRI); dispositivo: cuda
+lote efetivo 16 = 8 x 2 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 85397506; congelados: 2171008
+{"epoch": 0, "train_loss": 1.0980238153369772, "val_auroc": 0.9243749073528763, "optimizer_steps": 676, "seconds": 499.6, "train_seconds": 457.5, "data_wait_seconds": 1.7, "lr": 9.938441702975689e-06, "head_lr": 9.938441702975689e-05}
+{"epoch": 1, "train_loss": 0.8150443286582314, "val_auroc": 0.9615008633710332, "optimizer_steps": 676, "seconds": 497.0, "train_seconds": 455.4, "data_wait_seconds": 1.7, "lr": 9.755282581475769e-06, "head_lr": 9.755282581475769e-05}
+{"epoch": 2, "train_loss": 0.6725848314516899, "val_auroc": 0.9656494513287099, "optimizer_steps": 676, "seconds": 494.1, "train_seconds": 452.5, "data_wait_seconds": 1.6, "lr": 9.45503262094184e-06, "head_lr": 9.45503262094184e-05}
+{"epoch": 3, "train_loss": 0.6438513777714917, "val_auroc": 0.9644024711241451, "optimizer_steps": 676, "seconds": 495.0, "train_seconds": 453.0, "data_wait_seconds": 1.5, "lr": 9.045084971874738e-06, "head_lr": 9.045084971874738e-05}
+{"epoch": 4, "train_loss": 0.508893292840856, "val_auroc": 0.9673656766945911, "optimizer_steps": 676, "seconds": 496.8, "train_seconds": 455.0, "data_wait_seconds": 1.6, "lr": 8.535533905932739e-06, "head_lr": 8.535533905932738e-05}
+{"epoch": 5, "train_loss": 0.48285417065153413, "val_auroc": 0.9665063120234934, "optimizer_steps": 676, "seconds": 495.4, "train_seconds": 453.8, "data_wait_seconds": 1.6, "lr": 7.938926261462366e-06, "head_lr": 7.938926261462366e-05}
+{"epoch": 6, "train_loss": 0.41072661734884136, "val_auroc": 0.9651586719710901, "optimizer_steps": 676, "seconds": 494.8, "train_seconds": 453.1, "data_wait_seconds": 1.4, "lr": 7.269952498697734e-06, "head_lr": 7.269952498697734e-05}
+{"epoch": 7, "train_loss": 0.3245153077261248, "val_auroc": 0.9629902284828307, "optimizer_steps": 676, "seconds": 495.1, "train_seconds": 453.3, "data_wait_seconds": 1.6, "lr": 6.545084971874738e-06, "head_lr": 6.545084971874738e-05}
+{"epoch": 8, "train_loss": 0.27151990290467576, "val_auroc": 0.9554983313501839, "optimizer_steps": 676, "seconds": 496.3, "train_seconds": 454.5, "data_wait_seconds": 1.5, "lr": 5.782172325201155e-06, "head_lr": 5.782172325201155e-05}
+{"epoch": 9, "train_loss": 0.20144918164142356, "val_auroc": 0.9600410451797454, "optimizer_steps": 676, "seconds": 494.9, "train_seconds": 453.2, "data_wait_seconds": 1.6, "lr": 5e-06, "head_lr": 5e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9673656766945911,
+ "auroc_ic95": [
+  0.9572,
+  0.9777
+ ],
+ "auprc": 0.8286765804288053,
+ "regua_origem_auroc": 0.7922631138247538
+}
+tarefa 42/80: {'id': 41, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 0, 'inner': 1}
+treino: 10823 imagens (908 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 8 x 2 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 85397506; congelados: 2171008
+{"epoch": 0, "train_loss": 1.1266782332058205, "val_auroc": 0.9178747072891857, "optimizer_steps": 676, "seconds": 495.4, "train_seconds": 453.3, "data_wait_seconds": 1.7, "lr": 9.938441702975689e-06, "head_lr": 9.938441702975689e-05}
+{"epoch": 1, "train_loss": 0.853646295740247, "val_auroc": 0.9592002316721838, "optimizer_steps": 676, "seconds": 495.1, "train_seconds": 453.2, "data_wait_seconds": 1.5, "lr": 9.755282581475769e-06, "head_lr": 9.755282581475769e-05}
+{"epoch": 2, "train_loss": 0.7603406970208206, "val_auroc": 0.968791659801381, "optimizer_steps": 676, "seconds": 497.0, "train_seconds": 455.1, "data_wait_seconds": 1.5, "lr": 9.45503262094184e-06, "head_lr": 9.45503262094184e-05}
+{"epoch": 3, "train_loss": 0.591315928648029, "val_auroc": 0.9684406564710933, "optimizer_steps": 676, "seconds": 494.6, "train_seconds": 453.0, "data_wait_seconds": 1.5, "lr": 9.045084971874738e-06, "head_lr": 9.045084971874738e-05}
+{"epoch": 4, "train_loss": 0.5033642530441881, "val_auroc": 0.9709291352735878, "optimizer_steps": 676, "seconds": 493.9, "train_seconds": 452.2, "data_wait_seconds": 1.6, "lr": 8.535533905932739e-06, "head_lr": 8.535533905932738e-05}
+{"epoch": 5, "train_loss": 0.49925894525416414, "val_auroc": 0.970768862060185, "optimizer_steps": 676, "seconds": 494.6, "train_seconds": 452.7, "data_wait_seconds": 1.6, "lr": 7.938926261462366e-06, "head_lr": 7.938926261462366e-05}
+{"epoch": 6, "train_loss": 0.3975784016045477, "val_auroc": 0.9683672603266378, "optimizer_steps": 676, "seconds": 496.4, "train_seconds": 454.6, "data_wait_seconds": 1.5, "lr": 7.269952498697734e-06, "head_lr": 7.269952498697734e-05}
+{"epoch": 7, "train_loss": 0.3462548523651539, "val_auroc": 0.9703115092144616, "optimizer_steps": 676, "seconds": 495.2, "train_seconds": 453.6, "data_wait_seconds": 1.5, "lr": 6.545084971874738e-06, "head_lr": 6.545084971874738e-05}
+{"epoch": 8, "train_loss": 0.3279297024578274, "val_auroc": 0.9704652916123686, "optimizer_steps": 676, "seconds": 494.2, "train_seconds": 452.5, "data_wait_seconds": 1.5, "lr": 5.782172325201155e-06, "head_lr": 5.782172325201155e-05}
+{"epoch": 9, "train_loss": 0.2326807850995232, "val_auroc": 0.9700753433891044, "optimizer_steps": 676, "seconds": 495.0, "train_seconds": 453.2, "data_wait_seconds": 1.6, "lr": 5e-06, "head_lr": 5e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9709291352735878,
+ "auroc_ic95": [
+  0.9602,
+  0.9808
+ ],
+ "auprc": 0.8157463763629911,
+ "regua_origem_auroc": 0.7926553926194435
+}
+tarefa 43/80: {'id': 42, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 0, 'inner': 2}
+treino: 10823 imagens (908 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 8 x 2 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 85397506; congelados: 2171008
+{"epoch": 0, "train_loss": 1.1576947072444088, "val_auroc": 0.9225630732513493, "optimizer_steps": 676, "seconds": 497.9, "train_seconds": 455.7, "data_wait_seconds": 1.8, "lr": 9.938441702975689e-06, "head_lr": 9.938441702975689e-05}
+{"epoch": 1, "train_loss": 0.8784341860351376, "val_auroc": 0.9676128278485943, "optimizer_steps": 676, "seconds": 496.7, "train_seconds": 454.8, "data_wait_seconds": 1.6, "lr": 9.755282581475769e-06, "head_lr": 9.755282581475769e-05}
+{"epoch": 2, "train_loss": 0.7124068116613171, "val_auroc": 0.9733901529335989, "optimizer_steps": 676, "seconds": 495.6, "train_seconds": 453.7, "data_wait_seconds": 1.6, "lr": 9.45503262094184e-06, "head_lr": 9.45503262094184e-05}
+{"epoch": 3, "train_loss": 0.6325360110679565, "val_auroc": 0.9744211940104751, "optimizer_steps": 676, "seconds": 496.9, "train_seconds": 454.8, "data_wait_seconds": 1.6, "lr": 9.045084971874738e-06, "head_lr": 9.045084971874738e-05}
+{"epoch": 4, "train_loss": 0.5513968183610932, "val_auroc": 0.9775178122956016, "optimizer_steps": 676, "seconds": 498.0, "train_seconds": 456.1, "data_wait_seconds": 1.5, "lr": 8.535533905932739e-06, "head_lr": 8.535533905932738e-05}
+{"epoch": 5, "train_loss": 0.5166790771327672, "val_auroc": 0.9746648492383277, "optimizer_steps": 676, "seconds": 496.4, "train_seconds": 454.6, "data_wait_seconds": 1.6, "lr": 7.938926261462366e-06, "head_lr": 7.938926261462366e-05}
+{"epoch": 6, "train_loss": 0.43910984598546654, "val_auroc": 0.9765047457847147, "optimizer_steps": 676, "seconds": 495.7, "train_seconds": 453.8, "data_wait_seconds": 1.6, "lr": 7.269952498697734e-06, "head_lr": 7.269952498697734e-05}
+{"epoch": 7, "train_loss": 0.3630693829444542, "val_auroc": 0.9740806758436812, "optimizer_steps": 676, "seconds": 496.0, "train_seconds": 454.1, "data_wait_seconds": 1.6, "lr": 6.545084971874738e-06, "head_lr": 6.545084971874738e-05}
+{"epoch": 8, "train_loss": 0.2975008382167958, "val_auroc": 0.9695805435309037, "optimizer_steps": 676, "seconds": 498.5, "train_seconds": 456.6, "data_wait_seconds": 1.6, "lr": 5.782172325201155e-06, "head_lr": 5.782172325201155e-05}
+{"epoch": 9, "train_loss": 0.2316753048027899, "val_auroc": 0.9716151645421727, "optimizer_steps": 676, "seconds": 497.3, "train_seconds": 455.3, "data_wait_seconds": 1.5, "lr": 5e-06, "head_lr": 5e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9775178122956016,
+ "auroc_ic95": [
+  0.9684,
+  0.9839
+ ],
+ "auprc": 0.8246583227984351,
+ "regua_origem_auroc": 0.7907955243330688
+}
+tarefa 44/80: {'id': 43, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 0, 'inner': 3}
+treino: 10824 imagens (908 DMRI); validação: 3607 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 8 x 2 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 85397506; congelados: 2171008
+{"epoch": 0, "train_loss": 1.1014697255638304, "val_auroc": 0.9306680970760515, "optimizer_steps": 676, "seconds": 497.1, "train_seconds": 454.6, "data_wait_seconds": 1.7, "lr": 9.938441702975689e-06, "head_lr": 9.938441702975689e-05}
+{"epoch": 1, "train_loss": 0.7959448166424065, "val_auroc": 0.9627883793221937, "optimizer_steps": 676, "seconds": 495.5, "train_seconds": 453.8, "data_wait_seconds": 1.6, "lr": 9.755282581475769e-06, "head_lr": 9.755282581475769e-05}
+{"epoch": 2, "train_loss": 0.6728136934969314, "val_auroc": 0.9689804936910156, "optimizer_steps": 676, "seconds": 496.9, "train_seconds": 455.1, "data_wait_seconds": 1.6, "lr": 9.45503262094184e-06, "head_lr": 9.45503262094184e-05}
+{"epoch": 3, "train_loss": 0.6137363875995135, "val_auroc": 0.9691982515442827, "optimizer_steps": 676, "seconds": 495.8, "train_seconds": 454.1, "data_wait_seconds": 1.6, "lr": 9.045084971874738e-06, "head_lr": 9.045084971874738e-05}
+{"epoch": 4, "train_loss": 0.5276394488177247, "val_auroc": 0.968672835806583, "optimizer_steps": 676, "seconds": 494.8, "train_seconds": 453.1, "data_wait_seconds": 1.6, "lr": 8.535533905932739e-06, "head_lr": 8.535533905932738e-05}
+{"epoch": 5, "train_loss": 0.45555829466466174, "val_auroc": 0.9703964191818698, "optimizer_steps": 676, "seconds": 495.0, "train_seconds": 453.4, "data_wait_seconds": 1.6, "lr": 7.938926261462366e-06, "head_lr": 7.938926261462366e-05}
+{"epoch": 6, "train_loss": 0.39312234846069366, "val_auroc": 0.9709318238119212, "optimizer_steps": 676, "seconds": 496.6, "train_seconds": 454.7, "data_wait_seconds": 1.6, "lr": 7.269952498697734e-06, "head_lr": 7.269952498697734e-05}
+{"epoch": 7, "train_loss": 0.3587412239194569, "val_auroc": 0.969759127849831, "optimizer_steps": 676, "seconds": 496.1, "train_seconds": 454.4, "data_wait_seconds": 1.6, "lr": 6.545084971874738e-06, "head_lr": 6.545084971874738e-05}
+{"epoch": 8, "train_loss": 0.28821267283047913, "val_auroc": 0.9673378203437776, "optimizer_steps": 676, "seconds": 495.4, "train_seconds": 453.7, "data_wait_seconds": 1.6, "lr": 5.782172325201155e-06, "head_lr": 5.782172325201155e-05}
+{"epoch": 9, "train_loss": 0.2146383294188752, "val_auroc": 0.9646303310718481, "optimizer_steps": 676, "seconds": 495.3, "train_seconds": 453.7, "data_wait_seconds": 1.6, "lr": 5e-06, "head_lr": 5e-05}
+{"epoch": 10, "train_loss": 0.18257808186190988, "val_auroc": 0.9607351624993008, "optimizer_steps": 676, "seconds": 494.8, "train_seconds": 453.2, "data_wait_seconds": 1.6, "lr": 4.217827674798845e-06, "head_lr": 4.2178276747988446e-05}
+{"epoch": 11, "train_loss": 0.14904562011813177, "val_auroc": 0.9650768345599694, "optimizer_steps": 676, "seconds": 496.1, "train_seconds": 454.3, "data_wait_seconds": 1.6, "lr": 3.4549150281252635e-06, "head_lr": 3.4549150281252636e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9709318238119212,
+ "auroc_ic95": [
+  0.9597,
+  0.9789
+ ],
+ "auprc": 0.7871805048017082,
+ "regua_origem_auroc": 0.7928413604072272
+}
+tarefa 45/80: {'id': 44, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 1, 'inner': 0}
+treino: 10823 imagens (909 DMRI); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 8 x 2 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 85397506; congelados: 2171008
+{"epoch": 0, "train_loss": 1.1157116431173546, "val_auroc": 0.9200461347193721, "optimizer_steps": 676, "seconds": 500.0, "train_seconds": 457.4, "data_wait_seconds": 1.7, "lr": 9.938441702975689e-06, "head_lr": 9.938441702975689e-05}
+{"epoch": 1, "train_loss": 0.8704115484069742, "val_auroc": 0.9590589316117694, "optimizer_steps": 676, "seconds": 497.5, "train_seconds": 455.3, "data_wait_seconds": 1.7, "lr": 9.755282581475769e-06, "head_lr": 9.755282581475769e-05}
+{"epoch": 2, "train_loss": 0.6929269454646912, "val_auroc": 0.9725049055586346, "optimizer_steps": 676, "seconds": 497.9, "train_seconds": 455.5, "data_wait_seconds": 1.7, "lr": 9.45503262094184e-06, "head_lr": 9.45503262094184e-05}
+{"epoch": 3, "train_loss": 0.6132734929014214, "val_auroc": 0.9727595452434805, "optimizer_steps": 676, "seconds": 497.5, "train_seconds": 455.0, "data_wait_seconds": 1.7, "lr": 9.045084971874738e-06, "head_lr": 9.045084971874738e-05}
+{"epoch": 4, "train_loss": 0.5813288532792654, "val_auroc": 0.973672753054428, "optimizer_steps": 676, "seconds": 499.1, "train_seconds": 456.6, "data_wait_seconds": 1.7, "lr": 8.535533905932739e-06, "head_lr": 8.535533905932738e-05}
+{"epoch": 5, "train_loss": 0.4898716140556678, "val_auroc": 0.9701003080640893, "optimizer_steps": 676, "seconds": 498.7, "train_seconds": 456.4, "data_wait_seconds": 1.6, "lr": 7.938926261462366e-06, "head_lr": 7.938926261462366e-05}
+{"epoch": 6, "train_loss": 0.41376290292050927, "val_auroc": 0.9732044157517113, "optimizer_steps": 676, "seconds": 498.6, "train_seconds": 456.2, "data_wait_seconds": 1.6, "lr": 7.269952498697734e-06, "head_lr": 7.269952498697734e-05}
+{"epoch": 7, "train_loss": 0.35525638989921204, "val_auroc": 0.9656271376002956, "optimizer_steps": 676, "seconds": 498.0, "train_seconds": 455.5, "data_wait_seconds": 1.7, "lr": 6.545084971874738e-06, "head_lr": 6.545084971874738e-05}
+{"epoch": 8, "train_loss": 0.28281777983401, "val_auroc": 0.9670940619024081, "optimizer_steps": 676, "seconds": 497.5, "train_seconds": 455.4, "data_wait_seconds": 1.7, "lr": 5.782172325201155e-06, "head_lr": 5.782172325201155e-05}
+{"epoch": 9, "train_loss": 0.23675489550505674, "val_auroc": 0.9632325259757444, "optimizer_steps": 676, "seconds": 497.7, "train_seconds": 455.2, "data_wait_seconds": 1.7, "lr": 5e-06, "head_lr": 5e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.973672753054428,
+ "auroc_ic95": [
+  0.9637,
+  0.9822
+ ],
+ "auprc": 0.8186337918028168,
+ "regua_origem_auroc": 0.7927342809923958
+}
+tarefa 46/80: {'id': 45, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 1, 'inner': 1}
+treino: 10823 imagens (910 DMRI); validação: 3608 (302 DMRI); dispositivo: cuda
+lote efetivo 16 = 8 x 2 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 85397506; congelados: 2171008
+{"epoch": 0, "train_loss": 1.1058502931583614, "val_auroc": 0.9178595609828407, "optimizer_steps": 676, "seconds": 498.5, "train_seconds": 455.9, "data_wait_seconds": 1.8, "lr": 9.938441702975689e-06, "head_lr": 9.938441702975689e-05}
+{"epoch": 1, "train_loss": 0.8249428185882679, "val_auroc": 0.9608368088524577, "optimizer_steps": 676, "seconds": 497.2, "train_seconds": 454.8, "data_wait_seconds": 1.6, "lr": 9.755282581475769e-06, "head_lr": 9.755282581475769e-05}
+{"epoch": 2, "train_loss": 0.7084189407825897, "val_auroc": 0.9652503175041967, "optimizer_steps": 676, "seconds": 498.9, "train_seconds": 456.6, "data_wait_seconds": 1.7, "lr": 9.45503262094184e-06, "head_lr": 9.45503262094184e-05}
+{"epoch": 3, "train_loss": 0.647631091840084, "val_auroc": 0.964072447045909, "optimizer_steps": 676, "seconds": 497.0, "train_seconds": 454.9, "data_wait_seconds": 1.6, "lr": 9.045084971874738e-06, "head_lr": 9.045084971874738e-05}
+{"epoch": 4, "train_loss": 0.5454549681504731, "val_auroc": 0.9691139529572961, "optimizer_steps": 676, "seconds": 497.3, "train_seconds": 454.9, "data_wait_seconds": 1.7, "lr": 8.535533905932739e-06, "head_lr": 8.535533905932738e-05}
+{"epoch": 5, "train_loss": 0.49083749607950794, "val_auroc": 0.9718337720299836, "optimizer_steps": 676, "seconds": 497.1, "train_seconds": 454.7, "data_wait_seconds": 1.6, "lr": 7.938926261462366e-06, "head_lr": 7.938926261462366e-05}
+{"epoch": 6, "train_loss": 0.4191999619908149, "val_auroc": 0.9692091040572428, "optimizer_steps": 676, "seconds": 498.2, "train_seconds": 455.9, "data_wait_seconds": 1.6, "lr": 7.269952498697734e-06, "head_lr": 7.269952498697734e-05}
+{"epoch": 7, "train_loss": 0.36206473194988326, "val_auroc": 0.9672264556115111, "optimizer_steps": 676, "seconds": 497.2, "train_seconds": 455.1, "data_wait_seconds": 1.5, "lr": 6.545084971874738e-06, "head_lr": 6.545084971874738e-05}
+{"epoch": 8, "train_loss": 0.2982526612579266, "val_auroc": 0.9609259504092498, "optimizer_steps": 676, "seconds": 497.5, "train_seconds": 455.0, "data_wait_seconds": 1.7, "lr": 5.782172325201155e-06, "head_lr": 5.782172325201155e-05}
+{"epoch": 9, "train_loss": 0.24774387014412516, "val_auroc": 0.9646333377403317, "optimizer_steps": 676, "seconds": 498.5, "train_seconds": 456.1, "data_wait_seconds": 1.6, "lr": 5e-06, "head_lr": 5e-05}
+{"epoch": 10, "train_loss": 0.20140901964260752, "val_auroc": 0.961085203302845, "optimizer_steps": 676, "seconds": 497.8, "train_seconds": 455.3, "data_wait_seconds": 1.6, "lr": 4.217827674798845e-06, "head_lr": 4.2178276747988446e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9703909808776336,
+ "auroc_ic95": [
+  0.958,
+  0.9801
+ ],
+ "auprc": 0.8214138407813623,
+ "regua_origem_auroc": 0.7923011742647323
+}
+tarefa 47/80: {'id': 46, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 1, 'inner': 2}
+tarefa 48/80: {'id': 47, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 1, 'inner': 3}
+tarefa 49/80: {'id': 48, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 2, 'inner': 0}
+tarefa 50/80: {'id': 49, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 2, 'inner': 1}
+tarefa 51/80: {'id': 50, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 2, 'inner': 2}
+tarefa 52/80: {'id': 51, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 2, 'inner': 3}
+tarefa 53/80: {'id': 52, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 3, 'inner': 0}
+tarefa 54/80: {'id': 53, 'configuracao': 'convnext_arquiteturas_aux_dr-02', 'outer': 3, 'inner': 1}
+GitHub: enviado
+# convnext_arquiteturas_aux_dr-20261118-2030
+
+- commit: `c424c0107c921dd390b503a2dab9efa9d5c176b4`
+- assinatura dos dados: `72e45dfc1003894a`
+- analisado: 2026-11-21 13:50
+
+Referência: `convnext_arquiteturas_aux_dr-00`
+
+| configuração | mudanças | F2 médio por base [IC95] | AUROC | sens. | esp. normais | esp. outras | régua origem | veredito |
+|---|---|---|---|---|---|---|---|---|
+| convnext_arquiteturas_aux_dr-02 | `{"model": "convnext_base", "augment": {"crop_scale": [0.85, 1.0], "hflip": true, "rotate_deg": 15, "rotate_interpolation": "bilinear", "color": 0.1}, "aux_dr": 0.5}` | 0.803 [0.785, 0.817] | 0.973 | 0.906 | 0.980 | 0.840 | 0.792 | empatou |
+| convnext_arquiteturas_aux_dr-00 | `{"model": "convnext_tiny", "augment": {"crop_scale": [0.85, 1.0], "hflip": true, "rotate_deg": 15, "rotate_interpolation": "bilinear", "color": 0.1}, "aux_dr": 0.5}` | 0.802 [0.783, 0.819] | 0.974 | 0.893 | 0.983 | 0.861 | 0.792 | referência |
+| convnext_arquiteturas_aux_dr-03 | `{"model": "convnext_large", "augment": {"crop_scale": [0.85, 1.0], "hflip": true, "rotate_deg": 15, "rotate_interpolation": "bilinear", "color": 0.1}, "aux_dr": 0.5}` | 0.793 [0.774, 0.808] | 0.974 | 0.907 | 0.977 | 0.832 | 0.792 | empatou |
+| convnext_arquiteturas_aux_dr-01 | `{"model": "convnext_small", "augment": {"crop_scale": [0.85, 1.0], "hflip": true, "rotate_deg": 15, "rotate_interpolation": "bilinear", "color": 0.1}, "aux_dr": 0.5}` | 0.786 [0.767, 0.802] | 0.971 | 0.888 | 0.979 | 0.838 | 0.792 | perdeu |
+
+**Aninhado** (escolha da melhor configuração feita só com validação interna): F2 médio por base 0.798 [0.7792, 0.8139]; escolhida por dobra: {0: 'convnext_arquiteturas_aux_dr-00', 1: 'convnext_arquiteturas_aux_dr-02', 2: 'convnext_arquiteturas_aux_dr-02', 3: 'convnext_arquiteturas_aux_dr-02', 4: 'convnext_arquiteturas_aux_dr-03'}
+
+## convnext_arquiteturas_aux_dr-00
+
+| base | DMRI | sem DMRI | F2 | AUROC | sens. | esp. |
+|---|---|---|---|---|---|---|
+| adam | 263 | 662 | 0.881 | 0.963 | 0.920 | 0.879 |
+| brset | 261 | 8881 | 0.808 | 0.991 | 0.885 | 0.983 |
+| hyamd | 532 | 560 | 0.853 | 0.833 | 0.959 | 0.371 |
+| odir | 280 | 4362 | 0.676 | 0.924 | 0.771 | 0.940 |
+| rfmid | 179 | 2059 | 0.794 | 0.973 | 0.860 | 0.951 |
+
+Distribuição das notas (quantis) e fração acima do limiar:
+
+| tipo | n | p10 | p50 | p90 | acima do limiar |
+|---|---|---|---|---|---|
+| normal | 11017 | 0.0 | 0.0001 | 0.0032 | 0.0167 |
+| outra | 5507 | 0.0 | 0.0016 | 0.4586 | 0.1371 |
+| drusas | 2832 | 0.0 | 0.0018 | 0.9654 | 0.2433 |
+| dmri | 1515 | 0.1977 | 0.9969 | 1.0 | 0.8904 |
+
+Especificidade por doença: catarata 1.00 (n=288), cicatriz 0.85 (n=206), descolamento 1.00 (n=25), edema_macular 0.97 (n=395), glaucoma 0.98 (n=671), hemorragia 0.85 (n=85), membrana_epirretiniana 0.86 (n=390), miopia 0.87 (n=616), nao_especificada 0.88 (n=662), nevo 0.96 (n=97), oclusao_vascular 0.93 (n=326), outra 0.87 (n=671), retinopatia_diabetica 0.47 (n=671), retinopatia_hipertensiva 0.96 (n=404)
+
+## convnext_arquiteturas_aux_dr-01
+
+| base | DMRI | sem DMRI | F2 | AUROC | sens. | esp. |
+|---|---|---|---|---|---|---|
+| adam | 263 | 662 | 0.861 | 0.951 | 0.905 | 0.861 |
+| brset | 261 | 8881 | 0.799 | 0.989 | 0.897 | 0.979 |
+| hyamd | 532 | 560 | 0.824 | 0.813 | 0.934 | 0.302 |
+| odir | 280 | 4362 | 0.659 | 0.926 | 0.789 | 0.923 |
+| rfmid | 179 | 2059 | 0.787 | 0.969 | 0.872 | 0.942 |
+
+Distribuição das notas (quantis) e fração acima do limiar:
+
+| tipo | n | p10 | p50 | p90 | acima do limiar |
+|---|---|---|---|---|---|
+| normal | 11017 | 0.0 | 0.0001 | 0.0029 | 0.0227 |
+| outra | 5507 | 0.0 | 0.0012 | 0.3675 | 0.1622 |
+| drusas | 2832 | 0.0 | 0.0019 | 0.8427 | 0.2768 |
+| dmri | 1515 | 0.0916 | 0.9922 | 1.0 | 0.897 |
+
+Especificidade por doença: catarata 1.00 (n=288), cicatriz 0.83 (n=206), descolamento 1.00 (n=25), edema_macular 0.95 (n=395), glaucoma 0.97 (n=671), hemorragia 0.84 (n=85), membrana_epirretiniana 0.86 (n=390), miopia 0.82 (n=616), nao_especificada 0.86 (n=662), nevo 0.98 (n=97), oclusao_vascular 0.91 (n=326), outra 0.85 (n=671), retinopatia_diabetica 0.41 (n=671), retinopatia_hipertensiva 0.94 (n=404)
+
+## convnext_arquiteturas_aux_dr-02
+
+| base | DMRI | sem DMRI | F2 | AUROC | sens. | esp. |
+|---|---|---|---|---|---|---|
+| adam | 263 | 662 | 0.866 | 0.951 | 0.913 | 0.858 |
+| brset | 261 | 8881 | 0.807 | 0.986 | 0.897 | 0.981 |
+| hyamd | 532 | 560 | 0.842 | 0.827 | 0.955 | 0.318 |
+| odir | 280 | 4362 | 0.672 | 0.930 | 0.814 | 0.920 |
+| rfmid | 179 | 2059 | 0.828 | 0.974 | 0.911 | 0.949 |
+
+Distribuição das notas (quantis) e fração acima do limiar:
+
+| tipo | n | p10 | p50 | p90 | acima do limiar |
+|---|---|---|---|---|---|
+| normal | 11017 | 0.0 | 0.0001 | 0.0035 | 0.0221 |
+| outra | 5507 | 0.0001 | 0.0015 | 0.4136 | 0.1705 |
+| drusas | 2832 | 0.0001 | 0.0017 | 0.9276 | 0.2818 |
+| dmri | 1515 | 0.1541 | 0.9946 | 1.0 | 0.9116 |
+
+Especificidade por doença: catarata 0.99 (n=288), cicatriz 0.84 (n=206), descolamento 1.00 (n=25), edema_macular 0.95 (n=395), glaucoma 0.98 (n=671), hemorragia 0.88 (n=85), membrana_epirretiniana 0.85 (n=390), miopia 0.83 (n=616), nao_especificada 0.86 (n=662), nevo 0.98 (n=97), oclusao_vascular 0.89 (n=326), outra 0.85 (n=671), retinopatia_diabetica 0.42 (n=671), retinopatia_hipertensiva 0.95 (n=404)
+
+## convnext_arquiteturas_aux_dr-03
+
+| base | DMRI | sem DMRI | F2 | AUROC | sens. | esp. |
+|---|---|---|---|---|---|---|
+| adam | 263 | 662 | 0.854 | 0.954 | 0.901 | 0.850 |
+| brset | 261 | 8881 | 0.805 | 0.990 | 0.904 | 0.979 |
+| hyamd | 532 | 560 | 0.845 | 0.829 | 0.962 | 0.304 |
+| odir | 280 | 4362 | 0.666 | 0.934 | 0.807 | 0.920 |
+| rfmid | 179 | 2059 | 0.796 | 0.973 | 0.911 | 0.930 |
+
+Distribuição das notas (quantis) e fração acima do limiar:
+
+| tipo | n | p10 | p50 | p90 | acima do limiar |
+|---|---|---|---|---|---|
+| normal | 11017 | 0.0 | 0.0002 | 0.0049 | 0.0211 |
+| outra | 5507 | 0.0002 | 0.0027 | 0.4325 | 0.1656 |
+| drusas | 2832 | 0.0001 | 0.002 | 0.8931 | 0.2549 |
+| dmri | 1515 | 0.1992 | 0.9917 | 0.9997 | 0.9063 |
+
+Especificidade por doença: catarata 0.99 (n=288), cicatriz 0.80 (n=206), descolamento 1.00 (n=25), edema_macular 0.96 (n=395), glaucoma 0.98 (n=671), hemorragia 0.86 (n=85), membrana_epirretiniana 0.85 (n=390), miopia 0.81 (n=616), nao_especificada 0.85 (n=662), nevo 0.96 (n=97), oclusao_vascular 0.89 (n=326), outra 0.85 (n=671), retinopatia_diabetica 0.41 (n=671), retinopatia_hipertensiva 0.95 (n=404)
+
+fim: /home/CIN/gsn2/macdeg_runs/convnext_arquiteturas_aux_dr-20261118-2030
+fim | status 0 | 2026-11-21 13:52:27
