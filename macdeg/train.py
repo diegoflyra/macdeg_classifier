@@ -345,8 +345,13 @@ def predict(model, loader, device, column: int = 0) -> np.ndarray:
     model.eval()
     probs = []
     for images, *_ in loader:
+        images = images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last)
         with torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
-            logits = model(images.to(device, non_blocking=True).contiguous(memory_format=torch.channels_last))
+            logits = model(images)
+        if not torch.isfinite(logits[:, column]).all():
+            # Estouro do fp16 (visto na v2s_macula em 1024 px: 2 de 3609 notas). Refaz só este lote em fp32;
+            # as notas que já saem finitas não mudam, então resultados antigos continuam comparáveis.
+            logits = model(images.float())
         probs.append(torch.sigmoid(logits[:, column].float()).cpu().numpy())
     return np.concatenate(probs)
 
