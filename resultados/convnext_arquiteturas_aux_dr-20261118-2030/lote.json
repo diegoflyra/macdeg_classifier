@@ -1,0 +1,272 @@
+{
+ "nome": "convnext_arquiteturas_aux_dr-20261118-2030",
+ "experimento": {
+  "nome": "convnext_arquiteturas_aux_dr",
+  "base": "configs/train/convnext_cluster.yaml",
+  "grade": {
+   "model": [
+    "convnext_tiny",
+    "convnext_small",
+    "convnext_base",
+    "convnext_large"
+   ],
+   "augment": [
+    {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "rotate_interpolation": "bilinear",
+     "color": 0.1
+    }
+   ],
+   "aux_dr": [
+    0.5
+   ]
+  },
+  "variacoes": [],
+  "referencia": null
+ },
+ "teste": false,
+ "final": false,
+ "piloto": false,
+ "lote_de_origem": null,
+ "commit": "c424c0107c921dd390b503a2dab9efa9d5c176b4",
+ "codigo_alterado_sem_commit": false,
+ "criado": "2026-11-18 20:30",
+ "assinatura_dados": "72e45dfc1003894a",
+ "splits": "splits_nested_seed0.csv",
+ "configuracoes": [
+  {
+   "nome": "convnext_arquiteturas_aux_dr-00",
+   "mudancas": {
+    "model": "convnext_tiny",
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "rotate_interpolation": "bilinear",
+     "color": 0.1
+    },
+    "aux_dr": 0.5
+   },
+   "config": {
+    "name": "convnext_arquiteturas_aux_dr-00",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "convnext_tiny",
+    "pretrained": true,
+    "freeze_first_stages": 2,
+    "head_init": "xavier",
+    "stochastic_depth_prob": 0.1,
+    "gradient_checkpointing": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "micro_batch": 2,
+    "epochs": 20,
+    "lr": 1e-05,
+    "head_lr": 0.0001,
+    "weight_decay": 0.0001,
+    "exclude_norm_bias_from_weight_decay": true,
+    "max_grad_norm": 1.0,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 4,
+    "torch_num_threads": 2,
+    "cache": true,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "rotate_interpolation": "bilinear",
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  },
+  {
+   "nome": "convnext_arquiteturas_aux_dr-01",
+   "mudancas": {
+    "model": "convnext_small",
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "rotate_interpolation": "bilinear",
+     "color": 0.1
+    },
+    "aux_dr": 0.5
+   },
+   "config": {
+    "name": "convnext_arquiteturas_aux_dr-01",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "convnext_small",
+    "pretrained": true,
+    "freeze_first_stages": 2,
+    "head_init": "xavier",
+    "stochastic_depth_prob": 0.1,
+    "gradient_checkpointing": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "micro_batch": 2,
+    "epochs": 20,
+    "lr": 1e-05,
+    "head_lr": 0.0001,
+    "weight_decay": 0.0001,
+    "exclude_norm_bias_from_weight_decay": true,
+    "max_grad_norm": 1.0,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 4,
+    "torch_num_threads": 2,
+    "cache": true,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "rotate_interpolation": "bilinear",
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  },
+  {
+   "nome": "convnext_arquiteturas_aux_dr-02",
+   "mudancas": {
+    "model": "convnext_base",
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "rotate_interpolation": "bilinear",
+     "color": 0.1
+    },
+    "aux_dr": 0.5
+   },
+   "config": {
+    "name": "convnext_arquiteturas_aux_dr-02",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "convnext_base",
+    "pretrained": true,
+    "freeze_first_stages": 2,
+    "head_init": "xavier",
+    "stochastic_depth_prob": 0.1,
+    "gradient_checkpointing": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "micro_batch": 2,
+    "epochs": 20,
+    "lr": 1e-05,
+    "head_lr": 0.0001,
+    "weight_decay": 0.0001,
+    "exclude_norm_bias_from_weight_decay": true,
+    "max_grad_norm": 1.0,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 4,
+    "torch_num_threads": 2,
+    "cache": true,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "rotate_interpolation": "bilinear",
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  },
+  {
+   "nome": "convnext_arquiteturas_aux_dr-03",
+   "mudancas": {
+    "model": "convnext_large",
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "rotate_interpolation": "bilinear",
+     "color": 0.1
+    },
+    "aux_dr": 0.5
+   },
+   "config": {
+    "name": "convnext_arquiteturas_aux_dr-03",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "convnext_large",
+    "pretrained": true,
+    "freeze_first_stages": 2,
+    "head_init": "xavier",
+    "stochastic_depth_prob": 0.1,
+    "gradient_checkpointing": true,
+    "image_size": 512,
+    "batch_size": 16,
+    "micro_batch": 2,
+    "epochs": 20,
+    "lr": 1e-05,
+    "head_lr": 0.0001,
+    "weight_decay": 0.0001,
+    "exclude_norm_bias_from_weight_decay": true,
+    "max_grad_norm": 1.0,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 4,
+    "torch_num_threads": 2,
+    "cache": true,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "rotate_interpolation": "bilinear",
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5
+   }
+  }
+ ],
+ "n_tarefas": 80
+}
