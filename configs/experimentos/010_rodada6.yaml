@@ -1,17 +1,19 @@
-# Experimento 010: rodada 6 = modelo final proposto. A híbrida (bloco do Gustavo sobre a V2-S, rodada5-03)
-# com o que GANHOU na rodada 5. Junta mudanças de propósito (não é "uma por vez"): no texto, é o modelo
-# final, comparado com a V2-S da rodada 4 nas mesmas imagens. Hiperparâmetros fixos (sem Optuna: ver
-# docs/decisoes.md). Explicabilidade em todas as tarefas (explain_maps.npz).
+# Experimento 010: rodada 6 = modelo final proposto: a híbrida (bloco do Gustavo sobre a V2-S, rodada5-03)
+# + a saída auxiliar de drusas. Comparada com a V2-S da rodada 4 nas mesmas imagens; a rodada5-03 (híbrida
+# sem drusas) mede o efeito das drusas na híbrida e é o modelo de reserva se esta não terminar.
+# Hiperparâmetros fixos (sem Optuna: docs/decisoes.md). Explicabilidade em todas as tarefas.
 #
-# ANTES DE LANÇAR: veredito da rodada5-01 (drusas) e da rodada5-04 (augmentation ampliada)
-#   - drusas ganhou      -> descomente aux_drusas (e o conjunto precisa do drusas_dobras.csv no zip)
-#   - augmentation ganhou -> troque o augment pela linha ampliada
+# Vereditos parciais da rodada 5 (21/11, contra a rodada4-00): nada ganhou.
+#   - drusas (01, completa): F2 +0,001 [-0,013; +0,015], empatou. Entra por decisão dos donos (21/11), por
+#     COBERTURA, não por melhora: olhos com drusas sem diagnóstico existem na população rastreada, e a saída
+#     não alterou a métrica principal. Precisa do drusas_dobras.csv no zip do conjunto.
+#   - mácula em 1024 px (02, 4/5 dobras): +0,001, empatou -> fora.
+#   - augmentation ampliada (04, 3/5 dobras): +0,010, empatou -> fica a padrão.
 # 20 tarefas, todas em 1024 px (~2 h cada numa GPU).
 nome: rodada6
 base: configs/train/baseline.yaml
 base_mudancas:
   augment: {crop_scale: [0.85, 1.0], hflip: true, rotate_deg: 15, color: 0.1}
-  # augment: {crop_scale: [0.7, 1.0], hflip: true, rotate_deg: 30, color: 0.25}   # se a rodada5-04 ganhou
   aux_dr: 0.5
   model: tf_efficientnetv2_s.in21k_ft_in1k
 treinar_base: false
@@ -21,5 +23,5 @@ variacoes:
     image_size: 1024
     cache: false
     aux_localization: 0.25
-    # aux_drusas: 0.5                                                              # se a rodada5-01 ganhou
+    aux_drusas: 0.5
 referencia: resultados/rodada4-20261119-0229/rodada4-00

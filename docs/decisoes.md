@@ -181,6 +181,36 @@ conclusão sobre a arquitetura. A V2-S retreinada empatou com a da rodada 3 (−
   por imagem (híbrida) e 0,72 (mácula), contra 0,40 da V2-S em 512 px: o lote inteiro (16) cabe em 24 GB,
   então o BatchNorm vê os mesmos 16 da base.
 
+## Fase 2: rodada 6, modelo final (21/11/2026)
+
+Prazo: entrega em 23/11. Vereditos **parciais** da rodada 5 (`rodada5-20261120-0225`, análise com 31
+tarefas faltando; a híbrida, 03, ainda sem tarefas), contra a `rodada4-00`: nada ganhou.
+
+| variação | dobras externas | Δ F2 médio por base [IC95] | veredito |
+|---|---|---|---|
+| 01 saída de drusas | 5/5 | +0,001 [−0,013; +0,015] | empatou |
+| 02 mácula em 1024 px | 4/5 | +0,001 [−0,014; +0,015] | empatou |
+| 04 augmentation ampliada | 3/5 | +0,010 [−0,007; +0,026] | empatou |
+
+- **Especificidade em retinopatia diabética oscila ±0,1 entre treinos idênticos:** as duas V2-S iguais
+  (rodada3-02 × rodada4-00) deram 0,422 × 0,528 nas mesmas 671 imagens. Por isso o +0,07 das drusas e o
+  −0,05 da augmentation ampliada nessa métrica não se distinguem do ruído (um treino de cada lado).
+- **Drusas entram no modelo final por decisão dos donos (21/11), por cobertura, não por melhora:** olhos com
+  drusas sem diagnóstico existem na população rastreada, e a saída de drusas não alterou a métrica
+  principal. Comportamento nas drusas da dobra externa (sem rótulo de DMRI, logo fora do F2): marcadas como
+  DMRI 16,9% (V2-S) × 22,3% (com a saída), crescendo com a idade (15% até 55 anos; 39% acima de 75), sem
+  a idade entrar na rede: coerente com a definição de Ferris (drusas maiores e mais numerosas com a idade).
+- **Rodada 6** (`010_rodada6.yaml`): híbrida + drusas, 20 tarefas, comparada com a `rodada4-00`. A
+  `rodada5-03` (híbrida sem drusas) mede o efeito das drusas na híbrida e é o modelo de reserva.
+  Junta duas mudanças de propósito (modelo final, não "uma por vez").
+- **Sem Optuna nesta entrega:** com a validação aninhada, uma busca custaria centenas de GPU-h; ajustar numa
+  divisão só e avaliar nas 5 dobras vazaria o teste. Mudanças de receita moveram o F2 em no máximo ~0,013
+  (rodada 2), dentro da variação entre treinos. Os hiperparâmetros próprios da híbrida (alfa 0,1, peso de
+  localização 0,25, 3 recortes de 192 px, lr única) nunca foram ajustados: se ela perder, não se separa
+  "a ideia" de "o ajuste".
+- **Previsão em fp32 quando o fp16 estoura** (`predict`): uma tarefa da `rodada5-02` caiu com 2 de 3609
+  notas não finitas. Só o lote com NaN é refeito; as notas finitas não mudam (resultados comparáveis).
+
 ## Pré-processamento por ROI e auditoria (HYAMD, suspenso em 11/11/2026)
 
 Desenvolvido antes da mudança para o conjunto multibase. Fica disponível para voltar como experimento

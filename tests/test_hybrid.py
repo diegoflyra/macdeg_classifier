@@ -90,3 +90,25 @@ def test_hybrid_trains_with_localization_and_writes_explanations(tiny_dataset, t
     assert {r["grupo"] for r in summary["dmri"]} >= {"normal"}
     with pytest.raises(ValueError, match="aux_localization"):
         train.run({**config, "model": "resnet18"}, 0, 1, 0, tmp_path / "outra")
+
+
+def test_hybrid_trains_with_drusas_and_localization_together(tiny_dataset, tmp_path, monkeypatch):
+    """Híbrida + saída de drusas + perda de localização (candidata a modelo final): as drusas de treino
+    (rótulo -1) ficam fora da perda principal e da de localização; as do teste externo são pontuadas."""
+    from macdeg import train
+    from macdeg.data.drusas import FOLDS_FILE, assign_folds
+    monkeypatch.setenv("MACDEG_CACHE", str(tmp_path / "cache"))
+    manifest = pd.read_csv(tiny_dataset / "manifest.csv", dtype={"uid": str})
+    splits = pd.read_csv(tiny_dataset / "splits_nested_seed0.csv", dtype={"uid": str})
+    extras = pd.read_csv(tiny_dataset / "extras_drusas.csv", dtype={"uid": str})
+    links = extras[["uid"]].assign(patient_id=[f"p{i}" for i in range(len(extras))], age=np.arange(len(extras)) * 6 + 45)
+    assign_folds(extras, links, manifest, splits).to_csv(tiny_dataset / FOLDS_FILE, index=False)
+    config = {"name": "x", "dataset": str(tiny_dataset), "model": "hibrida_v2s", "pretrained": False,
+              "image_size": 128, "batch_size": 4, "epochs": 1, "lr": 1e-3, "num_workers": 0, "device": "cpu",
+              "augment": None, "aux_dr": 0.5, "aux_drusas": 0.5, "aux_localization": 0.25, "cache": False}
+    assert train.outputs_for(config) == 3
+    out = tmp_path / "tarefa"
+    assert train.run(config, 0, 1, 0, out) is not None
+    scored = pd.read_csv(out / "extra_predictions.csv")
+    assert scored["prob"].between(0, 1).all() and scored["prob_drusas"].between(0, 1).all()
+    assert np.isfinite(pd.read_csv(out / "test_predictions.csv")["prob"]).all()
