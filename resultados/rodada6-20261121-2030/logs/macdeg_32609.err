@@ -1,0 +1,16 @@
+wandb: [wandb.login()] Loaded credentials for https://api.forge.coreweave.com from WANDB_API_KEY.
+wandb: Currently logged in as: dfal (models-universidade-federal-de-pernambuco) to https://api.forge.coreweave.com. Use `wandb login --relogin` to force relogin
+wandb: setting up run ntst97xo
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /home/CIN/gsn2/macdeg_final/wandb/run-20261122_105405-ntst97xo
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run rodada6-20261121-2030-analise
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/ntst97xo
+wandb: updating run metadata; uploading artifact run-ntst97xo-ranking
+wandb: uploading artifact run-ntst97xo-ranking; uploading media/table/ranking_0_9de89d9a95019bbea50e.table.json; uploading wandb-summary.json; uploading wandb-metadata.json; uploading requirements.txt (+ 1 more)
+wandb: uploading history steps 0-0, summary
+wandb: 🚀 View run rodada6-20261121-2030-analise at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier/runs/ntst97xo
+wandb: ⭐️ View project at: https://forge.coreweave.com/wandb/models-universidade-federal-de-pernambuco/macdeg_classifier
+wandb: Synced 4 W&B file(s), 1 media file(s), 2 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20261122_105405-ntst97xo/logs
