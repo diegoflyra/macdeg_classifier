@@ -1,0 +1,155 @@
+==========================================
+job 32574 | nó cluster-node4 | 2026-11-21 21:02:17
+argumentos: --retomar /home/CIN/gsn2/macdeg_runs/rodada6-20261121-2030 --tarefas 1-10
+==========================================
+python: /home/CIN/gsn2/macdeg_classifier/.venv/bin/python
+GPU 0: NVIDIA GeForce RTX 3090 (UUID: GPU-a4fc3951-cc4a-baa1-8422-b0a546f53890)
+torch 2.14.1+cu130 | GPUs: NVIDIA GeForce RTX 3090
+disco local /tmp: 1564 GB livres
+disco local /var/tmp: 1564 GB livres
+copiando o conjunto para /tmp/gsn2-macdeg-32574 ...
+conjunto pronto: 20871 imagens
+segredos: {'GITHUB_TOKEN': True, 'WANDB_API_KEY': True, 'HF_TOKEN': True, 'WANDB_ENTITY': False}
+commit: 5c3ddec928 | mudanças sem commit: False
+assinatura dos dados: 72e45dfc1003894a
+GitHub: envio testado e funcionando
+lote /home/CIN/gsn2/macdeg_runs/rodada6-20261121-2030: 1 configuração(ões), 20 tarefas
+tarefa 1/20: {'id': 0, 'configuracao': 'rodada6-01', 'outer': 0, 'inner': 0}
+treino: 10823 imagens (909 DMRI) + 1656 drusas (só a saída de drusas); validação: 3608 (302 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 22495837; congelados: 0
+{"epoch": 0, "train_loss": 1.3353010161620815, "val_auroc": 0.9439489909977042, "seconds": 678.7, "train_seconds": 628.9, "data_wait_seconds": 381.5, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.9675800234117619, "val_auroc": 0.9496615625613475, "seconds": 578.2, "train_seconds": 531.2, "data_wait_seconds": 313.4, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.8028589480380803, "val_auroc": 0.9644841007519942, "seconds": 568.3, "train_seconds": 521.0, "data_wait_seconds": 307.5, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.7089622511943283, "val_auroc": 0.9551813279487826, "seconds": 541.2, "train_seconds": 493.2, "data_wait_seconds": 275.2, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.7154167809156613, "val_auroc": 0.9690648750215343, "seconds": 529.3, "train_seconds": 480.4, "data_wait_seconds": 260.6, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.6391470397276199, "val_auroc": 0.95898887433244, "seconds": 499.2, "train_seconds": 452.6, "data_wait_seconds": 216.8, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.5656835902410539, "val_auroc": 0.9688800815695324, "seconds": 506.9, "train_seconds": 461.9, "data_wait_seconds": 217.3, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.5401934969295127, "val_auroc": 0.9593754882753813, "seconds": 484.8, "train_seconds": 436.4, "data_wait_seconds": 181.6, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.4600436014000121, "val_auroc": 0.9686627364254435, "seconds": 473.3, "train_seconds": 424.6, "data_wait_seconds": 182.3, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.39261349847011834, "val_auroc": 0.9681889841067616, "seconds": 439.9, "train_seconds": 391.8, "data_wait_seconds": 154.2, "lr": 0.00015}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9690648750215343,
+ "auroc_ic95": [
+  0.9584,
+  0.9776
+ ],
+ "auprc": 0.8107808331710423,
+ "regua_origem_auroc": 0.7922631138247538
+}
+tarefa 2/20: {'id': 1, 'configuracao': 'rodada6-01', 'outer': 0, 'inner': 1}
+treino: 10823 imagens (908 DMRI) + 1706 drusas (só a saída de drusas); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 22495837; congelados: 0
+{"epoch": 0, "train_loss": 1.3392599123038855, "val_auroc": 0.9512929205174678, "seconds": 382.8, "train_seconds": 335.7, "data_wait_seconds": 93.8, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.9207433207700384, "val_auroc": 0.9555973297783635, "seconds": 395.7, "train_seconds": 351.5, "data_wait_seconds": 124.7, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.7958916021870166, "val_auroc": 0.9645821163054277, "seconds": 369.6, "train_seconds": 325.2, "data_wait_seconds": 88.1, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.7369760319799908, "val_auroc": 0.9607455450537489, "seconds": 373.5, "train_seconds": 327.9, "data_wait_seconds": 91.8, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6817484195528511, "val_auroc": 0.9628550600899727, "seconds": 386.3, "train_seconds": 340.5, "data_wait_seconds": 89.2, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.6130137667440515, "val_auroc": 0.9677805904644928, "seconds": 374.1, "train_seconds": 328.5, "data_wait_seconds": 89.2, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.5637524600210927, "val_auroc": 0.9732613352106769, "seconds": 377.0, "train_seconds": 331.8, "data_wait_seconds": 85.6, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.5177626011186632, "val_auroc": 0.9694352491224916, "seconds": 373.3, "train_seconds": 328.9, "data_wait_seconds": 77.3, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.4741056213966579, "val_auroc": 0.9676667515465616, "seconds": 393.4, "train_seconds": 350.2, "data_wait_seconds": 91.5, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.3904562270266419, "val_auroc": 0.9759160787485708, "seconds": 370.9, "train_seconds": 327.6, "data_wait_seconds": 85.2, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.36846294117993933, "val_auroc": 0.973865979638811, "seconds": 365.6, "train_seconds": 321.7, "data_wait_seconds": 75.5, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.31163190399911517, "val_auroc": 0.9727121123610092, "seconds": 385.6, "train_seconds": 340.9, "data_wait_seconds": 82.4, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.25407055711152454, "val_auroc": 0.9741331016611494, "seconds": 386.6, "train_seconds": 343.0, "data_wait_seconds": 87.5, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.19653355147056806, "val_auroc": 0.9782487779791595, "seconds": 374.8, "train_seconds": 332.0, "data_wait_seconds": 91.6, "lr": 6.183221215612904e-05}
+{"epoch": 14, "train_loss": 0.18956071067016245, "val_auroc": 0.9781489192792199, "seconds": 375.9, "train_seconds": 332.9, "data_wait_seconds": 97.2, "lr": 4.3933982822017876e-05}
+{"epoch": 15, "train_loss": 0.13993228836958016, "val_auroc": 0.9788419386568006, "seconds": 381.7, "train_seconds": 335.1, "data_wait_seconds": 68.9, "lr": 2.8647450843757897e-05}
+{"epoch": 16, "train_loss": 0.11560675139642423, "val_auroc": 0.9786791689758991, "seconds": 391.7, "train_seconds": 350.1, "data_wait_seconds": 70.6, "lr": 1.634902137174483e-05}
+{"epoch": 17, "train_loss": 0.10867847369372426, "val_auroc": 0.9786022777769456, "seconds": 367.9, "train_seconds": 326.3, "data_wait_seconds": 84.8, "lr": 7.34152255572697e-06}
+{"epoch": 18, "train_loss": 0.10109263403866901, "val_auroc": 0.9787620516968489, "seconds": 363.4, "train_seconds": 321.8, "data_wait_seconds": 77.8, "lr": 1.8467489107293509e-06}
+{"epoch": 19, "train_loss": 0.09770966017330934, "val_auroc": 0.9787266018583705, "seconds": 378.8, "train_seconds": 334.8, "data_wait_seconds": 86.3, "lr": 0.0}
+{
+ "auroc": 0.9788419386568006,
+ "auroc_ic95": [
+  0.9697,
+  0.9859
+ ],
+ "auprc": 0.8401879407308869,
+ "regua_origem_auroc": 0.7926553926194435
+}
+tarefa 3/20: {'id': 2, 'configuracao': 'rodada6-01', 'outer': 0, 'inner': 2}
+treino: 10823 imagens (908 DMRI) + 1783 drusas (só a saída de drusas); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 22495837; congelados: 0
+{"epoch": 0, "train_loss": 1.357959565622531, "val_auroc": 0.9493032359211715, "seconds": 422.8, "train_seconds": 373.5, "data_wait_seconds": 149.3, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.9586431193987932, "val_auroc": 0.9692055741126306, "seconds": 431.2, "train_seconds": 383.9, "data_wait_seconds": 162.6, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.8379605428482556, "val_auroc": 0.9667535437356141, "seconds": 438.6, "train_seconds": 391.0, "data_wait_seconds": 139.8, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.7127347401564579, "val_auroc": 0.9589376032913427, "seconds": 442.7, "train_seconds": 395.1, "data_wait_seconds": 158.0, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6768683287228684, "val_auroc": 0.9606911220622819, "seconds": 441.3, "train_seconds": 393.3, "data_wait_seconds": 148.8, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.618503614786771, "val_auroc": 0.9639674860072996, "seconds": 439.1, "train_seconds": 391.8, "data_wait_seconds": 153.1, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.5758292574667415, "val_auroc": 0.9678435014454546, "seconds": 452.9, "train_seconds": 405.5, "data_wait_seconds": 135.3, "lr": 0.00021809857496093199}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9692055741126306,
+ "auroc_ic95": [
+  0.9574,
+  0.978
+ ],
+ "auprc": 0.7833505690084209,
+ "regua_origem_auroc": 0.7907955243330688
+}
+tarefa 4/20: {'id': 3, 'configuracao': 'rodada6-01', 'outer': 0, 'inner': 3}
+treino: 10824 imagens (908 DMRI) + 1707 drusas (só a saída de drusas); validação: 3607 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 22495837; congelados: 0
+{"epoch": 0, "train_loss": 1.3216754481634114, "val_auroc": 0.9292721493699008, "seconds": 402.1, "train_seconds": 351.6, "data_wait_seconds": 141.5, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.9210201486241011, "val_auroc": 0.9557357218772724, "seconds": 411.7, "train_seconds": 363.7, "data_wait_seconds": 132.8, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.802394438901319, "val_auroc": 0.9581515354925324, "seconds": 434.9, "train_seconds": 387.7, "data_wait_seconds": 141.0, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.705878204360395, "val_auroc": 0.9621960380057376, "seconds": 446.0, "train_seconds": 398.8, "data_wait_seconds": 168.0, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6437870554083609, "val_auroc": 0.9718927552561551, "seconds": 459.2, "train_seconds": 412.1, "data_wait_seconds": 176.3, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.5936031744435981, "val_auroc": 0.9692202271074566, "seconds": 461.0, "train_seconds": 413.4, "data_wait_seconds": 176.1, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.5185022661141281, "val_auroc": 0.9693795499404663, "seconds": 451.7, "train_seconds": 404.7, "data_wait_seconds": 165.3, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.47403326201922286, "val_auroc": 0.9717114568599717, "seconds": 460.0, "train_seconds": 412.9, "data_wait_seconds": 164.8, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.43418474001560176, "val_auroc": 0.968636875794117, "seconds": 458.9, "train_seconds": 411.2, "data_wait_seconds": 159.7, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.35045575685941854, "val_auroc": 0.9689110708891712, "seconds": 469.6, "train_seconds": 421.8, "data_wait_seconds": 165.4, "lr": 0.00015}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9718927552561551,
+ "auroc_ic95": [
+  0.9625,
+  0.9795
+ ],
+ "auprc": 0.7329892127541778,
+ "regua_origem_auroc": 0.7928413604072272
+}
+tarefa 5/20: {'id': 4, 'configuracao': 'rodada6-01', 'outer': 1, 'inner': 0}
+treino: 10823 imagens (909 DMRI) + 1768 drusas (só a saída de drusas); validação: 3608 (303 DMRI); dispositivo: cuda
+lote efetivo 16 = 1 x 16 imagens | GPU: NVIDIA GeForce RTX 3090
+parâmetros treináveis: 22495837; congelados: 0
+{"epoch": 0, "train_loss": 1.3359097769962618, "val_auroc": 0.9163773260835917, "seconds": 637.6, "train_seconds": 583.4, "data_wait_seconds": 383.9, "lr": 0.00029815325108927063}
+{"epoch": 1, "train_loss": 0.9215618066262198, "val_auroc": 0.9443986758736387, "seconds": 632.9, "train_seconds": 581.3, "data_wait_seconds": 372.3, "lr": 0.00029265847744427303}
+{"epoch": 2, "train_loss": 0.8095700569052733, "val_auroc": 0.924585211925126, "seconds": 500.7, "train_seconds": 458.8, "data_wait_seconds": 214.8, "lr": 0.00028365097862825513}
+{"epoch": 3, "train_loss": 0.7270380181589806, "val_auroc": 0.9561939855105026, "seconds": 425.3, "train_seconds": 382.2, "data_wait_seconds": 117.4, "lr": 0.0002713525491562421}
+{"epoch": 4, "train_loss": 0.6524470817041761, "val_auroc": 0.9663286449673711, "seconds": 374.1, "train_seconds": 334.1, "data_wait_seconds": 81.7, "lr": 0.00025606601717798207}
+{"epoch": 5, "train_loss": 0.6432252679750058, "val_auroc": 0.9705396863438236, "seconds": 395.1, "train_seconds": 347.9, "data_wait_seconds": 90.9, "lr": 0.00023816778784387094}
+{"epoch": 6, "train_loss": 0.5511069282434369, "val_auroc": 0.9637078533874567, "seconds": 457.1, "train_seconds": 409.2, "data_wait_seconds": 164.8, "lr": 0.00021809857496093199}
+{"epoch": 7, "train_loss": 0.45570932013520604, "val_auroc": 0.9715417683977172, "seconds": 484.6, "train_seconds": 436.6, "data_wait_seconds": 188.7, "lr": 0.0001963525491562421}
+{"epoch": 8, "train_loss": 0.4646219461397967, "val_auroc": 0.9701252727390742, "seconds": 466.3, "train_seconds": 420.6, "data_wait_seconds": 158.7, "lr": 0.00017346516975603462}
+{"epoch": 9, "train_loss": 0.40529493694655766, "val_auroc": 0.9715247924187274, "seconds": 477.8, "train_seconds": 429.7, "data_wait_seconds": 182.0, "lr": 0.00015}
+{"epoch": 10, "train_loss": 0.3733862046645267, "val_auroc": 0.9681046319457967, "seconds": 474.2, "train_seconds": 427.7, "data_wait_seconds": 189.0, "lr": 0.00012653483024396533}
+{"epoch": 11, "train_loss": 0.2928833135121689, "val_auroc": 0.9725383582231143, "seconds": 473.4, "train_seconds": 426.4, "data_wait_seconds": 171.9, "lr": 0.0001036474508437579}
+{"epoch": 12, "train_loss": 0.23496178541635815, "val_auroc": 0.9682284567337218, "seconds": 472.0, "train_seconds": 424.4, "data_wait_seconds": 182.1, "lr": 8.190142503906798e-05}
+{"epoch": 13, "train_loss": 0.2149211607029799, "val_auroc": 0.9673297284342656, "seconds": 471.2, "train_seconds": 423.1, "data_wait_seconds": 190.8, "lr": 6.183221215612904e-05}
+{"epoch": 14, "train_loss": 0.17870713300936625, "val_auroc": 0.9695950230423951, "seconds": 444.1, "train_seconds": 396.8, "data_wait_seconds": 163.7, "lr": 4.3933982822017876e-05}
+{"epoch": 15, "train_loss": 0.14609928004225625, "val_auroc": 0.9695490880404227, "seconds": 461.9, "train_seconds": 413.7, "data_wait_seconds": 178.4, "lr": 2.8647450843757897e-05}
+{"epoch": 16, "train_loss": 0.13357036748934187, "val_auroc": 0.9694542222754801, "seconds": 463.5, "train_seconds": 416.9, "data_wait_seconds": 151.4, "lr": 1.634902137174483e-05}
+parada antecipada: 5 épocas sem melhorar
+{
+ "auroc": 0.9725383582231143,
+ "auroc_ic95": [
+  0.9623,
+  0.9811
+ ],
+ "auprc": 0.8348576509085538,
+ "regua_origem_auroc": 0.7927342809923958
+}
+tarefa 6/20: {'id': 5, 'configuracao': 'rodada6-01', 'outer': 1, 'inner': 1}
+tarefa 7/20: {'id': 6, 'configuracao': 'rodada6-01', 'outer': 1, 'inner': 2}
+tarefa 8/20: {'id': 7, 'configuracao': 'rodada6-01', 'outer': 1, 'inner': 3}
+tarefa 9/20: {'id': 8, 'configuracao': 'rodada6-01', 'outer': 2, 'inner': 0}
+tarefa 10/20: {'id': 9, 'configuracao': 'rodada6-01', 'outer': 2, 'inner': 1}
+faltam 10 tarefa(s) em andamento em outro job; a análise fica com ele
