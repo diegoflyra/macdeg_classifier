@@ -2,7 +2,7 @@
 
 - commit: `4e80f14fd26356f02f746b5d356510e3c47dbcd2`
 - assinatura dos dados: `72e45dfc1003894a`
-- analisado: 2026-11-22 10:50
+- analisado: 2026-11-22 10:51
 
 Referência: `resultados/rodada4-20261119-0229/rodada4-00`
 
