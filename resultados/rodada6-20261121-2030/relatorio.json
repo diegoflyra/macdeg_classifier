@@ -1,0 +1,736 @@
+{
+ "lote": "rodada6-20261121-2030",
+ "commit": "4e80f14fd26356f02f746b5d356510e3c47dbcd2",
+ "assinatura_dados": "72e45dfc1003894a",
+ "teste": false,
+ "piloto": false,
+ "tarefas_faltando": [],
+ "analisado": "2026-11-22 10:50",
+ "configuracoes": {
+  "rodada6-01": {
+   "mudancas": {
+    "model": "hibrida_v2s",
+    "image_size": 1024,
+    "cache": false,
+    "aux_localization": 0.25,
+    "aux_drusas": 0.5
+   },
+   "dobras_externas": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "n": 18039,
+   "n_dmri": 1515,
+   "n_normal": 11017,
+   "n_outra_doenca": 5507,
+   "f2_media_bases": 0.8102870389966054,
+   "f2_media_bases_ic95": [
+    0.7908,
+    0.8287
+   ],
+   "f2_geral": 0.810793889306286,
+   "auroc": 0.9772065514467206,
+   "auprc": 0.828019085475056,
+   "auroc_ic95": [
+    0.9736,
+    0.9809
+   ],
+   "sensibilidade": 0.8547854785478548,
+   "especificidade": 0.9618131203098523,
+   "especificidade_normais": 0.9915585004992284,
+   "especificidade_outras_doencas": 0.9023061558017069,
+   "especificidade_por_doenca": {
+    "catarata": {
+     "n": 288,
+     "especificidade": 1.0
+    },
+    "cicatriz": {
+     "n": 206,
+     "especificidade": 0.8495145631067961
+    },
+    "descolamento": {
+     "n": 25,
+     "especificidade": 1.0
+    },
+    "edema_macular": {
+     "n": 395,
+     "especificidade": 0.9848101265822785
+    },
+    "glaucoma": {
+     "n": 671,
+     "especificidade": 0.9940387481371088
+    },
+    "hemorragia": {
+     "n": 85,
+     "especificidade": 0.8941176470588236
+    },
+    "membrana_epirretiniana": {
+     "n": 390,
+     "especificidade": 0.9692307692307692
+    },
+    "miopia": {
+     "n": 616,
+     "especificidade": 0.9448051948051948
+    },
+    "nao_especificada": {
+     "n": 662,
+     "especificidade": 0.9063444108761329
+    },
+    "nevo": {
+     "n": 97,
+     "especificidade": 0.979381443298969
+    },
+    "oclusao_vascular": {
+     "n": 326,
+     "especificidade": 0.9785276073619632
+    },
+    "outra": {
+     "n": 671,
+     "especificidade": 0.9165424739195231
+    },
+    "retinopatia_diabetica": {
+     "n": 671,
+     "especificidade": 0.5499254843517138
+    },
+    "retinopatia_hipertensiva": {
+     "n": 404,
+     "especificidade": 0.9678217821782178
+    }
+   },
+   "por_base": {
+    "adam": {
+     "n_dmri": 263,
+     "n_sem_dmri": 662,
+     "f2": 0.8740740740740741,
+     "auroc": 0.9635509402318129,
+     "sensibilidade": 0.8973384030418251,
+     "especificidade": 0.9063444108761329
+    },
+    "brset": {
+     "n_dmri": 261,
+     "n_sem_dmri": 8881,
+     "f2": 0.8345375722543352,
+     "auroc": 0.9938781875811334,
+     "sensibilidade": 0.8850574712643678,
+     "especificidade": 0.9877266073640356
+    },
+    "hyamd": {
+     "n_dmri": 532,
+     "n_sem_dmri": 560,
+     "f2": 0.8209982788296041,
+     "auroc": 0.8035747851772288,
+     "sensibilidade": 0.8966165413533834,
+     "especificidade": 0.4642857142857143
+    },
+    "odir": {
+     "n_dmri": 280,
+     "n_sem_dmri": 4362,
+     "f2": 0.7002801120448179,
+     "auroc": 0.9407308246544835,
+     "sensibilidade": 0.7142857142857143,
+     "especificidade": 0.9752407152682255
+    },
+    "rfmid": {
+     "n_dmri": 179,
+     "n_sem_dmri": 2059,
+     "f2": 0.8215451577801959,
+     "auroc": 0.9787552128412936,
+     "sensibilidade": 0.8435754189944135,
+     "especificidade": 0.9747450218552696
+    }
+   },
+   "regua_origem_auroc": 0.7921528881283191,
+   "regua_idade_auroc": 0.7957865370853291,
+   "regua_idade_cobertura": 0.656,
+   "regua_idade_por_base": {
+    "brset": 0.9049483657529676,
+    "hyamd": 0.7308253893662728,
+    "odir": 0.5707457260758498
+   },
+   "auroc_por_estagio": {
+    "dmri_intermediaria_tardia": {
+     "n": 424,
+     "n_sem_dmri": 560,
+     "bases": [
+      "hyamd"
+     ],
+     "auroc": 0.8593286725067385
+    },
+    "dmri_precoce": {
+     "n": 108,
+     "n_sem_dmri": 560,
+     "bases": [
+      "hyamd"
+     ],
+     "auroc": 0.5846891534391534
+    }
+   },
+   "nota_selecao_por_dobra": {
+    "0": 0.7770143033987976,
+    "1": 0.7808190433595416,
+    "2": 0.7855783036958343,
+    "3": 0.777419045537096,
+    "4": 0.7653060804794133
+   },
+   "epocas_melhores": [
+    4,
+    15,
+    1,
+    4,
+    11,
+    3,
+    6,
+    4,
+    12,
+    8,
+    8,
+    4,
+    17,
+    6,
+    9,
+    17,
+    12,
+    8,
+    9,
+    12
+   ],
+   "gpus": [
+    "NVIDIA A100 80GB PCIe",
+    "NVIDIA GeForce RTX 3090"
+   ],
+   "distribuicao_notas": [
+    {
+     "tipo": "normal",
+     "n": 11017,
+     "p10": 0.0,
+     "p25": 0.0001,
+     "p50": 0.0005,
+     "p75": 0.0077,
+     "p90": 0.0638,
+     "acima_do_limiar": 0.0083
+    },
+    {
+     "tipo": "outra",
+     "n": 5507,
+     "p10": 0.0003,
+     "p25": 0.0049,
+     "p50": 0.0457,
+     "p75": 0.2444,
+     "p90": 0.5862,
+     "acima_do_limiar": 0.0928
+    },
+    {
+     "tipo": "drusas",
+     "n": 2832,
+     "p10": 0.0006,
+     "p25": 0.0049,
+     "p50": 0.0634,
+     "p75": 0.4545,
+     "p90": 0.9377,
+     "acima_do_limiar": 0.1931
+    },
+    {
+     "tipo": "dmri",
+     "n": 1515,
+     "p10": 0.4683,
+     "p25": 0.7928,
+     "p50": 0.9703,
+     "p75": 0.9936,
+     "p90": 0.9985,
+     "acima_do_limiar": 0.8442
+    }
+   ],
+   "explicabilidade": {
+    "atencao": [
+     {
+      "grupo": "dmri",
+      "n": 1515,
+      "massa_macula": 0.0944,
+      "massa_fora_retina": 0.0975,
+      "area_metade": 0.0517
+     },
+     {
+      "grupo": "dmri_precoce",
+      "n": 108,
+      "massa_macula": 0.0336,
+      "massa_fora_retina": 0.2218,
+      "area_metade": 0.0311
+     },
+     {
+      "grupo": "dmri_intermediaria_tardia",
+      "n": 424,
+      "massa_macula": 0.0691,
+      "massa_fora_retina": 0.1677,
+      "area_metade": 0.0423
+     },
+     {
+      "grupo": "normal",
+      "n": 11017,
+      "massa_macula": 0.0761,
+      "massa_fora_retina": 0.3249,
+      "area_metade": 0.0426
+     },
+     {
+      "grupo": "retinopatia_diabetica",
+      "n": 671,
+      "massa_macula": 0.0559,
+      "massa_fora_retina": 0.2379,
+      "area_metade": 0.0424
+     },
+     {
+      "grupo": "outras_doencas",
+      "n": 5507,
+      "massa_macula": 0.0938,
+      "massa_fora_retina": 0.201,
+      "area_metade": 0.063
+     },
+     {
+      "grupo": "falso_negativo",
+      "n": 220,
+      "massa_macula": 0.0938,
+      "massa_fora_retina": 0.1399,
+      "area_metade": 0.0629
+     },
+     {
+      "grupo": "falso_positivo",
+      "n": 631,
+      "massa_macula": 0.1041,
+      "massa_fora_retina": 0.1289,
+      "area_metade": 0.0521
+     }
+    ],
+    "dmri": [
+     {
+      "grupo": "dmri",
+      "n": 1515,
+      "massa_macula": 0.5357,
+      "massa_fora_retina": 0.049,
+      "area_metade": 0.0908
+     },
+     {
+      "grupo": "dmri_precoce",
+      "n": 108,
+      "massa_macula": 0.3316,
+      "massa_fora_retina": 0.1142,
+      "area_metade": 0.1394
+     },
+     {
+      "grupo": "dmri_intermediaria_tardia",
+      "n": 424,
+      "massa_macula": 0.5392,
+      "massa_fora_retina": 0.0687,
+      "area_metade": 0.1066
+     },
+     {
+      "grupo": "normal",
+      "n": 11017,
+      "massa_macula": 0.216,
+      "massa_fora_retina": 0.0584,
+      "area_metade": 0.071
+     },
+     {
+      "grupo": "retinopatia_diabetica",
+      "n": 671,
+      "massa_macula": 0.2745,
+      "massa_fora_retina": 0.1229,
+      "area_metade": 0.123
+     },
+     {
+      "grupo": "outras_doencas",
+      "n": 5507,
+      "massa_macula": 0.2758,
+      "massa_fora_retina": 0.0762,
+      "area_metade": 0.0942
+     },
+     {
+      "grupo": "falso_negativo",
+      "n": 220,
+      "massa_macula": 0.3852,
+      "massa_fora_retina": 0.0654,
+      "area_metade": 0.0771
+     },
+     {
+      "grupo": "falso_positivo",
+      "n": 631,
+      "massa_macula": 0.4623,
+      "massa_fora_retina": 0.0681,
+      "area_metade": 0.1036
+     }
+    ],
+    "drusas": [
+     {
+      "grupo": "dmri",
+      "n": 1515,
+      "massa_macula": 0.4752,
+      "massa_fora_retina": 0.0261,
+      "area_metade": 0.0607
+     },
+     {
+      "grupo": "dmri_precoce",
+      "n": 108,
+      "massa_macula": 0.4285,
+      "massa_fora_retina": 0.0319,
+      "area_metade": 0.0543
+     },
+     {
+      "grupo": "dmri_intermediaria_tardia",
+      "n": 424,
+      "massa_macula": 0.5146,
+      "massa_fora_retina": 0.0144,
+      "area_metade": 0.0533
+     },
+     {
+      "grupo": "normal",
+      "n": 11017,
+      "massa_macula": 0.2974,
+      "massa_fora_retina": 0.0553,
+      "area_metade": 0.0498
+     },
+     {
+      "grupo": "retinopatia_diabetica",
+      "n": 671,
+      "massa_macula": 0.3877,
+      "massa_fora_retina": 0.0283,
+      "area_metade": 0.0522
+     },
+     {
+      "grupo": "outras_doencas",
+      "n": 5507,
+      "massa_macula": 0.3076,
+      "massa_fora_retina": 0.078,
+      "area_metade": 0.0585
+     },
+     {
+      "grupo": "falso_negativo",
+      "n": 220,
+      "massa_macula": 0.4002,
+      "massa_fora_retina": 0.0384,
+      "area_metade": 0.0402
+     },
+     {
+      "grupo": "falso_positivo",
+      "n": 631,
+      "massa_macula": 0.465,
+      "massa_fora_retina": 0.0301,
+      "area_metade": 0.0558
+     }
+    ]
+   },
+   "drusas_por_idade": [
+    {
+     "faixa": "ate_55",
+     "n": 362,
+     "mediana_nota_dmri": 0.021,
+     "acima_do_limiar_dmri": 0.1271,
+     "mediana_nota_drusas": 0.4182
+    },
+    {
+     "faixa": "56_65",
+     "n": 468,
+     "mediana_nota_dmri": 0.036,
+     "acima_do_limiar_dmri": 0.1261,
+     "mediana_nota_drusas": 0.5937
+    },
+    {
+     "faixa": "66_75",
+     "n": 523,
+     "mediana_nota_dmri": 0.0527,
+     "acima_do_limiar_dmri": 0.195,
+     "mediana_nota_drusas": 0.7355
+    },
+    {
+     "faixa": "acima_75",
+     "n": 530,
+     "mediana_nota_dmri": 0.26,
+     "acima_do_limiar_dmri": 0.3189,
+     "mediana_nota_drusas": 0.822
+    },
+    {
+     "faixa": "sem_idade",
+     "n": 949,
+     "mediana_nota_dmri": 0.0537,
+     "acima_do_limiar_dmri": 0.1802,
+     "mediana_nota_drusas": 0.5302
+    }
+   ],
+   "veredito": {
+    "delta_f2_media_bases": 0.0062,
+    "ic95": [
+     -0.0067,
+     0.0199
+    ],
+    "veredito": "empatou"
+   },
+   "discordancias": [
+    {
+     "grupo": "geral",
+     "valor": "todas",
+     "n_dmri": 1515,
+     "dmri_so_referencia": 55,
+     "dmri_so_nova": 60,
+     "dmri_nenhuma": 165,
+     "n_sem_dmri": 16524,
+     "falso_positivo_so_referencia": 176,
+     "falso_positivo_so_nova": 145
+    },
+    {
+     "grupo": "base",
+     "valor": "adam",
+     "n_dmri": 263,
+     "dmri_so_referencia": 5,
+     "dmri_so_nova": 5,
+     "dmri_nenhuma": 22,
+     "n_sem_dmri": 662,
+     "falso_positivo_so_referencia": 11,
+     "falso_positivo_so_nova": 18
+    },
+    {
+     "grupo": "base",
+     "valor": "brset",
+     "n_dmri": 261,
+     "dmri_so_referencia": 5,
+     "dmri_so_nova": 19,
+     "dmri_nenhuma": 25,
+     "n_sem_dmri": 8881,
+     "falso_positivo_so_referencia": 31,
+     "falso_positivo_so_nova": 36
+    },
+    {
+     "grupo": "base",
+     "valor": "hyamd",
+     "n_dmri": 532,
+     "dmri_so_referencia": 22,
+     "dmri_so_nova": 18,
+     "dmri_nenhuma": 33,
+     "n_sem_dmri": 560,
+     "falso_positivo_so_referencia": 62,
+     "falso_positivo_so_nova": 46
+    },
+    {
+     "grupo": "base",
+     "valor": "odir",
+     "n_dmri": 280,
+     "dmri_so_referencia": 18,
+     "dmri_so_nova": 15,
+     "dmri_nenhuma": 62,
+     "n_sem_dmri": 4362,
+     "falso_positivo_so_referencia": 46,
+     "falso_positivo_so_nova": 24
+    },
+    {
+     "grupo": "base",
+     "valor": "rfmid",
+     "n_dmri": 179,
+     "dmri_so_referencia": 5,
+     "dmri_so_nova": 3,
+     "dmri_nenhuma": 23,
+     "n_sem_dmri": 2059,
+     "falso_positivo_so_referencia": 26,
+     "falso_positivo_so_nova": 21
+    },
+    {
+     "grupo": "estagio_dmri",
+     "valor": "dmri",
+     "n_dmri": 983,
+     "dmri_so_referencia": 33,
+     "dmri_so_nova": 42,
+     "dmri_nenhuma": 132,
+     "n_sem_dmri": 0,
+     "falso_positivo_so_referencia": 0,
+     "falso_positivo_so_nova": 0
+    },
+    {
+     "grupo": "estagio_dmri",
+     "valor": "dmri_intermediaria_tardia",
+     "n_dmri": 424,
+     "dmri_so_referencia": 7,
+     "dmri_so_nova": 15,
+     "dmri_nenhuma": 16,
+     "n_sem_dmri": 0,
+     "falso_positivo_so_referencia": 0,
+     "falso_positivo_so_nova": 0
+    },
+    {
+     "grupo": "estagio_dmri",
+     "valor": "dmri_precoce",
+     "n_dmri": 108,
+     "dmri_so_referencia": 15,
+     "dmri_so_nova": 3,
+     "dmri_nenhuma": 17,
+     "n_sem_dmri": 0,
+     "falso_positivo_so_referencia": 0,
+     "falso_positivo_so_nova": 0
+    },
+    {
+     "grupo": "doenca",
+     "valor": "catarata",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 288,
+     "falso_positivo_so_referencia": 0,
+     "falso_positivo_so_nova": 0
+    },
+    {
+     "grupo": "doenca",
+     "valor": "cicatriz",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 206,
+     "falso_positivo_so_referencia": 4,
+     "falso_positivo_so_nova": 13
+    },
+    {
+     "grupo": "doenca",
+     "valor": "descolamento",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 25,
+     "falso_positivo_so_referencia": 0,
+     "falso_positivo_so_nova": 0
+    },
+    {
+     "grupo": "doenca",
+     "valor": "edema_macular",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 395,
+     "falso_positivo_so_referencia": 3,
+     "falso_positivo_so_nova": 4
+    },
+    {
+     "grupo": "doenca",
+     "valor": "glaucoma",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 671,
+     "falso_positivo_so_referencia": 3,
+     "falso_positivo_so_nova": 0
+    },
+    {
+     "grupo": "doenca",
+     "valor": "hemorragia",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 85,
+     "falso_positivo_so_referencia": 1,
+     "falso_positivo_so_nova": 4
+    },
+    {
+     "grupo": "doenca",
+     "valor": "membrana_epirretiniana",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 390,
+     "falso_positivo_so_referencia": 8,
+     "falso_positivo_so_nova": 1
+    },
+    {
+     "grupo": "doenca",
+     "valor": "miopia",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 616,
+     "falso_positivo_so_referencia": 21,
+     "falso_positivo_so_nova": 14
+    },
+    {
+     "grupo": "doenca",
+     "valor": "nao_especificada",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 662,
+     "falso_positivo_so_referencia": 11,
+     "falso_positivo_so_nova": 18
+    },
+    {
+     "grupo": "doenca",
+     "valor": "nevo",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 97,
+     "falso_positivo_so_referencia": 0,
+     "falso_positivo_so_nova": 0
+    },
+    {
+     "grupo": "doenca",
+     "valor": "normal",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 11017,
+     "falso_positivo_so_referencia": 38,
+     "falso_positivo_so_nova": 23
+    },
+    {
+     "grupo": "doenca",
+     "valor": "oclusao_vascular",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 326,
+     "falso_positivo_so_referencia": 2,
+     "falso_positivo_so_nova": 4
+    },
+    {
+     "grupo": "doenca",
+     "valor": "outra",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 671,
+     "falso_positivo_so_referencia": 19,
+     "falso_positivo_so_nova": 14
+    },
+    {
+     "grupo": "doenca",
+     "valor": "retinopatia_diabetica",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 671,
+     "falso_positivo_so_referencia": 62,
+     "falso_positivo_so_nova": 47
+    },
+    {
+     "grupo": "doenca",
+     "valor": "retinopatia_hipertensiva",
+     "n_dmri": 0,
+     "dmri_so_referencia": 0,
+     "dmri_so_nova": 0,
+     "dmri_nenhuma": 0,
+     "n_sem_dmri": 404,
+     "falso_positivo_so_referencia": 4,
+     "falso_positivo_so_nova": 3
+    }
+   ]
+  }
+ },
+ "referencia": "resultados/rodada4-20261119-0229/rodada4-00"
+}

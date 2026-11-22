@@ -1,0 +1,2 @@
+configuracao,mudancas,f2_media_bases,f2_ic95,auroc,sensibilidade,esp_normais,esp_outras,regua_origem,veredito
+rodada6-01,"{""model"": ""hibrida_v2s"", ""image_size"": 1024, ""cache"": false, ""aux_localization"": 0.25, ""aux_drusas"": 0.5}",0.8102870389966054,"[0.7908, 0.8287]",0.9772065514467206,0.8547854785478548,0.9915585004992284,0.9023061558017069,0.7921528881283191,empatou
