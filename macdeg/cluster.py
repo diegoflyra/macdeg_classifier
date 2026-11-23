@@ -55,7 +55,9 @@ def expand(experiment: dict) -> list[dict]:
     """Configurações do experimento: a base, cada combinação da grade e cada variação avulsa.
     Nomes: <nome>-00, <nome>-01, ... na ordem (a 00 é a base com a primeira combinação).
     `base_mudancas`: o que já foi incorporado à base (ex.: as melhorias da rodada anterior); vale para
-    todas as configurações e não conta como mudança da variação."""
+    todas as configurações e não conta como mudança da variação.
+    `treinar_base: false`: a 00 não é treinada (já existe em outro lote); as variações mantêm os nomes
+    01, 02, ... e são comparadas com a `referencia`, que passa a ser obrigatória."""
     base = load_config(PROJECT / experiment["base"], [])
     for key, value in (experiment.get("base_mudancas") or {}).items():
         _set(base, key, value)
@@ -70,6 +72,13 @@ def expand(experiment: dict) -> list[dict]:
         name = f"{experiment['nome']}-{i:02d}"
         config["name"] = name
         configs.append({"nome": name, "mudancas": changes, "config": config})
+    if experiment.get("treinar_base", True) is False:
+        if not experiment.get("referencia"):
+            raise SystemExit("treinar_base: false precisa de `referencia: resultados/<lote>/<configuração>` "
+                             "(a base já treinada, com a mesma assinatura dos dados).")
+        if len(configs) < 2:
+            raise SystemExit("treinar_base: false sem variações: não sobra nada para treinar.")
+        configs = configs[1:]
     return configs
 
 
@@ -110,6 +119,8 @@ def prepare(experiment_path: Path, dataset: str | None = None, test: bool = Fals
                 raise SystemExit(f"A referência ainda tem o marcador: {experiment['referencia']}. Troque pelo lote "
                                  "real (branch resultados do GitHub) antes de lançar.")
             experiment = {**experiment, "referencia": None}    # --teste: compara com a própria 00
+        if test:     # o teste treina e compara com a própria 00 (números de teste não se comparam a um lote real)
+            experiment = {**experiment, "referencia": None, "treinar_base": True}
         configs, name = expand(experiment), experiment["nome"]
     if pilot:
         name = "piloto-" + name
@@ -267,17 +278,32 @@ def visible_gpus() -> list[str]:
     return [g.strip() for g in os.environ.get("CUDA_VISIBLE_DEVICES", "").split(",") if g.strip()]
 
 
+def parse_tasks(text: str) -> set[int]:
+    """"1-10,15" (numeração dos logs, a partir de 1) -> {0, ..., 9, 14} (índices do lote.json)."""
+    ids = set()
+    for part in text.split(","):
+        first, _, last = part.strip().partition("-")
+        ids.update(range(int(first) - 1, int(last or first)))
+    if not ids or min(ids) < 0:
+        raise ValueError(f"faixa de tarefas inválida: {text!r} (ex.: 1-10 ou 1-5,11-15)")
+    return ids
+
+
 def run_local(batch: Path, dataset: str | None = None, wandb_mode: str | None = "disabled",
-              gpus: list[str] | None = None, from_end: bool = False) -> None:
+              gpus: list[str] | None = None, from_end: bool = False, only: set[int] | None = None) -> None:
     """Roda as tarefas do lote. Com uma GPU (ou nenhuma), uma por vez neste processo. Com várias, um
     processo por GPU, cada um pegando a próxima tarefa livre de uma fila comum. Tarefas já concluídas são
     puladas; uma tarefa interrompida continua do last.pt. O resultado de cada tarefa não depende da GPU
     (lote efetivo fixo), então dividir as tarefas entre GPUs não muda os números. `from_end`: começa pela
-    última tarefa (um segundo job no mesmo lote, para os dois se encontrarem no meio)."""
+    última tarefa (um segundo job no mesmo lote, para os dois se encontrarem no meio). `only`: só estas
+    tarefas (índices do lote.json); para dividir um experimento entre contas que não enxergam a pasta uma da
+    outra (cada conta roda uma faixa num lote próprio; as pastas das tarefas são juntadas depois)."""
     batch = Path(batch)
     lote = json.loads((batch / "lote.json").read_text(encoding="utf-8"))
     total = len(lote["tarefas"])
     pending = pending_tasks(batch, lote)
+    if only is not None:
+        pending = [t for t in pending if t in only]
     if from_end:
         pending.reverse()
     gpus = visible_gpus() if gpus is None else gpus

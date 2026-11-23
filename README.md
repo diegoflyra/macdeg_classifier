@@ -108,6 +108,8 @@ macdeg/
                            dobras das drusas (drusas.py)
   train.py                 Treino de uma dobra (torchvision, timm e a AlexNet de models.py; saídas auxiliares)
   models.py                AlexNet escrita camada por camada
+  hybrid.py                Redes em duas resoluções sobre a V2-S: híbrida do Gustavo e recorte da mácula
+  explain.py               Explicabilidade: Grad-CAM e atenção por tarefa, números por grupo, pranchas locais
   catalogo.py              Gera docs/experimentos.md a partir da branch resultados
   metrics.py               F2 por base, limiar em outras dobras, IC por paciente, veredito pareado
   cluster.py               Lança experimentos no SLURM (Apuana) ou localmente

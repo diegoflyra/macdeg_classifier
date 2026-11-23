@@ -151,6 +151,98 @@ nenhuma configuração (36 no ODIR).
     variação ganhar, o ganho vem de imagens a mais e de uma tarefa a mais, juntas; o texto diz assim.
   - Não interpreta o que as drusas significam para a idade (Ferris et al., 2013): não há rótulo para isso.
 
+## Fase 2: rodada 5 (20/11/2026)
+
+Resultado da rodada 4 (`rodada4-20261119-0229`): Inception-v3 empatou (−0,010 [−0,023; +0,004]); o ViT-B/16
+não aprendeu com a receita comum (perda de treino parada em ~1,3; F2 0,465): limitação da receita, não
+conclusão sobre a arquitetura. A V2-S retreinada empatou com a da rodada 3 (−0,005).
+
+- **Ruído entre treinos idênticos:** as duas V2-S (mesma configuração e semente; só o não determinismo da
+  GPU muda) diferem até +0,040 no F2 do BRSET e −0,029 no RFMiD, com IC95 sem cruzar o zero. O IC do
+  veredito só reamostra pacientes, não a variação do treino. Logo, "a rede X é melhor no aspecto Y" a
+  partir de um treino só não se sustenta; a média dos dois treinos ganhou de um só (+0,013 [+0,005; +0,022]).
+  Conclusão principal no texto: com dois treinos de cada lado.
+- **Arquitetura a partir do problema, não das diferenças entre redes:** a 512 px (~25 µm/px), uma drusa
+  média (63–125 µm, DMRI precoce pelo Ferris et al., 2013) tem 2,5–5 px; a 1024 px, 5–10 px. Na V2-S, o
+  estágio 2 (64 × 64, 8 px por posição) é o último em que ela tem endereço próprio.
+- **Rede híbrida do Gustavo** (branch `rede-hibrida`, inspirada em GMIC, attention MIL e Inception-ResNet)
+  portada para a V2-S (`hibrida_v2s`, `macdeg/hybrid.py`): ramo multiescala do estágio 2, atenção espacial,
+  3 recortes de 192 px em 1024 px e perda de localização (0,25). Mudança em relação ao original: os
+  recortes passam por uma cópia pré-treinada dos estágios 0–3 da V2-S (no original, uma CNN de 3 camadas
+  começava do zero com ~900 DMRI). Usa a receita da base (augmentation, cabeça de DR, lr 3e-4).
+- **Recorte da mácula em resolução nativa** (`v2s_macula`): vista global 512 px + centro de 448 px da imagem
+  em 1024 px (~6 mm, a grade do AREDS), cada um com a sua V2-S. Diferente do `crop: 0.6` da rodada 3, que
+  substituía a imagem e a reduzia.
+- **Explicabilidade em todas as tarefas** (`macdeg/explain.py`, `explain: true` por padrão): Grad-CAM da
+  saída de DMRI (e de drusas), atenção da híbrida e mapa do ramo da mácula, nas imagens do teste externo.
+  No GitHub só números (massa na mácula, fora da retina, área com metade do mapa, por grupo e por erro);
+  pranchas com imagens só no cluster/local (`python -m macdeg.explain pranchas`).
+- Entrada de 1024 px sem cache (os pixels são os mesmos; o cache teria ~65 GB). Memória medida: 0,51 GB
+  por imagem (híbrida) e 0,72 (mácula), contra 0,40 da V2-S em 512 px: o lote inteiro (16) cabe em 24 GB,
+  então o BatchNorm vê os mesmos 16 da base.
+
+## Fase 2: rodada 6, modelo final (21/11/2026)
+
+Prazo: entrega em 23/11. Vereditos **parciais** da rodada 5 (`rodada5-20261120-0225`, análise com 31
+tarefas faltando; a híbrida, 03, ainda sem tarefas), contra a `rodada4-00`: nada ganhou.
+
+| variação | dobras externas | Δ F2 médio por base [IC95] | veredito |
+|---|---|---|---|
+| 01 saída de drusas | 5/5 | +0,001 [−0,013; +0,015] | empatou |
+| 02 mácula em 1024 px | 4/5 | +0,001 [−0,014; +0,015] | empatou |
+| 04 augmentation ampliada | 3/5 | +0,010 [−0,007; +0,026] | empatou |
+
+- **Especificidade em retinopatia diabética oscila ±0,1 entre treinos idênticos:** as duas V2-S iguais
+  (rodada3-02 × rodada4-00) deram 0,422 × 0,528 nas mesmas 671 imagens. Por isso o +0,07 das drusas e o
+  −0,05 da augmentation ampliada nessa métrica não se distinguem do ruído (um treino de cada lado).
+- **Drusas entram no modelo final por decisão dos donos (21/11), por cobertura, não por melhora:** olhos com
+  drusas sem diagnóstico existem na população rastreada, e a saída de drusas não alterou a métrica
+  principal. Comportamento nas drusas da dobra externa (sem rótulo de DMRI, logo fora do F2): marcadas como
+  DMRI 16,9% (V2-S) × 22,3% (com a saída), crescendo com a idade (15% até 55 anos; 39% acima de 75), sem
+  a idade entrar na rede: coerente com a definição de Ferris (drusas maiores e mais numerosas com a idade).
+- **Rodada 6** (`010_rodada6.yaml`): híbrida + drusas, 20 tarefas, comparada com a `rodada4-00`. A
+  `rodada5-03` (híbrida sem drusas) mede o efeito das drusas na híbrida e é o modelo de reserva.
+  Junta duas mudanças de propósito (modelo final, não "uma por vez").
+- **Sem Optuna nesta entrega:** com a validação aninhada, uma busca custaria centenas de GPU-h; ajustar numa
+  divisão só e avaliar nas 5 dobras vazaria o teste. Mudanças de receita moveram o F2 em no máximo ~0,013
+  (rodada 2), dentro da variação entre treinos. Os hiperparâmetros próprios da híbrida (alfa 0,1, peso de
+  localização 0,25, 3 recortes de 192 px, lr única) nunca foram ajustados: se ela perder, não se separa
+  "a ideia" de "o ajuste".
+- **Previsão em fp32 quando o fp16 estoura** (`predict`): uma tarefa da `rodada5-02` caiu com 2 de 3609
+  notas não finitas. Só o lote com NaN é refeito; as notas finitas não mudam (resultados comparáveis).
+- **Execução dividida entre duas contas** (`--tarefas`): sem ACL no cluster, cada conta rodou 10 tarefas num
+  lote próprio (mesmo YAML, commit `4e80f14` e assinatura); as pastas das tarefas foram juntadas no lote
+  `rodada6-20261121-2030` antes da análise. ~12 h com 4 GPUs. A `rodada5-03` não rodou (GPUs para a 6).
+
+### Resultado da rodada 6 (22/11/2026): modelo final
+
+`rodada6-01`: F2 médio por base **0,810 [0,791; 0,829]**, AUROC 0,977, sensibilidade 0,855, especificidade
+0,992 em normais e 0,902 em outras doenças. Réguas: origem 0,792 e idade 0,796 de AUROC (a rede: 0,977).
+
+| comparação pareada (mesmas 18 039 imagens) | Δ F2 médio por base [IC95] | veredito |
+|---|---|---|
+| contra a referência inicial (ResNet-50, `referencia-00`) | +0,040 [+0,025; +0,057] | **ganhou** |
+| contra a V2-S (`rodada4-00`, referência do YAML) | +0,006 [−0,007; +0,020] | empatou |
+| contra a V2-S + drusas (`rodada5-01`) | +0,005 [−0,009; +0,020] | empatou |
+
+- **Escolhida como modelo final:** maior F2 entre as configurações com as 5 dobras, empate estatístico com
+  a V2-S, e duas vantagens fora do F2: cobertura das drusas e explicabilidade (abaixo). O ganho de todo o
+  projeto contra a referência inicial é significativo; nenhuma rodada isolada depois da 3 ganhou.
+- **F2 por base** (V2-S → híbrida): ADAM 0,879 → 0,874; BRSET 0,795 → 0,835; HYAMD 0,822 → 0,821;
+  ODIR 0,699 → 0,700; RFMiD 0,826 → 0,822.
+- **DMRI precoce continua o ponto fraco:** AUROC 0,585 (108 olhos, HYAMD); contra a V2-S, a híbrida perdeu 15
+  e ganhou 3 desses olhos. A intermediária/tardia: AUROC 0,859.
+- **Retinopatia diabética:** especificidade 0,550 (V2-S 0,528), dentro do ruído de ±0,1.
+- **Drusas da dobra externa:** 19,3% marcadas como DMRI (V2-S + drusas: 22,3%), crescendo com a idade
+  (12,7% até 55 anos → 31,9% acima de 75), sem a idade entrar na rede.
+- **Explicabilidade** (massa do mapa dentro da mácula, raio de 3 mm do AREDS; um mapa uniforme dá 0,166):
+  - Grad-CAM da saída de DMRI, olhos com DMRI: **0,536** na híbrida × 0,350 na V2-S + drusas, e mais
+    concentrado (metade da massa em 9% da imagem × 16%). Em normais, 0,216. A decisão olha para a mácula.
+  - **A atenção que escolhe os recortes da híbrida não está na mácula:** 0,094 nos olhos com DMRI (abaixo do
+    uniforme), e nos normais 32% da massa cai fora da retina. A perda de localização só treina os maiores
+    escores nos olhos com DMRI; nos sem DMRI a atenção não tem alvo. Não apresentar esse mapa como
+    "onde está a lesão". Se os recortes ajudam ou não, só uma ablação diria (não feita).
+
 ## Pré-processamento por ROI e auditoria (HYAMD, suspenso em 11/11/2026)
 
 Desenvolvido antes da mudança para o conjunto multibase. Fica disponível para voltar como experimento

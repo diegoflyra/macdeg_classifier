@@ -11,6 +11,8 @@ rode direto.
     python rodar.py --retomar ~/macdeg_runs/<lote>    # continua um lote interrompido (pula o que já terminou)
     python rodar.py --retomar ~/macdeg_runs/<lote> --do-fim   # outro job no mesmo lote, a partir da última
                                                       # tarefa; a análise roda no job que terminar por último
+    python rodar.py --retomar ~/macdeg_runs/<lote> --tarefas 11-20   # só esta faixa (outra conta faz o resto
+                                                      # num lote próprio; as pastas das tarefas são juntadas depois)
     python rodar.py --final ~/macdeg_runs/<lote> <configuração>   # modelo final (5 dobras), guardado no lote
 
 Resultados: ~/macdeg_runs/<lote>/ ; GitHub (branch resultados) e W&B (curvas). No --final, os pesos ficam
@@ -27,7 +29,7 @@ import time
 from pathlib import Path
 
 from macdeg.ambiente import commit_info, load_dotenv, push_results, which_secrets
-from macdeg.cluster import RUNS, dataset_signature, failed_tasks, pending_tasks, prepare, run_local
+from macdeg.cluster import RUNS, dataset_signature, failed_tasks, parse_tasks, pending_tasks, prepare, run_local
 from macdeg.data.sources import resolve
 
 REFERENCIA = "configs/experimentos/001_referencia.yaml"
@@ -59,6 +61,8 @@ def main() -> None:
     ap.add_argument("--final", nargs="+", metavar=("LOTE", "CONFIG"), help="modelo final de configurações de um lote")
     ap.add_argument("--do-fim", action="store_true",
                     help="com --retomar: começa pela última tarefa (para um segundo job dividir o mesmo lote)")
+    ap.add_argument("--tarefas", type=parse_tasks, default=None, metavar="FAIXA",
+                    help="só estas tarefas, numeradas a partir de 1 como nos logs (ex.: 1-10 ou 1-5,11-15)")
     ap.add_argument("--dados", default="~/macdeg_data/dataset_1024", help="pasta do conjunto (com as imagens)")
     ap.add_argument("--sem-wandb", action="store_true")
     args = ap.parse_args()
@@ -78,7 +82,7 @@ def main() -> None:
     print(f"lote {batch}: {len(lote['configuracoes'])} configuração(ões), {len(lote['tarefas'])} tarefas", flush=True)
 
     wandb_mode = "disabled" if (args.teste or args.sem_wandb) else None
-    run_local(batch, args.dados, wandb_mode, from_end=args.do_fim)
+    run_local(batch, args.dados, wandb_mode, from_end=args.do_fim, only=args.tarefas)
 
     missing = pending_tasks(batch, lote)
     failed = failed_tasks(batch, lote)

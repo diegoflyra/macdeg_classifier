@@ -31,6 +31,9 @@ código ou lançar jobs. Regras gerais do projeto: `CLAUDE.md`; motivos: `docs/d
 2. **Cada variação muda UMA coisa** sobre essa base. Duas mudanças na mesma variação não dizem qual ajudou.
 3. O veredito pareado (`ganhou` / `empatou` / `perdeu`) é sempre contra a base vigente. Para usar a base de
    outro lote, `referencia: resultados/<lote>/<configuração>` (sem retreinar a referência por conta própria).
+   Se a base já tem treinos suficientes, `treinar_base: false` pula a 00 (economiza 20 tarefas); a
+   `referencia` passa a ser obrigatória e precisa ter a mesma assinatura dos dados. O `--teste` treina a 00
+   mesmo assim. A rodada 5 usa isso (a V2-S base já tem dois treinos: `rodada3-02` e `rodada4-00`).
 4. O que **ganhou** entra na base da rodada seguinte, por decisão dos donos.
 5. **Hiperparâmetros fixos** (receita da `baseline.yaml`: AdamW, lr 3e-4, weight decay 1e-4, 20 épocas,
    paciência 5, lote 16, 512 px) em todas as rodadas. O ajuste fino de hiperparâmetros é a **última**
@@ -72,7 +75,7 @@ Concluídos (resultados em `docs/experimentos.md`): `001_referencia`, `002_rodad
 | `005_alexnet_congelamento.yaml` | Gustavo | apêndice AlexNet: congelar 3 convoluções | `gustavo-01` |
 | `006_alexnet_taxas.yaml` | Gustavo | apêndice AlexNet: lr separada da saída | (dentro do lote) |
 | `007_alexnet_inicializacao.yaml` | Gustavo | apêndice AlexNet: Xavier na saída | (dentro do lote) |
-| `009_rodada5.yaml` | donos | saída auxiliar de drusas (fase 2; precisa do `drusas_dobras.csv`) | `rodada5-00` |
+| `009_rodada5.yaml` | donos | V2-S + drusas, + recorte da mácula em 1024 px, + híbrida do Gustavo sobre a V2-S, + augmentation ampliada (precisa do `drusas_dobras.csv`) | `rodada5-00` |
 
 Ordem: 004 só depois que a rodada 3 estiver no GitHub; 005 depois do 004; 006 e 007 em sequência, cada
 um só se o anterior não perdeu. Os resultados da Parte 1 (004) entram na comparação de arquiteturas; os

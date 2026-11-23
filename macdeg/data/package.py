@@ -16,11 +16,13 @@ from pathlib import Path
 from macdeg.data.sources import resolve
 
 FILES = ["manifest.csv", "splits_nested_seed0.csv", "extras_drusas.csv", "summary.json"]
+# Entram se existirem: dobras das drusas por paciente (aux_drusas; python -m macdeg.data.drusas).
+OPTIONAL = ["drusas_dobras.csv"]
 
 
 def package(dataset: Path, out: Path) -> str:
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_STORED) as archive:
-        for name in FILES:
+        for name in FILES + [f for f in OPTIONAL if (dataset / f).exists()]:
             archive.write(dataset / name, name)
         # Só as imagens usadas: as do manifest e as drusas sem diagnóstico (que o modelo pontua)
         import pandas as pd
