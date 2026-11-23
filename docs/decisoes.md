@@ -210,6 +210,38 @@ tarefas faltando; a híbrida, 03, ainda sem tarefas), contra a `rodada4-00`: nad
   "a ideia" de "o ajuste".
 - **Previsão em fp32 quando o fp16 estoura** (`predict`): uma tarefa da `rodada5-02` caiu com 2 de 3609
   notas não finitas. Só o lote com NaN é refeito; as notas finitas não mudam (resultados comparáveis).
+- **Execução dividida entre duas contas** (`--tarefas`): sem ACL no cluster, cada conta rodou 10 tarefas num
+  lote próprio (mesmo YAML, commit `4e80f14` e assinatura); as pastas das tarefas foram juntadas no lote
+  `rodada6-20261121-2030` antes da análise. ~12 h com 4 GPUs. A `rodada5-03` não rodou (GPUs para a 6).
+
+### Resultado da rodada 6 (22/11/2026): modelo final
+
+`rodada6-01`: F2 médio por base **0,810 [0,791; 0,829]**, AUROC 0,977, sensibilidade 0,855, especificidade
+0,992 em normais e 0,902 em outras doenças. Réguas: origem 0,792 e idade 0,796 de AUROC (a rede: 0,977).
+
+| comparação pareada (mesmas 18 039 imagens) | Δ F2 médio por base [IC95] | veredito |
+|---|---|---|
+| contra a referência inicial (ResNet-50, `referencia-00`) | +0,040 [+0,025; +0,057] | **ganhou** |
+| contra a V2-S (`rodada4-00`, referência do YAML) | +0,006 [−0,007; +0,020] | empatou |
+| contra a V2-S + drusas (`rodada5-01`) | +0,005 [−0,009; +0,020] | empatou |
+
+- **Escolhida como modelo final:** maior F2 entre as configurações com as 5 dobras, empate estatístico com
+  a V2-S, e duas vantagens fora do F2: cobertura das drusas e explicabilidade (abaixo). O ganho de todo o
+  projeto contra a referência inicial é significativo; nenhuma rodada isolada depois da 3 ganhou.
+- **F2 por base** (V2-S → híbrida): ADAM 0,879 → 0,874; BRSET 0,795 → 0,835; HYAMD 0,822 → 0,821;
+  ODIR 0,699 → 0,700; RFMiD 0,826 → 0,822.
+- **DMRI precoce continua o ponto fraco:** AUROC 0,585 (108 olhos, HYAMD); contra a V2-S, a híbrida perdeu 15
+  e ganhou 3 desses olhos. A intermediária/tardia: AUROC 0,859.
+- **Retinopatia diabética:** especificidade 0,550 (V2-S 0,528), dentro do ruído de ±0,1.
+- **Drusas da dobra externa:** 19,3% marcadas como DMRI (V2-S + drusas: 22,3%), crescendo com a idade
+  (12,7% até 55 anos → 31,9% acima de 75), sem a idade entrar na rede.
+- **Explicabilidade** (massa do mapa dentro da mácula, raio de 3 mm do AREDS; um mapa uniforme dá 0,166):
+  - Grad-CAM da saída de DMRI, olhos com DMRI: **0,536** na híbrida × 0,350 na V2-S + drusas, e mais
+    concentrado (metade da massa em 9% da imagem × 16%). Em normais, 0,216. A decisão olha para a mácula.
+  - **A atenção que escolhe os recortes da híbrida não está na mácula:** 0,094 nos olhos com DMRI (abaixo do
+    uniforme), e nos normais 32% da massa cai fora da retina. A perda de localização só treina os maiores
+    escores nos olhos com DMRI; nos sem DMRI a atenção não tem alvo. Não apresentar esse mapa como
+    "onde está a lesão". Se os recortes ajudam ou não, só uma ablação diria (não feita).
 
 ## Pré-processamento por ROI e auditoria (HYAMD, suspenso em 11/11/2026)
 
