@@ -243,6 +243,20 @@ tarefas faltando; a híbrida, 03, ainda sem tarefas), contra a `rodada4-00`: nad
     escores nos olhos com DMRI; nos sem DMRI a atenção não tem alvo. Não apresentar esse mapa como
     "onde está a lesão". Se os recortes ajudam ou não, só uma ablação diria (não feita).
 
+## Figuras do relatório com retinografias de bases públicas (27/11/2026)
+
+Exceção à regra "nenhuma imagem sai do computador local ou do cluster" (CLAUDE.md, seção 1), decidida
+pelos donos a pedido do professor: o relatório pode mostrar exemplos de retinografias **só da RFMiD e da
+ODIR**, que o relatório já cita ([9], [10], [11]). Ficam de fora a BRSET e a HYAMD (PhysioNet, termo de uso
+sem redistribuição) e o ADAM (publicação exige aprovação dos organizadores).
+
+- As candidatas foram escolhidas **só pelo rótulo** (condição única marcada, maior resolução, sorteio com
+  semente 0), sem abrir as imagens: alguém precisa conferir visualmente antes de usar.
+- Cópias com nomes neutros em `~/macdeg_data/figuras_relatorio/` (fora do Git); os originais não mudam. O
+  arquivo `origem_privada.csv` dessa pasta liga cada cópia ao original e não sai do computador.
+- Cada figura cita a base de origem. Nada disso vale para as outras bases nem para o Git (o `.gitignore`
+  continua bloqueando imagens).
+
 ## Pré-processamento por ROI e auditoria (HYAMD, suspenso em 11/11/2026)
 
 Desenvolvido antes da mudança para o conjunto multibase. Fica disponível para voltar como experimento

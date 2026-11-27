@@ -135,3 +135,8 @@ annotations/
 mlp_fase5.ipynb
 AMD Classification Literature Review.md
 handoff*.md
+# Documentos de contexto locais (relatório, rascunhos, modelos de apresentação): não versionar
+relatorio_*.pdf
+evolucao_treinamento*.docx
+Anexo*t*cnico*.pdf
+Apresenta*IA.html
