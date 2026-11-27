@@ -1,0 +1,15 @@
+==========================================
+job 33397 | nó cluster-node5 | 2026-11-27 09:56:56
+argumentos: --final /home/CIN/dfal/macdeg_runs/rodada6-20261121-2030 rodada6-01
+==========================================
+python: /home/CIN/dfal/macdeg_classifier/.venv/bin/python
+GPU 0: NVIDIA GeForce RTX 3090 (UUID: GPU-50059bdc-ce02-250c-f41c-9d9130474e16)
+torch 2.14.1+cu130 | GPUs: NVIDIA GeForce RTX 3090
+disco local /tmp: 1450 GB livres
+disco local /var/tmp: 1450 GB livres
+copiando o conjunto para /tmp/dfal-macdeg-33397 ...
+conjunto pronto: 20871 imagens
+segredos: {'GITHUB_TOKEN': True, 'WANDB_API_KEY': True, 'HF_TOKEN': True, 'WANDB_ENTITY': False}
+commit: 41819cb549 | mudanças sem commit: False
+assinatura dos dados: 72e45dfc1003894a
+GitHub: envio testado e funcionando
