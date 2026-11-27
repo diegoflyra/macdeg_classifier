@@ -1,0 +1,44 @@
+{
+ "configuracao": "rodada6-01",
+ "lote_final": "rodada6-20261121-2054-final-20261127-1005",
+ "commit": "41819cb549de2a3525374b721b12505848d1f1a0",
+ "assinatura_dados": "72e45dfc1003894a",
+ "modelo": "hibrida_v2s",
+ "image_size": 1024,
+ "normalizacao": {
+  "media": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "dp": [
+   0.5,
+   0.5,
+   0.5
+  ]
+ },
+ "entrada": "retina inteira num quadrado (bordas pretas completam), RGB",
+ "saida": "logit 0; sigmoide = P(DMRI) (os seguintes, se houver, são as saídas auxiliares: DR, depois drusas)",
+ "saidas": 3,
+ "preprocess": null,
+ "crop": null,
+ "ensemble": "média das probabilidades das 5 dobras",
+ "limiar": 0.44397708999999996,
+ "mudancas": {
+  "model": "hibrida_v2s",
+  "image_size": 1024,
+  "cache": false,
+  "aux_localization": 0.25,
+  "aux_drusas": 0.5
+ },
+ "lote_de_origem": "rodada6-20261121-2054",
+ "metricas_validacao_aninhada": {},
+ "exportado": "2026-11-27 17:37",
+ "dobras": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ]
+}

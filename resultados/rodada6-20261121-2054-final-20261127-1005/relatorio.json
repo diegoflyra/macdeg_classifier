@@ -1,0 +1,31 @@
+{
+ "lote": "rodada6-20261121-2054-final-20261127-1005",
+ "commit": "41819cb549de2a3525374b721b12505848d1f1a0",
+ "assinatura_dados": "72e45dfc1003894a",
+ "teste": false,
+ "piloto": false,
+ "tarefas_faltando": [],
+ "analisado": "2026-11-27 17:37",
+ "configuracoes": {},
+ "final": {
+  "rodada6-01": {
+   "limiar": 0.44397708999999996,
+   "f2_media_bases_fora_da_dobra": 0.7899274025779068,
+   "dobras": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "epocas_melhores": [
+    7,
+    19,
+    9,
+    10,
+    12
+   ],
+   "modelo": "/home/CIN/dfal/macdeg_runs/rodada6-20261121-2054-final-20261127-1005/modelo/rodada6-01"
+  }
+ }
+}

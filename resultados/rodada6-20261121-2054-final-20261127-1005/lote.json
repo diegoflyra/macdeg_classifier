@@ -1,0 +1,86 @@
+{
+ "nome": "rodada6-20261121-2054-final-20261127-1005",
+ "experimento": {
+  "nome": "rodada6",
+  "base": "configs/train/baseline.yaml",
+  "base_mudancas": {
+   "augment": {
+    "crop_scale": [
+     0.85,
+     1.0
+    ],
+    "hflip": true,
+    "rotate_deg": 15,
+    "color": 0.1
+   },
+   "aux_dr": 0.5,
+   "model": "tf_efficientnetv2_s.in21k_ft_in1k"
+  },
+  "treinar_base": false,
+  "grade": {},
+  "variacoes": [
+   {
+    "model": "hibrida_v2s",
+    "image_size": 1024,
+    "cache": false,
+    "aux_localization": 0.25,
+    "aux_drusas": 0.5
+   }
+  ],
+  "referencia": "resultados/rodada4-20261119-0229/rodada4-00"
+ },
+ "teste": false,
+ "final": true,
+ "piloto": false,
+ "lote_de_origem": "/home/CIN/dfal/macdeg_runs/rodada6-20261121-2054",
+ "commit": "41819cb549de2a3525374b721b12505848d1f1a0",
+ "codigo_alterado_sem_commit": false,
+ "criado": "2026-11-27 10:05",
+ "assinatura_dados": "72e45dfc1003894a",
+ "splits": "splits_nested_seed0.csv",
+ "configuracoes": [
+  {
+   "nome": "rodada6-01",
+   "mudancas": {
+    "model": "hibrida_v2s",
+    "image_size": 1024,
+    "cache": false,
+    "aux_localization": 0.25,
+    "aux_drusas": 0.5
+   },
+   "config": {
+    "name": "rodada6-01",
+    "dataset": "~/macdeg_data/dataset_1024",
+    "splits": "splits_nested_seed0.csv",
+    "sources": null,
+    "other_diseases": true,
+    "model": "hibrida_v2s",
+    "pretrained": true,
+    "image_size": 1024,
+    "batch_size": 16,
+    "epochs": 20,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "warmup_epochs": 1,
+    "patience": 5,
+    "balance": "pos_weight",
+    "num_workers": 6,
+    "augment": {
+     "crop_scale": [
+      0.85,
+      1.0
+     ],
+     "hflip": true,
+     "rotate_deg": 15,
+     "color": 0.1
+    },
+    "shuffle_labels": false,
+    "aux_dr": 0.5,
+    "cache": false,
+    "aux_localization": 0.25,
+    "aux_drusas": 0.5
+   }
+  }
+ ],
+ "n_tarefas": 5
+}
